@@ -23,7 +23,7 @@ for my $url_info(@urls) {
     DEBUG && diag $_;
   }
 
-  waitpid $pid;
+  waitpid $pid, 0;
   ok $? == 0, $note;
 
   my @files = <*.{mp4,flv}>;
