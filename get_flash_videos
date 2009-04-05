@@ -21,7 +21,17 @@
 # 
 
 use strict;
+use Getopt::Long;
 use URI;
+
+our $VERSION = "1.0";
+
+my $show_version = 0;
+GetOptions("version|v" => \$show_version);
+
+if($show_version) {
+  die "get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)\n";
+}
 
 binmode STDERR, ":utf8";
 
