@@ -61,40 +61,14 @@ if (!$browser->success and !$browser->response->is_redirect) {
   print STDERR "Couldn't download '$url': " . $browser->status_line() . "\n";
 }
 
-# Figure out what method we need to call to get either the HTTP URL or
+# Figure out what package we need to use to get either the HTTP URL or
 # rtmpdump command for the video. 
-my $method = 'generic';
+my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
 
-foreach my $host_part (split /\./, URI->new($url)->host) {
-  my $possible_method = "site_$host_part";  
-  $method = $possible_method and 
-    last if FlashVideo::URLFinder->can($possible_method);
-}
-
-if($method eq 'generic') {
-  # Fairly lame heuristic, look for the first URL outside the <object>
-  # element (avoids grabbing things like codebase attribute).
-  # Also look at embedded scripts for sites which embed their content that way.
- 
-  URLS: for my $possible_url(
-      $browser->content =~ m!(?:<object[^>]+>.*?|<(?:script|embed) [^>]*src=["']?)(http://[^"'> ]+)!gx) {
-    foreach my $host_part (split /\./, URI->new($possible_url)->host) {
-      my $possible_method = "site_$host_part";
-      if(FlashVideo::URLFinder->can($possible_method)) {
-        $method = $possible_method;
-        $url = $possible_url;
-
-        # XXX: only support one match, for now
-        last URLS;
-      }
-    }
-  }
-}
-
-print STDERR "Using method '$method' for $url\n";
+print STDERR "Using method '", lc((split /::/, $package)[-1]), "' for $url\n";
 
 my ($actual_url, @suggested_fnames) =
-  FlashVideo::URLFinder->$method($browser, $url);
+  $package->find_video($browser, $possible_url);
 my $suggested_filename = $suggested_fnames[-1];
 if (!$yes && @suggested_fnames > 1) {
   print "There are different suggested filenames, please choose:\n";

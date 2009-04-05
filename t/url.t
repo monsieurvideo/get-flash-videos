@@ -17,6 +17,8 @@ for my $url_info(@urls) {
   mkpath $dir;
   chdir $dir or next;
 
+  diag "Testing $note";
+
   my $pid = open my $out_fh, "-|", "../../get_flash_videos --yes '$url' 2>&1";
 
   while(<$out_fh>) {

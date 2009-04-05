@@ -5,20 +5,18 @@ TARGETS = combined-$(MAIN) $(MAIN)-$(VERSION)
 
 all: $(TARGETS)
 
-COMBINE = utils/combine-perl.pl
-COMBINED_SOURCES = experiments/combine-head $(MAIN)
-
-combined-get_flash_videos: $(COMBINE) $(COMBINED_SOURCES)
-	$(COMBINE) $(COMBINED_SOURCES) > $@
-
 clean:
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) .sitemodules
 
 release: $(MAIN)-$(VERSION) 
 	googlecode_upload.py -s "Version $(VERSION)" -p get-flash-videos $^
 
-$(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/*
-	$(COMBINE) --include="^FlashVideo::" $(MAIN) > $@
+$(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules
+	$(COMBINE) --include="^FlashVideo::" $(MAIN) .sitemodules > $@
+	chmod a+x $@
+
+COMBINE = utils/combine-perl.pl
+COMBINED_SOURCES = experiments/combine-head $(MAIN) .sitemodules
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
@@ -26,5 +24,13 @@ release-combined: combined-$(MAIN)-$(VERSION)
 combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
 
+combined-get_flash_videos: $(COMBINE) $(COMBINED_SOURCES)
+	$(COMBINE) $(COMBINED_SOURCES) > $@
+	chmod a+x $@
+
 check: $(MAIN)
 	$(MAKE) -C t $@
+
+.sitemodules: FlashVideo/Site/*.pm
+	ls $^ | sed -e 's!/!::!g' -e 's/\.pm$$/ ();/' -e 's/^/use /' > $@
+
