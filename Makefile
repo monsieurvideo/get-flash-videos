@@ -1,7 +1,7 @@
 MAIN = get_flash_videos
 VERSION := $(shell ./$(MAIN) --version 2>&1 | awk '{print $$3}')
 
-TARGETS = combined-$(MAIN)
+TARGETS = combined-$(MAIN) $(MAIN)-$(VERSION)
 
 all: $(TARGETS)
 
@@ -17,8 +17,8 @@ clean:
 release: $(MAIN)-$(VERSION) 
 	googlecode_upload.py -s "Version $(VERSION)" -p get-flash-videos $^
 
-$(MAIN)-$(VERSION):
-	cp -p $(MAIN) $@
+$(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/*
+	$(COMBINE) --include="^FlashVideo::" $(MAIN) > $@
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
