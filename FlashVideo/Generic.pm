@@ -1,5 +1,8 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Generic;
+
+use strict;
+use constant MAX_REDIRECTS => 5;
 use FlashVideo::Utils;
 use Memoize;
 use LWP::Simple;

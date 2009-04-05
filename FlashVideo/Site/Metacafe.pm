@@ -2,7 +2,7 @@
 package FlashVideo::Site::Metacafe;
 
 use strict;
-use URI::Escape;
+use FlashVideo::Utils;
 use URI::Escape;
 
 sub find_video {

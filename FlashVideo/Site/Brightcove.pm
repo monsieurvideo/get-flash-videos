@@ -96,7 +96,7 @@ EOF
 
     # Use sane filename
     if ($d->{publisherName} and $d->{displayName}) {
-      $args->{flv} = FlashVideo::URLFinder::title_to_filename("$d->{publisherName} - $d->{displayName}");
+      $args->{flv} = title_to_filename("$d->{publisherName} - $d->{displayName}");
     }
 
     # In some cases, Brightcove doesn't use RTMP streaming - the file is
