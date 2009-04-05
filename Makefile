@@ -12,7 +12,7 @@ combined-get_flash_videos: $(COMBINE) $(COMBINED_SOURCES)
 	$(COMBINE) $(COMBINED_SOURCES) > $@
 
 clean:
-	rm -f $(TARGETS) $(MAIN)-$(VERSION)
+	rm -f $(TARGETS)
 
 release: $(MAIN)-$(VERSION) 
 	googlecode_upload.py -s "Version $(VERSION)" -p get-flash-videos $^
@@ -25,3 +25,6 @@ release-combined: combined-$(MAIN)-$(VERSION)
 
 combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
+
+check: $(MAIN)
+	$(MAKE) -C t $@

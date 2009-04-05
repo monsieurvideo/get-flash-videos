@@ -31,12 +31,14 @@ sub download {
 
     print STDERR "File $file already exists, seeing if resuming is supported.\n";
     if (!$response->header('Accept-Ranges')) {
-      print STDERR "This server doesn't explicitly support resuming.\n" .
+      if(!$::yes) {
+        print STDERR "This server doesn't explicitly support resuming.\n" .
                    "Do you want to try resuming anyway (y/n)?\n";
-      chomp(my $answer = <STDIN>);
-      if (!$answer or lc($answer) eq 'n') {
-        undef $offset;
-        $mode = '>';
+        chomp(my $answer = <STDIN>);
+        if (!$answer or lc($answer) eq 'n') {
+          undef $offset;
+          $mode = '>';
+        }
       }
     }
     else {

@@ -30,7 +30,12 @@ use FlashVideo::RTMPDownloader;
 our $VERSION = "1.1";
 
 my $show_version = 0;
-GetOptions("version|v" => \$show_version);
+our $yes = 0;
+
+GetOptions(
+  "version|v" => \$show_version,
+  "yes|y" => \$yes
+);
 
 if($show_version) {
   die "get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)\n";
@@ -91,7 +96,7 @@ print STDERR "Using method '$method' for $url\n";
 my ($actual_url, @suggested_fnames) =
   FlashVideo::URLFinder->$method($browser, $url);
 my $suggested_filename = $suggested_fnames[-1];
-if (@suggested_fnames > 1) {
+if (!$yes && @suggested_fnames > 1) {
   print "There are different suggested filenames, please choose:\n";
   my $count;
   foreach my $filename (@suggested_fnames) {
@@ -103,7 +108,7 @@ if (@suggested_fnames > 1) {
   chomp(my $chosen_fname = <STDIN>);
 
   $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
-  $suggested_fnames[-1];
+    $suggested_fnames[-1];
 }
 
 my $save_as = $filename || $suggested_filename;
