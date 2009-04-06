@@ -58,7 +58,7 @@ wiki:
 wiki-update: wiki
 	@cd wiki && svn up
 	@perl -pi -e's/$(MAIN)-\d+\.\d+/$(MAIN)-$(VERSION)/g' wiki/Installation.wiki
-	@perl -pi -e's/$(MAIN)-\d+\.\d+/$(MAIN)-$(VERSION)/g' wiki/Version.wiki
+	@perl -pi -e's/\d+\.\d+/$(VERSION)/g' wiki/Version.wiki
 	@svn diff wiki/Installation.wiki wiki/Version.wiki | grep -q . || (echo "Version already released" && exit 1)
 	@svn diff wiki/Installation.wiki wiki/Version.wiki && echo "OK? (ctrl-c to abort)" && read F
 
