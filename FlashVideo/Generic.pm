@@ -3,9 +3,23 @@ package FlashVideo::Generic;
 
 use strict;
 use constant MAX_REDIRECTS => 5;
+use constant FRIENDLY_FAILURE => <<EOF;
+
+Couldn't extract Flash movie URL, this may site need specific support adding.
+
+Please confirm the site is using Flash video and if you have Flash available
+check that the URL really works(!).
+
+Check for updates at: http://code.google.com/p/get-flash-videos/
+
+If the latest version does not support this please open a bug (or
+contribute a patch!).
+EOF
+
 use FlashVideo::Utils;
 use Memoize;
 use LWP::Simple;
+use URI::Escape;
 
 sub find_video {
   my ($self, $browser) = @_;
@@ -27,28 +41,13 @@ sub find_video {
 
   my @flv_urls = map {
     (m|http://.+?(http://.+?\.flv)|) ? $1 : $_
-  } ($browser->content =~ m'(http://.+?\.(?:flv|mp4))'g);
+  } ($browser->content =~ m'(http://[-:/a-zA-Z0-9%_.?=&]+\.(?:flv|mp4))'g);
   if (@flv_urls) {
     memoize("LWP::Simple::head");
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
     $possible_filename = (split /\//, $flv_urls[-1])[-1];
-    $actual_url = $flv_urls[-1];
 
-    $browser->head($actual_url);
-    my $response = $browser->response;
-    $got_url = 1 if $response->code == 200;
-    my $redirects = 0;
-    while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
-             and ($redirects < MAX_REDIRECTS) ) {
-      my $url = $response->header('Location');
-      $response = $browser->head($url);
-      if ($response->code == 200) {
-        $actual_url = $url;
-        $got_url = 1;
-        last;
-      }
-      $redirects++;
-    }
+    ($got_url, $actual_url) = url_exists($browser->clone, $flv_urls[-1]);
   }
 
   if(!$got_url) {
@@ -59,10 +58,11 @@ sub find_video {
         # Attempt to handle scripts using flashvars / swfobject
         qr{(?si)<script[^>]*>(.*?)</script>}) {
       for my $param($browser->content =~ /$regex/g) {
-        ($actual_url, $possible_filename) = find_file_param($browser, $param);
+        ($actual_url, $possible_filename) = find_file_param($browser->clone, $param);
+
         if($actual_url) {
-          $got_url = 1;
-          last RE;
+          ($got_url, $actual_url) = url_exists($browser->clone, $actual_url);
+          last RE if $got_url;
         }
       }
     }
@@ -75,14 +75,14 @@ sub find_video {
   
   return ($actual_url, @filenames) if $got_url;
 
-  # XXX: link to bug tracker here / suggest update, etc...
-  die "Couldn't extract Flash movie URL, maybe this site needs specific support adding?";
+  die FRIENDLY_FAILURE;
 }
 
 sub find_file_param {
   my($browser, $param) = @_;
 
   if($param =~ /(?:video|movie|file)['"]?\s*[=:]\s*['"]?([^&'"]+)/
+      || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/
       || $param =~ /['"=](.*?\.(?:flv|mp4))/) {
     my $file = $1;
 
@@ -98,20 +98,40 @@ sub find_file_param {
 }
 
 sub guess_file {
-  my($browser, $file) = @_;
+  my($browser, $file, $once) = @_;
+
+  # Contains lots of URI encoding, so try escaping..
+  $file = uri_unescape($file) if scalar(() = $file =~ /%[A-F0-9]{2}/g) > 3;
 
   my $uri = URI->new_abs($file, $browser->uri);
 
-  if($uri) {
-    $browser->head($uri);
-    my $response = $browser->response;
+  print STDERR "Guessed ", $uri->as_string, ", trying...\n";
 
-    if($response->code == 200) {
-      my $content_type = $response->header("Content-type");
+  if($uri) {
+    (my $exists, $uri) = url_exists($browser, $uri);
+
+    if($exists) {
+      my $content_type = $browser->response->header("Content-type");
 
       if($content_type =~ m!^(text|application/xml)!) {
         $browser->get($uri);
-        return $1 if $browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+\.(flv|mp4))!;
+
+        # If this looks like HTML we have no hope of guessing right, so
+        # give up now.
+        return if $browser->content =~ /<html[^>]*>/i;
+
+        if($browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+\.(flv|mp4)
+            # Grab any params that might be used for auth..
+            (?:\?[-:/a-zA-Z0-9%_.?=&]+))!x) {
+          # Found a video URL
+          return $1;
+        } elsif(!defined $once
+            && $browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+)!) {
+          # Try once more, one level deeper..
+          return guess_file($browser, $1, 1);
+        } else {
+          print STDERR "Tried $uri, but no video URL found\n";
+        }
       } else {
         return $uri->as_string;
       }
@@ -119,6 +139,25 @@ sub guess_file {
   }
 
   return;
+}
+
+sub url_exists {
+  my($browser, $url) = @_;
+
+  $browser->head($url);
+  my $response = $browser->response;
+  return 1, $url if $response->code == 200;
+
+  my $redirects = 0;
+  while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
+      and ($redirects < MAX_REDIRECTS) ) {
+    $url = $response->header('Location');
+    $response = $browser->head($url);
+    if ($response->code == 200) {
+      return 1, $url;
+    }
+    $redirects++;
+  }
 }
 
 1;
