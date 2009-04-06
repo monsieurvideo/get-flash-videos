@@ -46,7 +46,7 @@ check: $(MAIN)
 #  http://code.google.com/p/support/source/browse/trunk/scripts/googlecode_upload.py
 
 release: $(MAIN)-$(VERSION) wiki-update release-combined
-	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $^
+	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 
 release-combined: combined-$(MAIN)-$(VERSION)
