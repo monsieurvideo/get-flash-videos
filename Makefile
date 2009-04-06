@@ -8,8 +8,9 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS) .sitemodules
 
-release: $(MAIN)-$(VERSION) 
+release: $(MAIN)-$(VERSION) wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $^
+	svn commit -m "Version $(VERSION)" wiki/Installation.wiki
 
 $(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules
 	$(COMBINE) --include="^FlashVideo::" $(MAIN) .sitemodules > $@
@@ -34,3 +35,14 @@ check: $(MAIN)
 .sitemodules: FlashVideo/Site/*.pm
 	ls $^ | sed -e 's!/!::!g' -e 's/\.pm$$/ ();/' -e 's/^/use /' > $@
 
+wiki:
+	svn checkout https://get-flash-videos.googlecode.com/svn/wiki/ $@
+
+wiki-update: wiki
+	@cd wiki && svn up
+	@perl -pi -e's/$(MAIN)-\d+\.\d+/$(MAIN)-$(VERSION)/g' wiki/Installation.wiki
+	@svn diff wiki/Installation.wiki | grep -q . || (echo "Version already released" && exit 1)
+	@svn diff wiki/Installation.wiki && echo "OK? (ctrl-c to abort)" && read F
+
+
+.PHONY: all clean release release-combined check wiki-update
