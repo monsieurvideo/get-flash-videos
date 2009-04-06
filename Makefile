@@ -9,7 +9,7 @@ clean:
 	rm -f $(TARGETS) .sitemodules
 
 release: $(MAIN)-$(VERSION) 
-	googlecode_upload.py -s "Version $(VERSION)" -p get-flash-videos $^
+	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $^
 
 $(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules
 	$(COMBINE) --include="^FlashVideo::" $(MAIN) .sitemodules > $@
@@ -19,7 +19,7 @@ COMBINE = utils/combine-perl.pl
 COMBINED_SOURCES = experiments/combine-head $(MAIN) .sitemodules
 
 release-combined: combined-$(MAIN)-$(VERSION)
-	googlecode_upload.py -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
+	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
 
 combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
