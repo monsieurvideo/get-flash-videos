@@ -80,8 +80,9 @@ EOF
   my @rtmpdump_commands;
 
   for my $d (@found) {
+    use Data::Dumper; print STDERR Dumper($d);
     my $host = ($d->{FLVFullLengthURL} =~ m!rtmp://(.*?)/!)[0];
-    my $file = ($d->{FLVFullLengthURL} =~ m!&(media.*?)&!)[0];
+    my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z]+/.*?)&!)[0];
     my $app = ($d->{FLVFullLengthURL} =~ m!//.*?/(.*?)/&!)[0];
     my $filename = ($d->{FLVFullLengthURL} =~ m!&.*?/([^/&]+)&!)[0];
 
@@ -89,7 +90,7 @@ EOF
       swfUrl => "http://admin.brightcove.com/viewer/federated/f_012.swf?bn=590&pubId=$d->{publisherId}",
       app => "$app?videoId=$d->{videoId}&lineUpId=$d->{lineUpId}&pubId=$d->{publisherId}&playerId=$d->{playerId}",
       tcUrl => $d->{FLVFullLengthURL},
-      auth => ($d->{FLVFullLengthURL} =~ /&(media.*)/)[0],
+      auth => ($d->{FLVFullLengthURL} =~ /&([a-z]+\/.*)/)[0],
       rtmp => "rtmp://$host/?slist=$file",
       flv => "$filename.flv"
     };
@@ -115,6 +116,11 @@ EOF
   else {
     return $rtmpdump_commands[-1];
   }
+}
+
+sub can_handle {
+  my($self, $browser, $url) = @_;
+  return $browser->content =~ /playerI[dD]/ && $browser->content =~ /brightcove/i;
 }
 
 1;

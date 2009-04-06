@@ -15,11 +15,12 @@ sub find_video {
   }
 
   my $url;
-  if ($browser->content =~ /googleplayer\.swf\?&?videoUrl=(.+?)["']/) {
+  if ($browser->content =~ /googleplayer\.swf\?&?videoUrl(.+?)\\x26/) {
     $url = uri_unescape($1);
 
     # Contains JavaScript (presumably) escaping \xHEX, so unescape hackily
-    $url =~ s/\\x([A-F0-9]{2})/chr(hex $1)/eg;
+    $url =~ s/\\x([A-F0-9]{2})/chr(hex $1)/egi;
+    $url =~ s/^=//;
   }
 
   my $filename;

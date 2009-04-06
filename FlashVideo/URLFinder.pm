@@ -4,11 +4,16 @@ package FlashVideo::URLFinder;
 use strict;
 use FlashVideo::Mechanize;
 use FlashVideo::Generic;
+use URI;
 
 # The main issue is getting a URL for the actual video, so we handle this
 # here - a different package for each site, as well as a generic fallback.
 # Each package has a find_video method, which should return a URL, and a
 # suggested filename.
+
+# In some cases there isn't an obvious URL to find, so the following will be loaded and their 'can_handle'
+# method called.
+my @can_handle = qw(Brightcove);
 
 sub find_package {
   my($url, $browser) = @_;
@@ -23,6 +28,19 @@ sub find_package {
         $browser->content =~ m!(?:<object[^>]+>.*?|<(?:script|embed) [^>]*src=["']?)(http://[^"'> ]+)!gx) {
       $package = find_package_url($possible_url);
       return $package, $possible_url if defined $package;
+    }
+  }
+
+  if(!defined $package) {
+    for(@can_handle) {
+      my $possible_package = "FlashVideo::Site::$_";
+      eval "require $possible_package";
+
+      my $r = $possible_package->can_handle($browser, $url);
+      if($r) {
+        $package = $possible_package;
+        last;
+      }
     }
   }
 

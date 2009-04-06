@@ -24,7 +24,7 @@ release-combined: combined-$(MAIN)-$(VERSION)
 combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
 
-combined-get_flash_videos: $(COMBINE) $(COMBINED_SOURCES)
+combined-$(MAIN): $(COMBINE) $(COMBINED_SOURCES)
 	$(COMBINE) $(COMBINED_SOURCES) > $@
 	chmod a+x $@
 

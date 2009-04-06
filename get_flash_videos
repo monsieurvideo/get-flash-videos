@@ -22,7 +22,6 @@
 
 use strict;
 use Getopt::Long;
-use URI;
 use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
@@ -58,7 +57,7 @@ $browser->get($url);
 # (Redirect check is for Youtube which sometimes redirects to login page
 # for "mature" videos.)
 if (!$browser->success and !$browser->response->is_redirect) {
-  print STDERR "Couldn't download '$url': " . $browser->status_line() . "\n";
+  print STDERR "Couldn't download '$url': " . $browser->response->status_line . "\n";
 }
 
 # Figure out what package we need to use to get either the HTTP URL or
