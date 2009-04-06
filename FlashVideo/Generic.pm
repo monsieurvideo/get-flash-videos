@@ -122,7 +122,7 @@ sub guess_file {
 
         if($browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+\.(flv|mp4)
             # Grab any params that might be used for auth..
-            (?:\?[-:/a-zA-Z0-9%_.?=&]+))!x) {
+            (?:\?[-:/a-zA-Z0-9%_.?=&]+)?)!x) {
           # Found a video URL
           return $1;
         } elsif(!defined $once

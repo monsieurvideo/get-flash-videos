@@ -26,7 +26,7 @@ use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 
-our $VERSION = "1.1";
+our $VERSION = "1.2";
 
 my $show_version = 0;
 our $yes = 0;
