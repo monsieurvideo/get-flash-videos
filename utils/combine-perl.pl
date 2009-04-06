@@ -24,10 +24,13 @@ EOF
 my $include = ".*";
 # Note exclude takes precendence over include.
 my $exclude = "^(HTML::Parser|HTML::Entities)";
+# Our name, ends up in $::SCRIPT_NAME
+my $name    = "";
 
 GetOptions(
   "include|i=s" => \$include,
-  "exclude|e=s" => \$exclude);
+  "exclude|e=s" => \$exclude,
+  "name|n=s"    => \$name);
 
 my %done;
 
@@ -46,6 +49,10 @@ sub process_file {
 
   if(defined $main && $main) {
     $output .= "package main;\n";
+    if($name) {
+      $output .= "\$::SCRIPT_NAME = '$name';\n";
+      $name = "";
+    }
   }
 
   open my $fh, "<", $file or die $!;

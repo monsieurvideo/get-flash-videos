@@ -13,7 +13,7 @@ clean:
 # file, for easier download and installation.
 
 $(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules
-	$(COMBINE) --include="^FlashVideo::" $(MAIN) .sitemodules > $@
+	$(COMBINE) --name="$(MAIN)" --include="^FlashVideo::" $(MAIN) .sitemodules > $@
 	chmod a+x $@
 
 # This makes sure to 'use' all the Site modules, so that the combiner can pick
@@ -33,7 +33,7 @@ combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
 
 combined-$(MAIN): $(COMBINE) $(COMBINED_SOURCES)
-	$(COMBINE) $(COMBINED_SOURCES) > $@
+	$(COMBINE) --name="$@" $(COMBINED_SOURCES) > $@
 	chmod a+x $@
 
 # Run our Perl tests.
@@ -47,7 +47,7 @@ check: $(MAIN)
 
 release: $(MAIN)-$(VERSION) wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $^
-	svn commit -m "Version $(VERSION)" wiki/Installation.wiki
+	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
@@ -58,7 +58,8 @@ wiki:
 wiki-update: wiki
 	@cd wiki && svn up
 	@perl -pi -e's/$(MAIN)-\d+\.\d+/$(MAIN)-$(VERSION)/g' wiki/Installation.wiki
-	@svn diff wiki/Installation.wiki | grep -q . || (echo "Version already released" && exit 1)
-	@svn diff wiki/Installation.wiki && echo "OK? (ctrl-c to abort)" && read F
+	@perl -pi -e's/$(MAIN)-\d+\.\d+/$(MAIN)-$(VERSION)/g' wiki/Version.wiki
+	@svn diff wiki/Installation.wiki wiki/Version.wiki | grep -q . || (echo "Version already released" && exit 1)
+	@svn diff wiki/Installation.wiki wiki/Version.wiki && echo "OK? (ctrl-c to abort)" && read F
 
 .PHONY: all clean release release-combined check wiki-update

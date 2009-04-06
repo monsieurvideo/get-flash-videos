@@ -26,24 +26,45 @@ use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 
-our $VERSION = "1.2";
+our $VERSION = "1.3";
 
-my $show_version = 0;
+my %opt = ( version => 0, update => 0 );
 our $yes = 0;
 
+my $VER_INFO = <<EOF;
+get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
+EOF
+
+my $USAGE = <<EOF;
+$VER_INFO
+Usage: $0 [--yes] url [filename]
+
+Options:
+  --yes     Say yes to any questions (don't prompt for any information).
+  --update  Update to latest version.
+  --version Print version.
+
+EOF
+
 GetOptions(
-  "version|v" => \$show_version,
-  "yes|y" => \$yes
+  "yes|y" => \$yes,
+  "version|v" => \$opt{version},
+  "update|u"  => \$opt{update},
+  "help|h"    => \$opt{help},
 );
 
-if($show_version) {
-  die "get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)\n";
+if($opt{version}) {
+  die $VER_INFO;
+} elsif($opt{update}) {
+  exit update();
+} elsif($opt{help}) {
+  die $USAGE;
 }
 
 binmode STDERR, ":utf8";
 
 my ($url, $filename) = @ARGV;
-$url or die "usage: $0 url [filename]\n";
+$url or die $USAGE;
 
 $url = "http://$url" if $url !~ m!^\w+:!;
 
@@ -96,6 +117,59 @@ else {
   # HTTP
   unless(FlashVideo::Downloader->new->download($actual_url, $save_as, $browser)) {
     exit 1;
+  }
+}
+
+sub update {
+  # SCRIPT_NAME is some magic set by combine-perl
+  die "This is a development version" unless $::SCRIPT_NAME;
+
+  my $browser = FlashVideo::URLFinder::get_browser();
+
+  $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
+
+  if(!$browser->response->is_success) {
+    die "Unable to retrieve version data: " . $browser->response->status_line;
+  }
+
+  my $version = ($browser->content =~ /version: (\S+)/)[0];
+  my $base = ($browser->content =~ /from: (\S+)/)[0];
+  my $url = $base . $::SCRIPT_NAME . "-" . $version;
+
+  die "Unable to parse version data" unless $version and $base;
+
+  # Split version on . and compare..
+  my @v = split /\./, $version;
+  my @V = split /\./, $VERSION;
+
+  my $newer = 0;
+  my $i = 0;
+  for(@v) {
+    $newer = 1 if !defined $V[$i] || $_ > $V[$i];
+    last if $V[$i] > $v[$i];
+    $i++;
+  }
+
+  if($newer) {
+    print STDERR "Newer version ($version) available, downloading..\n";
+    die "Cannot update -- unable to write to $0\n" unless -w $0;
+
+    my $new_file = $0 . ".new";
+    $browser->mirror($url, $new_file);
+
+    if($browser->response->is_success && -f $new_file) {
+      rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
+      rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
+      chmod 0755, $0;
+
+      print STDERR "New version installed as $0\n";
+      print STDERR "(previous version backed up to $0.old).\n";
+      exit 0;
+    } else {
+      die "Download failed: " . $browser->response->status_line;
+    }
+  } else {
+    die "You already have the latest version.\n";
   }
 }
 

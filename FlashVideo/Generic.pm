@@ -10,10 +10,10 @@ Couldn't extract Flash movie URL, this may site need specific support adding.
 Please confirm the site is using Flash video and if you have Flash available
 check that the URL really works(!).
 
-Check for updates at: http://code.google.com/p/get-flash-videos/
+Check for updates by running: $0 --update
 
 If the latest version does not support this please open a bug (or
-contribute a patch!).
+contribute a patch!) at http://code.google.com/p/get-flash-videos/
 EOF
 
 use FlashVideo::Utils;
