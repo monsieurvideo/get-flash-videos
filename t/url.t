@@ -7,7 +7,10 @@ use File::Path;
 $ENV{PERL5LIB} = "../..";
 
 # We don't want to do this unless they really meant it, as it downloads a lot.
-plan skip_all => "RTFS", exit unless $ENV{SITE} || $ENV{SURE};
+unless($ENV{SITE} || $ENV{SURE}) {
+  plan skip_all => "RTFS";
+  exit;
+}
 
 my @urls = assemble_urls();
 plan tests => 3 * scalar @urls;
