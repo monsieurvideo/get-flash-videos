@@ -80,7 +80,7 @@ EOF
   my @rtmpdump_commands;
 
   for my $d (@found) {
-    use Data::Dumper; print STDERR Dumper($d);
+    # use Data::Dumper; print STDERR Dumper($d);
     my $host = ($d->{FLVFullLengthURL} =~ m!rtmp://(.*?)/!)[0];
     my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z]+/.*?)&!)[0];
     my $app = ($d->{FLVFullLengthURL} =~ m!//.*?/(.*?)/&!)[0];
