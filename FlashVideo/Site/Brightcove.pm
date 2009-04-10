@@ -125,7 +125,9 @@ EOF
 
 sub can_handle {
   my($self, $browser, $url) = @_;
-  return $browser->content =~ /playerI[dD]/ && $browser->content =~ /brightcove/i;
+
+  return $browser->content =~ /(playerI[dD]|brightcove.player.create)/
+    && $browser->content =~ /brightcove/i;
 }
 
 1;
