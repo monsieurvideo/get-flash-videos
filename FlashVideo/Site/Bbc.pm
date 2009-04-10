@@ -17,6 +17,28 @@ sub find_video {
   if ($browser->content =~ /<param name="playlist" value="(http:.+?\.xml)"/) {
     $playlist_xml = $1;
   }
+  elsif($browser->content =~ /empDivReady\s*\(([^)]+)/) {
+    my @params = split /,\s*/, $1;
+
+    my $id   = $params[3];
+    my $path = $params[4];
+
+    $id   =~ s/['"]//g;
+    $path =~ s/['"]//g;
+
+    $playlist_xml = URI->new_abs($path, $browser->uri) . "/media/emp/playlists/$id.xml";
+  }
+  elsif($browser->uri =~ m!/(b[0-9a-z]{7})(?:/|$)!) {
+    # Looks like a pid..
+    my @gi_cmd = (qw(get_iplayer -g --pid), $1);
+    print STDERR "get_flash_videos does not support iplayer, but get_iplayer does..\n";
+    print STDERR "Attempting to run '@gi_cmd'\n";
+    exec @gi_cmd;
+    # Probably not installed..
+    print STDERR "Please download get_iplayer from http://linuxcentre.net/getiplayer/\n";
+    print STDERR "and install in your PATH\n";
+    exit 1;
+  }
   else {
     die "Couldn't find BBC XML playlist URL in " . $browser->uri->as_string;
   }
@@ -24,7 +46,7 @@ sub find_video {
   $browser->get($playlist_xml);
   if (!$browser->success) {
     die "Couldn't download BBC XML playlist $playlist_xml: " .
-      $browser->status_line;
+      $browser->response->status_line;
   }
 
   my $playlist = eval {
