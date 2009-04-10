@@ -18,6 +18,9 @@ use constant COMBINED_WARNING => <<EOF;
 # You should edit the original files, not this
 # combined version.
 #
+# The original files are available at:
+# http://code.google.com/p/get-flash-videos/source/checkout
+#
 #################################################
 EOF
 

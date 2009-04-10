@@ -1,10 +1,12 @@
 #!perl
 use strict;
+use lib qw(..);
 use constant DEBUG => $ENV{DEBUG};
 use Test::More;
 use File::Path;
+use FlashVideo::Downloader;
 
-$ENV{PERL5LIB} = "../..";
+BEGIN { $ENV{PERL5LIB} = "../.." }
 
 # We don't want to do this unless they really meant it, as it downloads a lot.
 unless($ENV{SITE} || $ENV{SURE}) {
@@ -13,7 +15,7 @@ unless($ENV{SITE} || $ENV{SURE}) {
 }
 
 my @urls = assemble_urls();
-plan tests => 3 * scalar @urls;
+plan tests => 4 * scalar @urls;
 
 my $i = 0;
 for my $url_info(@urls) {
@@ -36,6 +38,8 @@ for my $url_info(@urls) {
 
   my @files = <*.{mp4,flv}>;
   ok @files == 1, "One file downloaded";
+
+  ok(FlashVideo::Downloader->check_file($files[0]), "File is a media file");
 
   ok -s $files[0] > (1024*200), "File looks big enough";
 
