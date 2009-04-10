@@ -26,7 +26,7 @@ use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 
-our $VERSION = "1.3";
+our $VERSION = "1.4";
 
 my %opt = ( version => 0, update => 0 );
 our $yes = 0;
@@ -109,8 +109,8 @@ my $save_as = $filename || $suggested_filename;
 
 if (ref($actual_url) or $actual_url =~ /rtmp/) {
   # RTMP
-  foreach my $rtmpdump_command ( (ref($actual_url) ? @$actual_url : $actual_url ) ) {
-    FlashVideo::RTMPDownloader->new()->download($rtmpdump_command);
+  foreach my $rtmp_data ( (ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url ) ) {
+    FlashVideo::RTMPDownloader->new()->download($rtmp_data);
   }
 }
 else {

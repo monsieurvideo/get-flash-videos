@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $page_url) = @_;
 
   my $has_xml_simple = eval { require XML::Simple };
   if(!$has_xml_simple) {
@@ -57,22 +57,25 @@ sub find_video {
     die "Couldn't parse BBC XML playlist: $@";
   }
 
-  my $app   = $playlist->{item}->{media}->{connection}->{application};
-  my $tcurl = "rtmp://" .  $playlist->{item}->{media}->{connection}->{server} .
-              "/$app";
-  my $rtmp  = "rtmp://" .  $playlist->{item}->{media}->{connection}->{server} .
-              "/?slist=" .  $playlist->{item}->{media}->{connection}->{identifier};
-              # (Note slist is an rtmpdump weirdism)
   my $sound = ($playlist->{item}->{guidance} !~ /has no sound/);
-  my $flv   = title_to_filename('BBC - ' . $playlist->{title} .
-                                ($sound ? '' : ' (no sound)'));
+  my $info = $playlist->{item}->{media}->{connection};
+
+  $info->{application} ||= "ondemand";
+
+  my $data = {
+    app      => $info->{application},
+    tcUrl    => "rtmp://$info->{server}/$info->{application}",
+    swfUrl   => "http://www.bbc.co.uk/player/emp/2.10.7938_7967/9player.swf",
+    pageUrl  => $page_url,
+    rtmp     => "rtmp://" .  $info->{server} . "/$info->{application}",
+    playpath => $info->{identifier},
+    flv      => title_to_filename('BBC - ' . $playlist->{title} .
+                                ($sound ? '' : ' (no sound)'))
+  };
 
   # 'Secure' items need to be handled differently - have to get a token to
   # pass to the rtmp server.
-  my $swfurl;
-  if ($playlist->{item}->{media}->{connection}->{identifier} =~ /^secure/) {
-    my $info = $playlist->{item}->{media}->{connection};
-
+  if ($info->{identifier} =~ /^secure/) {
     my $url = "http://www.bbc.co.uk/mediaselector/4/gtis?server=$info->{server}" .
               "&identifier=$info->{identifier}&kind=$info->{kind}" .
               "&application=$info->{application}&cb=123";
@@ -104,17 +107,15 @@ sub find_video {
       die "Couldn't get token for 'secure' video download";
     }
 
-    $app = "ondemand?_fcs_vhost=$info->{server}"
+    $data->{app} = "ondemand?_fcs_vhost=$info->{server}"
             . "&auth=$token"
             . "&aifp=v001&slist=" . $info->{identifier};
-    $tcurl = "rtmp://$info->{server}:80/$app";
-    $rtmp  = "rtmp://$info->{server}:1935/ondemand?_fcs_vhost="
-            . $info->{server} . "&aifp=v001" .
-              "&slist=" . $info->{identifier};
-    $swfurl = " --swfUrl 'http://www.bbc.co.uk/emp/9player.swf?revision=7978_8340'";
+    $data->{tcUrl} = "rtmp://$info->{server}/ondemand?_fcs_vhost=$info->{server}"
+            . "&auth=$token"
+            . "&aifp=v001&slist=" . $info->{identifier};
   }
 
-  return "rtmpdump -o '$flv' --app '$app' --tcUrl '$tcurl' --rtmp '$rtmp' $swfurl ";
+  return $data;
 }
 
 1;

@@ -27,6 +27,11 @@ sub find_video {
     $video_id = $1;
   }
 
+  if(!$player_id && $browser->content =~ /brightcove.player.create\(['"]?(\d+)['"]?,\s*['"]?(\d+)/) {
+    $video_id = $1;
+    $player_id = $2;
+  }
+
   if (!$player_id) {
     die "Unable to extract Brightcove IDs from page";
   }
@@ -80,18 +85,18 @@ EOF
   my @rtmpdump_commands;
 
   for my $d (@found) {
-    # use Data::Dumper; print STDERR Dumper($d);
     my $host = ($d->{FLVFullLengthURL} =~ m!rtmp://(.*?)/!)[0];
-    my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z]+/.*?)&!)[0];
+    my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z]+/.*?)(?:&|$)!)[0];
     my $app = ($d->{FLVFullLengthURL} =~ m!//.*?/(.*?)/&!)[0];
-    my $filename = ($d->{FLVFullLengthURL} =~ m!&.*?/([^/&]+)&!)[0];
+    my $filename = ($d->{FLVFullLengthURL} =~ m!&.*?/([^/&]+)(?:&|$)!)[0];
 
     my $args = {
       swfUrl => "http://admin.brightcove.com/viewer/federated/f_012.swf?bn=590&pubId=$d->{publisherId}",
-      app => "$app?videoId=$d->{videoId}&lineUpId=$d->{lineUpId}&pubId=$d->{publisherId}&playerId=$d->{playerId}",
-      tcUrl => $d->{FLVFullLengthURL},
+      app => $app,
+      tcUrl => "rtmp://$host/$app",
       auth => ($d->{FLVFullLengthURL} =~ /&([a-z]+\/.*)/)[0],
-      rtmp => "rtmp://$host/?slist=$file",
+      rtmp => "rtmp://$host/$app",
+      playpath => $file,
       flv => "$filename.flv"
     };
 
@@ -107,7 +112,7 @@ EOF
       return ($d->{FLVFullLengthURL}, $args->{flv});
     }
 
-    push @rtmpdump_commands, join " ", 'rtmpdump', map { ("--$_" => "'" . $args->{$_} . "'") } keys %$args;
+    push @rtmpdump_commands, $args;
   }
 
   if (@rtmpdump_commands > 1) {

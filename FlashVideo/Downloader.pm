@@ -77,6 +77,14 @@ sub download {
 
         my $fh = $self->{fh};
         print $fh $data;
+
+        if(!$self->{downloaded}) {
+          if(!$self->_check_magic($data)) {
+            print STDERR "Sorry, file does not look like a media file, aborting.\n";
+            exit 1;
+          }
+        }
+
         $self->{downloaded} += length $data;
         if ($self->{content_length}) {
           my $percent = int(
@@ -116,6 +124,38 @@ sub download {
 
 sub _bytes_to_kib {
   return sprintf '%0.2f', ($_[0] / 1024)
+}
+
+sub check_file {
+  my($self, $file) = @_;
+
+  open my $fh, "<", $file;
+  binmode $fh;
+  my $data;
+  read $fh, $data, 16;
+
+  return $self->_check_magic($data);
+}
+
+sub _check_magic {
+  my($self, $data) = @_;
+
+  # This is a very simple check to ensure we have a media file.
+  # The aim is to avoid downloading HTML, Flash, etc and claiming to have
+  # succeeded.
+
+  # FLV
+  if(substr($data, 0, 3) eq 'FLV') {
+    return 1;
+  # ISO
+  } elsif(substr($data, 4, 4) eq 'ftyp') {
+    return 1;
+  # Other QuickTime
+  } elsif(substr($data, 4, 4) eq 'moov') {
+    return 1;
+  }
+
+  return 0;
 }
 
 1;
