@@ -15,7 +15,7 @@ unless($ENV{SITE} || $ENV{SURE}) {
 }
 
 my @urls = assemble_urls();
-plan tests => 4 * scalar @urls;
+plan tests => 5 * scalar @urls;
 
 my $i = 0;
 for my $url_info(@urls) {
@@ -38,6 +38,8 @@ for my $url_info(@urls) {
 
   my @files = <*.{mp4,flv}>;
   ok @files == 1, "One file downloaded";
+
+  ok($files[0] !~ /^video\d{14}\./, "Has good filename");
 
   ok(FlashVideo::Downloader->check_file($files[0]), "File is a media file");
 
