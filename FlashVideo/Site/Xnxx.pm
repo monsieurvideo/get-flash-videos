@@ -5,25 +5,23 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-    my ($self, $browser, $url) = @_;
+  my ($self, $browser, $url) = @_;
+  my $filename;
 
-    # Grab the file from the page..
-    my $file = ($browser->content =~ /flv_url=(.+?)&/)[0];
-        die "Unable to extract file" unless $file;
+  # Grab the file from the page..
+  my $file = ($browser->content =~ /flv_url=(.+?)&/)[0];
+  die "Unable to extract file" unless $file;
+
+  # Get Video suffix from URL
+  my $suffix = ($file =~ /http.+\.(.+)$/)[0];
+
+  # Extract filename from page and format
+  if ($browser->content =~ /<span class="style5"><strong>([^<]+)/) {
+    $filename = title_to_filename($1, $suffix);
+  }
+  $filename ||= get_video_filename($suffix);
     
-    my $suffix = ($file =~ /http.+\.(.+)$/)[0];
-
-    my $filename = 'default';
-
-    if ($browser->content =~ /video\d+\/(.+)\|\|/) {
-        $filename = $1 . '.' . $suffix;
-        $filename =~ s/%\d\d//g;
-        $filename =~ s/__/-/g;
-        $filename =~ s/_/-/g;
-    }
-      die "Unable to name file" if $filename =~ /default/;
-    
-    return $file, $filename;
+  return $file, $filename;
 }
 
 1;
