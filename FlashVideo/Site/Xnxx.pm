@@ -16,7 +16,7 @@ sub find_video {
   my $suffix = ($file =~ /http.+\.(.+)$/)[0];
 
   # Extract filename from page and format
-  if ($browser->content =~ /<span class="style5"><strong>([^<]+)/) {
+  if ($browser->content =~ /(?:<span class="style5">|<td style="font-size: 20px;">\s*)<strong>([^<]+)/) {
     $filename = title_to_filename($1, $suffix);
   }
   $filename ||= get_video_filename($suffix);
