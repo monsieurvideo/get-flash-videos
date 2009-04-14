@@ -3,18 +3,6 @@ package FlashVideo::Generic;
 
 use strict;
 use constant MAX_REDIRECTS => 5;
-use constant FRIENDLY_FAILURE => <<EOF;
-
-Couldn't extract Flash movie URL, this may site need specific support adding.
-
-Please confirm the site is using Flash video and if you have Flash available
-check that the URL really works(!).
-
-Check for updates by running: $0 --update
-
-If the latest version does not support this please open a bug (or
-contribute a patch!) at http://code.google.com/p/get-flash-videos/
-EOF
 
 use FlashVideo::Utils;
 use Memoize;
@@ -75,7 +63,7 @@ sub find_video {
   
   return ($actual_url, @filenames) if $got_url;
 
-  die FRIENDLY_FAILURE;
+  die "No URLs found";
 }
 
 sub find_file_param {

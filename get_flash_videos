@@ -28,15 +28,12 @@ use FlashVideo::RTMPDownloader;
 
 our $VERSION = "1.5";
 
-my %opt = ( version => 0, update => 0 );
-our $yes = 0;
-
-my $VER_INFO = <<EOF;
+use constant VER_INFO => <<EOF;
 get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
 EOF
 
-my $USAGE = <<EOF;
-$VER_INFO
+use constant USAGE => VER_INFO . <<EOF;
+
 Usage: $0 [--yes] url [filename]
 
 Options:
@@ -46,6 +43,23 @@ Options:
 
 EOF
 
+use constant FRIENDLY_FAILURE => <<EOF;
+  
+Couldn't extract Flash movie URL. This may site need specific support adding,
+or fixing.
+
+Please confirm the site is using Flash video and if you have Flash available
+check that the URL really works(!).
+  
+Check for updates by running: $0 --update
+
+If the latest version does not support this please open a bug (or
+contribute a patch!) at http://code.google.com/p/get-flash-videos/
+EOF
+
+our $yes = 0;
+my %opt = ( version => 0, update => 0 );
+
 GetOptions(
   "yes|y" => \$yes,
   "version|v" => \$opt{version},
@@ -54,17 +68,17 @@ GetOptions(
 );
 
 if($opt{version}) {
-  die $VER_INFO;
+  die VER_INFO;
 } elsif($opt{update}) {
   exit update();
 } elsif($opt{help}) {
-  die $USAGE;
+  die USAGE;
 }
 
 binmode STDERR, ":utf8";
 
 my ($url, $filename) = @ARGV;
-$url or die $USAGE;
+$url or die USAGE;
 
 $url = "http://$url" if $url !~ m!^\w+:!;
 
@@ -87,8 +101,18 @@ my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser
 
 print STDERR "Using method '", lc((split /::/, $package)[-1]), "' for $url\n";
 
-my ($actual_url, @suggested_fnames) =
-  $package->find_video($browser, $possible_url);
+my ($actual_url, @suggested_fnames);
+
+eval {
+  ($actual_url, @suggested_fnames) =
+    $package->find_video($browser, $possible_url);
+};
+
+if(!$actual_url) {
+  my $err = $@;
+  die "Error: $@" . FRIENDLY_FAILURE;
+}
+
 my $suggested_filename = $suggested_fnames[-1];
 if (!$yes && @suggested_fnames > 1) {
   print "There are different suggested filenames, please choose:\n";
