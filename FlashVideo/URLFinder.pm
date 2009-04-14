@@ -13,11 +13,11 @@ use URI;
 
 # In some cases there isn't an obvious URL to find, so the following will be loaded and their 'can_handle'
 # method called.
-my @can_handle = qw(Brightcove);
+my @extra_can_handle = qw(Brightcove);
 
 sub find_package {
   my($url, $browser) = @_;
-  my $package = find_package_url($url);
+  my $package = find_package_url($url, $browser);
 
   if(!defined $package) {
     # Fairly lame heuristic, look for the first URL outside the <object>
@@ -26,13 +26,13 @@ sub find_package {
  
     URLS: for my $possible_url(
         $browser->content =~ m!(?:<object[^>]+>.*?|<(?:script|embed) [^>]*src=["']?)(http://[^"'> ]+)!gx) {
-      $package = find_package_url($possible_url);
+      $package = find_package_url($possible_url, $browser);
       return $package, $possible_url if defined $package;
     }
   }
 
   if(!defined $package) {
-    for(@can_handle) {
+    for(@extra_can_handle) {
       my $possible_package = "FlashVideo::Site::$_";
       eval "require $possible_package";
 
@@ -54,7 +54,7 @@ sub find_package {
 # Split the URLs into parts and see if we have a package with this name.
 
 sub find_package_url {
-  my($url) = @_;
+  my($url, $browser) = @_;
   my $package;
 
   foreach my $host_part (split /\./, URI->new($url)->host) {
@@ -65,6 +65,11 @@ sub find_package_url {
     eval "require $possible_package";
 
     if(UNIVERSAL::can($possible_package, "find_video")) {
+
+      if($possible_package->can("can_handle")) {
+        next unless $possible_package->can_handle($browser, $url);
+      }
+
       $package = $possible_package;
       last;
     }

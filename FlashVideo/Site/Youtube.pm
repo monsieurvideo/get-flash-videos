@@ -73,7 +73,7 @@ sub find_video {
   }
 
   my $t; # no idea what this parameter is but it seems to be needed
-  if ($browser->content =~ /['"]?t['"]?: ?['"](.+?)['"]/) {
+  if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
     $t = $1;
   } else {
     die "Couldn't extract mysterious t parameter";
@@ -120,8 +120,12 @@ sub find_video {
   return @ret if @ret;
 
   # Otherwise get normal
-  return $fetcher->("http://youtube.com/get_video?video_id=$video_id&t=$t",
+  my @ret = $fetcher->("http://youtube.com/get_video?video_id=$video_id&t=$t",
     $file_functor->());
+
+  die "Unable to find video URL" unless @ret;
+
+  return @ret;
 }
 
 1;
