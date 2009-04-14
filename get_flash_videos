@@ -109,8 +109,11 @@ eval {
 };
 
 if(!$actual_url) {
-  my $err = $@;
-  die "Error: $@" . FRIENDLY_FAILURE;
+  if($@ =~ /^Must have /) {
+    die $@;
+  } else {
+    die "Error: $@" . FRIENDLY_FAILURE;
+  }
 }
 
 my $suggested_filename = $suggested_fnames[-1];
