@@ -45,7 +45,7 @@ EOF
 
 use constant FRIENDLY_FAILURE => <<EOF;
   
-Couldn't extract Flash movie URL. This may site need specific support adding,
+Couldn't extract Flash movie URL. This site may need specific support adding,
 or fixing.
 
 Please confirm the site is using Flash video and if you have Flash available
