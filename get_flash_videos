@@ -26,10 +26,10 @@ use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 
-our $VERSION = "1.5";
+use constant VERSION => "1.5";
 
 use constant VER_INFO => <<EOF;
-get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
+get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
 EOF
 
 use constant USAGE => VER_INFO . <<EOF;
@@ -164,7 +164,7 @@ sub update {
 
   # Split version on . and compare..
   my @v = split /\./, $version;
-  my @V = split /\./, $VERSION;
+  my @V = split /\./, VERSION;
 
   my $newer = 0;
   my $i = 0;
