@@ -9,7 +9,7 @@ sub find_video {
   my ($self, $browser) = @_;
 
   my $filename;
-  if ($browser->content =~ /video_title"[^>]+>(.*?)<\//) {
+  if ($browser->content =~ /<h1[^>]*>(.*?)<\//) {
     $filename = title_to_filename($1);
   }
   $filename ||= get_video_filename();
