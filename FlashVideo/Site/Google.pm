@@ -29,6 +29,8 @@ sub find_video {
   }
   $filename ||= get_video_filename();
 
+  $browser->allow_redirects;
+
   return ($url, $filename);
 }
 

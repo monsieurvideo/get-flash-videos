@@ -6,7 +6,7 @@ use FlashVideo::Utils;
 use URI::Escape;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $url) = @_;
 
   my $filename;
   if ($browser->content =~ /<h1[^>]*>(.*?)<\//) {
@@ -17,9 +17,23 @@ sub find_video {
   my $video;
   if ($browser->content =~ /"video", "([^"]+)/) {
     $video = uri_unescape($1);
-  } else {
-    die "Couldn't find video parameter.";
+  } elsif ($url =~ m!/swf/!) {
+    $browser->get($url);
+
+    die "Must have Compress::Zlib for embedded Dailymotion videos\n"
+      unless eval { require Compress::Zlib; };
+
+    my $data = Compress::Zlib::uncompress(substr $browser->content, 8);
+
+    $data =~ /\{\{video\}\}\{\{(.*?)\}\}/;
+    $video = $1;
+
+    if($data =~ /videotitle=([^&]+)/) {
+      $filename = title_to_filename(uri_unescape($1));
+    }
   }
+
+  die "Couldn't find video parameter." unless $video;
 
   my @streams;
   for(split /\|\|/, $video) {
