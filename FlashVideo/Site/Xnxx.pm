@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser, $url) = @_;
+  my ($self, $browser, $embed_url) = @_;
   my $filename;
 
   # Grab the file from the page..

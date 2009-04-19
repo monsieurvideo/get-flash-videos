@@ -6,17 +6,17 @@ use FlashVideo::Utils;
 use URI::Escape;
 
 sub find_video {
-  my ($self, $browser, $url) = @_;
-  my $id = ($url =~ /(sm\d+)/)[0];
+  my ($self, $browser, $embed_url) = @_;
+  my $id = ($embed_url =~ /(sm\d+)/)[0];
   die "No ID found\n" unless $id;
 
   my $base = "http://ext.nicovideo.jp/thumb_watch/$id";
 
-  if($url !~ /ext\.nicovideo\.jp\/thumb_watch/) {
-    $url = "$base?w=472&h=374&n=1";
+  if($embed_url !~ /ext\.nicovideo\.jp\/thumb_watch/) {
+    $embed_url = "$base?w=472&h=374&n=1";
   }
 
-  $browser->get($url);
+  $browser->get($embed_url);
   my $playkey = ($browser->content =~ /thumbPlayKey: '([^']+)/)[0];
   die "No playkey found\n" unless $playkey;
 

@@ -6,10 +6,10 @@ use constant MAX_REDIRECTS => 5;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser, $url) = @_;
+  my ($self, $browser, $embed_url) = @_;
 
-  if($url !~ m!/watch!) {
-    $browser->get($url);
+  if($embed_url !~ m!/watch!) {
+    $browser->get($embed_url);
     if ($browser->response->header('Location') =~ m!/swf/.*video_id=([^&]+)!) {
       # We ended up on a embedded SWF
       $browser->get("http://www.youtube.com/watch?v=$1");

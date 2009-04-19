@@ -5,15 +5,15 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser, $url) = @_;
+  my ($self, $browser, $embed_url) = @_;
 
-  $browser->content =~ /\Q$url\E.*?([a-f0-9]{32})/;
+  $browser->content =~ /\Q$embed_url\E.*?([a-f0-9]{32})/;
   my $id = $1;
 
   $browser->post("http://services.fliqz.com/mediaassetcomponentservice/20071201/service.svc",
     Content_Type => "text/xml; charset=utf-8",
     SOAPAction   => '"urn:fliqz.s.mac.20071201/IMediaAssetComponentService/ad"',
-    Referer      => $url,
+    Referer      => $embed_url,
     Content      => <<EOF);
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <SOAP-ENV:Body>

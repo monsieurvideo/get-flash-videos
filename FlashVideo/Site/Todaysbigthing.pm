@@ -7,7 +7,7 @@ use FlashVideo::Utils;
 my $base = "http://www.todaysbigthing.com/betamax";
 
 sub find_video {
-  my ($self, $browser, $url) = @_;
+  my ($self, $browser, $embed_url) = @_;
 
   my $has_xml_simple = eval { require XML::Simple };
   if(!$has_xml_simple) {
@@ -17,7 +17,7 @@ sub find_video {
   my $id;
   if($browser->content =~ /item_id=(\d+)/) {
     $id = $1;
-  } elsif($url =~ m![/:](\d+)!) {
+  } elsif($embed_url =~ m![/:](\d+)!) {
     $id = $1;
   }
   die "No ID found\n" unless $id;

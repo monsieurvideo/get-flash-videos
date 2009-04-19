@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser, $url) = @_;
+  my ($self, $browser, $embed_url) = @_;
   my $base = "http://www.collegehumor.com/moogaloop";
 
   my $has_xml_simple = eval { require XML::Simple };
@@ -16,7 +16,7 @@ sub find_video {
   my $id;
   if($browser->content =~ /clip_id=(\d+)/) {
     $id = $1;
-  } elsif($url =~ m![/:](\d+)!) {
+  } elsif($embed_url =~ m![/:](\d+)!) {
     $id = $1;
   }
   die "No ID found\n" unless $id;
