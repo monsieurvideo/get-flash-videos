@@ -1,0 +1,84 @@
+=head1 NAME
+
+get_flash_videos - Video downloader for various Flash-based video hosting sites
+
+=head1 SYNOPSIS
+
+get_flash_videos [OPTION]... URL [FILENAME]
+
+=head1 DESCRIPTION
+
+Download the Flash video from the web page given in C<URL> saving as
+C<FILENAME>, if no filename is supplied a suitable one would be chosen.
+
+I<get-flash-videos> attempts to support many video sites, therefore there is no
+list of supported sites in this manual page as it frequently changes, see the
+website for a list.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-p>, B<--play>
+
+Begin playing the video once enough of the file has been downloaded.
+
+=item B<-P I<CMD>>, B<--player=I<CMD>>
+
+Specify the player to use for the C<--play> option. Any occurrence of C<%s> in
+this string will be replaced with the filename of the video (appropriately
+shell escaped).
+
+The default is to use mplayer:
+
+  mplayer -really-quiet %s
+
+You may wish to automatically delete the video after you have viewed it:
+
+  mplayer -really-quiet %s; rm %s
+
+=item B<-u>, B<--update>
+
+Check the I<get-flash-videos> website for a newer version. If a newer version is
+available download it and replace the running version with it. You will need to
+run this as a user with permission to write to the location of the
+F<get_flash_videos> program. If you installed using a packaging system it is
+recommended to use that to upgrade, not this option.
+
+=item B<-v>, B<--version>
+
+Print the version of I<get_flash_videos>.
+
+=item B<-y>, B<--yes>
+
+Do not prompt with any questions, just say 'yes'. This means either literally
+yes, or the default option if choosing from a list.
+
+=back
+
+=head1 BUGS
+
+Third party sites are a moving target therefore it is possible support for some
+of the sites may not work correctly. First check that you are using the latest
+version.
+
+If you wish to see open bugs or report a bug visit
+L<http://code.google.com/p/get-flash-videos/issues/list>.
+
+=head1 COPYRIGHT
+
+Copyright 2009, zakflash and MonsieurVideo
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may
+not use this file except in compliance with the License. You may obtain a
+copy of the License at
+L<http://www.apache.org/licenses/LICENSE-2.0>
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.
+
+Contributions are welcome and encouraged, but please take care to
+maintain the JustWorks(tm) nature of the program.
