@@ -9,7 +9,7 @@ get_flash_videos [OPTION]... URL [FILENAME]
 =head1 DESCRIPTION
 
 Download the Flash video from the web page given in C<URL> saving as
-C<FILENAME>, if no filename is supplied a suitable one would be chosen.
+C<FILENAME>. If no filename is supplied, a suitable one will be chosen.
 
 I<get-flash-videos> attempts to support many video sites, therefore there is no
 list of supported sites in this manual page as it frequently changes, see the
@@ -64,6 +64,14 @@ version.
 
 If you wish to see open bugs or report a bug visit
 L<http://code.google.com/p/get-flash-videos/issues/list>.
+
+=head1 HACKING
+
+If you'd like to change or improve I<get-flash-videos> (for example adding
+support for another site), please see the project wiki where there's an
+overview to help you get started, and a detailed tutorial on adding support
+for a new site:
+L<http://code.google.com/p/get-flash-videos/w/list>.
 
 =head1 COPYRIGHT
 
