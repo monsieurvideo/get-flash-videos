@@ -26,7 +26,7 @@ use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 
-use constant VERSION => "1.6";
+use constant VERSION => "1.7";
 
 use constant VER_INFO => <<EOF;
 get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
@@ -168,6 +168,7 @@ sub update {
 
   my $version = ($browser->content =~ /version: (\S+)/)[0];
   my $base = ($browser->content =~ /from: (\S+)/)[0];
+  my $info = ($browser->content =~ /info: (\S+)/)[0];
   my $url = $base . $::SCRIPT_NAME . "-" . $version;
 
   die "Unable to parse version data" unless $version and $base;
@@ -198,6 +199,7 @@ sub update {
 
       print STDERR "New version installed as $0\n";
       print STDERR "(previous version backed up to $0.old).\n";
+      print STDERR "$info\n";
       exit 0;
     } else {
       die "Download failed: " . $browser->response->status_line;

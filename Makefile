@@ -61,7 +61,7 @@ install: $(MAIN)-$(VERSION) $(MAIN).1.gz
 # Put this in ~/bin:
 #  http://code.google.com/p/support/source/browse/trunk/scripts/googlecode_upload.py
 
-release: $(MAIN)-$(VERSION) wiki-update release-combined
+release: $(MAIN)-$(VERSION) changelog-update wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 
@@ -70,6 +70,9 @@ release-combined: combined-$(MAIN)-$(VERSION)
 
 wiki:
 	svn checkout https://get-flash-videos.googlecode.com/svn/wiki/ $@
+
+changelog-update:
+	@fgrep -q '$(MAIN) ($(VERSION))' debian/changelog || dch -v $(VERSION)-1
 
 wiki-update: wiki
 	@cd wiki && svn up

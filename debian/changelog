@@ -1,5 +1,40 @@
 get-flash-videos (1.6-1) unstable; urgency=low
 
-  * Initial release
+  * Resume support for RTMP downloads.
 
- -- MonsieurVideo <monsieurvideo@gmail.com>  Sun, 26 Apr 2009 12:46:52 +0100
+ -- zakflashvideo <zakflashvideo@gmail.com>  Fri, 17 Apr 2009 20:12:45 -0000
+
+get-flash-videos (1.5-1) unstable; urgency=low
+
+  * Add sites:
+    - Xnxx/Xvideo
+    - Collegehumor
+    - Today's big thing
+  
+  * Fix sites:
+    - Dailymotion (title extraction)
+
+  * Print friendlier error messages when we are unable to extract a video.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Tue, 14 Apr 2009 20:54:05 -0000
+
+get-flash-videos (1.4-1) unstable; urgency=low
+
+  * Add sites:
+    - Dailymotion
+    - Videolectures
+    - Muzu
+  
+  * Fix sites:
+    - BBC (more embedding methods supported)
+    - Brightcove (another embedding method)
+
+  * Check the downloaded file is a valid media file.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Fri, 10 Apr 2009 20:12:08 -0000
+
+get-flash-videos (1.3-1) unstable; urgency=low
+  
+  * Support for --update option for online updates.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Fri, 06 Apr 2009 21:54:38 -0000
