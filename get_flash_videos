@@ -43,6 +43,11 @@ Options:
 
 EOF
 
+use constant REQ_INFO => <<EOF;
+
+A required Perl module for downloading this video is not installed.
+EOF
+
 use constant FRIENDLY_FAILURE => <<EOF;
   
 Couldn't extract Flash movie URL. This site may need specific support adding,
@@ -109,8 +114,10 @@ eval {
 };
 
 if(!$actual_url) {
-  if($@ =~ /^Must have /) {
-    die $@;
+  if($@ =~ /^Must have | requires /) {
+    my $error = "$@";
+    $error =~ s/at $0.*//;
+    die "$error" . REQ_INFO;
   } else {
     die "Error: $@" . FRIENDLY_FAILURE;
   }

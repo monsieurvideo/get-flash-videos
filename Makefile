@@ -2,9 +2,10 @@ MAIN = get_flash_videos
 COMBINE = utils/combine-perl.pl
 VERSION := $(shell ./$(MAIN) --version 2>&1 | awk '{print $$3}')
 
-TARGETS = combined-$(MAIN) $(MAIN)-$(VERSION)
+TARGETS = combined-$(MAIN) combined-$(MAIN)-$(VERSION) \
+	  $(MAIN)-$(VERSION) $(MAIN).1 $(MAIN).1.gz
 
-all: $(TARGETS)
+all: $(MAIN)-$(VERSION)
 
 clean:
 	rm -f $(TARGETS) .sitemodules
@@ -27,7 +28,7 @@ $(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules
 # need HTML::Parser, as this is XS, and optionally XML::Simple, but LWP and
 # Mechanize are included by this).
 
-COMBINED_SOURCES = experiments/combine-head $(MAIN) .sitemodules
+COMBINED_SOURCES = utils/combine-head $(MAIN) .sitemodules
 
 combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
@@ -39,6 +40,21 @@ combined-$(MAIN): $(COMBINE) $(COMBINED_SOURCES)
 # Run our Perl tests.
 check: $(MAIN)
 	$(MAKE) -C t $@
+
+# Manpage
+$(MAIN).1:
+	pod2man $(MAIN).pod > $@
+
+$(MAIN).1.gz: $(MAIN).1
+	gzip $^
+
+# Install
+DESTDIR ?=
+install: $(MAIN)-$(VERSION) $(MAIN).1.gz
+	mkdir -p $(DESTDIR)/usr/bin
+	cp -p $(MAIN)-$(VERSION) $(DESTDIR)/usr/bin/$(MAIN)
+	mkdir -p $(DESTDIR)/usr/man/man1
+	cp -p $(MAIN).1.gz $(DESTDIR)/usr/man/man1
 
 # For project people to easily make releases.
 
@@ -62,4 +78,4 @@ wiki-update: wiki
 	@svn diff wiki/Installation.wiki wiki/Version.wiki | grep -q . || (echo "Version already released" && exit 1)
 	@svn diff wiki/Installation.wiki wiki/Version.wiki && echo "OK? (ctrl-c to abort)" && read F
 
-.PHONY: all clean release release-combined check wiki-update
+.PHONY: all clean release release-combined check wiki-update install

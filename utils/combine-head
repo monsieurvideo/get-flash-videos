@@ -13,5 +13,6 @@ use HTTP::Cookies ();
 use HTTP::Config ();
 use HTTP::Request::Common ();
 use LWP::Protocol::http ();
+use XML::Simple ();
 
 1;
