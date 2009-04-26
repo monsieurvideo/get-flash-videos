@@ -1,0 +1,17 @@
+Source: get-flash-videos
+Section: utils
+Priority: optional
+Maintainer: MonsieurVideo <monsieurvideo@gmail.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.0
+Homepage: http://code.google.com/p/get-flash-videos
+
+Package: get-flash-videos
+Architecture: all
+Depends: ${perl:Depends}, libwww-mechanize-perl
+Recommends: libxml-simple-perl, libcompress-zlib-perl, rtmpdump
+Description: Video downloader for various Flash-based video hosting sites
+  Download videos from various Flash-based video hosting sites, without having
+  to use the Flash player. Handy for saving viqeos for watching offline, and
+  means you don't have to keep upgrading Flash for sites that insist on a newer
+  version of the player.
