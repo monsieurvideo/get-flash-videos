@@ -18,7 +18,6 @@
 #
 # Contributions are welcome and encouraged, but please take care to
 # maintain the JustWorks(tm) nature of the program.
-# 
 
 use strict;
 use Getopt::Long;
@@ -34,12 +33,17 @@ EOF
 
 use constant USAGE => VER_INFO . <<EOF;
 
-Usage: $0 [--yes] url [filename]
+Usage: $0 [OPTION]... url [filename]
 
 Options:
-  --yes     Say yes to any questions (don't prompt for any information).
-  --update  Update to latest version.
-  --version Print version.
+  -d --debug   Print extra debugging information.
+  -p --play    Play the video rather than saving locally.
+     --player  Player to use for the video (default:
+                 mplayer -really-quiet %s).
+  -q --quiet   Be quiet (only print errors).
+  -u --update  Update to latest version.
+  -v --version Print version.
+  -y --yes     Say yes to any questions (don't prompt for any information).
 
 EOF
 
@@ -62,14 +66,25 @@ If the latest version does not support this please open a bug (or
 contribute a patch!) at http://code.google.com/p/get-flash-videos/
 EOF
 
-our $yes = 0;
-my %opt = ( version => 0, update => 0 );
+our %opt = (
+  yes => 0,
+  version => 0,
+  update => 0,
+  play => 0,
+  player => "mplayer -really-quiet %s",
+  debug => 0,
+  quiet => 0,
+);
 
 GetOptions(
-  "yes|y" => \$yes,
-  "version|v" => \$opt{version},
-  "update|u"  => \$opt{update},
-  "help|h"    => \$opt{help},
+  "yes|y"      => \$opt{yes},
+  "version|v"  => \$opt{version},
+  "update|u"   => \$opt{update},
+  "help|h"     => \$opt{help},
+  "play|p"     => \$opt{play},
+  "player=s" => \$opt{player},
+  "debug|d"    => \$opt{debug},
+  "quiet|q"    => \$opt{quiet},
 );
 
 if($opt{version}) {
@@ -101,7 +116,7 @@ if (!$browser->success and !$browser->response->is_redirect) {
 }
 
 # Figure out what package we need to use to get either the HTTP URL or
-# rtmpdump command for the video. 
+# rtmpdump data for the video. 
 my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
 
 print STDERR "Using method '", lc((split /::/, $package)[-1]), "' for $url\n";
@@ -124,33 +139,35 @@ if(!$actual_url) {
 }
 
 my $suggested_filename = $suggested_fnames[-1];
-if (!$yes && @suggested_fnames > 1) {
-  print "There are different suggested filenames, please choose:\n";
-  my $count;
-  foreach my $filename (@suggested_fnames) {
-    $count++;
-    print "$count - $filename\n";
+
+if (!$opt{play}) {
+  if (!$opt{yes} && @suggested_fnames > 1) {
+    print "There are different suggested filenames, please choose:\n";
+    my $count;
+    foreach my $filename (@suggested_fnames) {
+      $count++;
+      print "$count - $filename\n";
+    }
+
+    print "\nWhat filename would you like to use: ";
+    chomp(my $chosen_fname = <STDIN>);
+
+    $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
+      $suggested_fnames[-1];
   }
-
-  print "\nWhat filename would you like to use: ";
-  chomp(my $chosen_fname = <STDIN>);
-
-  $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
-    $suggested_fnames[-1];
 }
 
 my $save_as = $filename || $suggested_filename;
 
-if (ref($actual_url) or $actual_url =~ /rtmp/) {
-  # RTMP
-  foreach my $rtmp_data ( (ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url ) ) {
-    FlashVideo::RTMPDownloader->new()->download($rtmp_data);
-  }
-}
-else {
-  # HTTP
-  unless(FlashVideo::Downloader->new->download($actual_url, $save_as, $browser)) {
-    exit 1;
+my $action = $opt{play} ? "play" : "download";
+
+for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
+  if(ref $data eq 'HASH') {
+    # RTMP data
+    FlashVideo::RTMPDownloader->new()->$action($data) || exit 1;
+  } else {
+    # HTTP
+    FlashVideo::Downloader->new->$action($data, $save_as, $browser) || exit 1;
   }
 }
 

@@ -5,7 +5,8 @@ use strict;
 use base 'Exporter';
 use HTML::Entities;
 
-our @EXPORT = qw(title_to_filename get_video_filename get_timestamp_in_iso8601_format);
+our @EXPORT = qw(title_to_filename get_video_filename get_timestamp_in_iso8601_format
+  debug info error);
 
 sub title_to_filename {
   my($title, $type) = @_;
@@ -34,6 +35,18 @@ sub get_timestamp_in_iso8601_format {
   return sprintf("%04d%02d%02d%02d%02d%02d", 
                  $time->year + 1900, $time->mon + 1, 
                  $time->mday, $time->hour, $time->min, $time->sec); 
+}
+
+sub debug(@) {
+  print STDERR "@_\n" if $::opt{debug};
+}
+
+sub info(@) {
+  print STDERR "@_\n" unless $::opt{quiet};
+}
+
+sub error(@) {
+  print STDERR "@_\n";
 }
 
 1;

@@ -19,11 +19,15 @@ website for a list.
 
 =over 4
 
+=item B<-d>, B<--debug>
+
+Print extra debugging information.
+
 =item B<-p>, B<--play>
 
 Begin playing the video once enough of the file has been downloaded.
 
-=item B<-P I<CMD>>, B<--player=I<CMD>>
+=item B<--player=I<CMD>>
 
 Specify the player to use for the C<--play> option. Any occurrence of C<%s> in
 this string will be replaced with the filename of the video (appropriately
@@ -36,6 +40,10 @@ The default is to use mplayer:
 You may wish to automatically delete the video after you have viewed it:
 
   mplayer -really-quiet %s; rm %s
+
+=item B<-q>, B<--quiet>
+
+Be quiet, only print errors.
 
 =item B<-u>, B<--update>
 

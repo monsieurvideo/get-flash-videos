@@ -75,7 +75,7 @@ sub find_video {
 
   # 'Secure' items need to be handled differently - have to get a token to
   # pass to the rtmp server.
-  if ($info->{identifier} =~ /^secure/) {
+  if ($info->{identifier} =~ /^secure/ or $info->{tokenIssuer}) {
     my $url = "http://www.bbc.co.uk/mediaselector/4/gtis?server=$info->{server}" .
               "&identifier=$info->{identifier}&kind=$info->{kind}" .
               "&application=$info->{application}&cb=123";
@@ -107,12 +107,18 @@ sub find_video {
       die "Couldn't get token for 'secure' video download";
     }
 
-    $data->{app} = "ondemand?_fcs_vhost=$info->{server}"
+    $data->{app} = "$info->{application}?_fcs_vhost=$info->{server}"
             . "&auth=$token"
             . "&aifp=v001&slist=" . $info->{identifier};
-    $data->{tcUrl} = "rtmp://$info->{server}/ondemand?_fcs_vhost=$info->{server}"
+    $data->{tcUrl} = "rtmp://$info->{server}/$info->{application}?_fcs_vhost=$info->{server}"
             . "&auth=$token"
             . "&aifp=v001&slist=" . $info->{identifier};
+    $data->{playpath} .= "?auth=$token&aifp=v0001";
+
+    if($info->{application} eq 'live') {
+      $data->{fcsubscribe} = $data->{playpath};
+      $data->{live} = 1;
+    }
   }
 
   return $data;

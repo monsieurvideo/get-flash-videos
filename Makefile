@@ -42,8 +42,8 @@ check: $(MAIN)
 	$(MAKE) -C t $@
 
 # Manpage
-$(MAIN).1:
-	pod2man $(MAIN).pod > $@
+$(MAIN).1: $(MAIN).pod
+	pod2man -c "User commands" -r "$(MAIN)-$(VERSION)" $^ > $@
 
 $(MAIN).1.gz: $(MAIN).1
 	gzip $^
@@ -64,6 +64,7 @@ install: $(MAIN)-$(VERSION) $(MAIN).1.gz
 release: $(MAIN)-$(VERSION) changelog-update wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
+	svn commit -m "Version $(VERSION)" debian/changelog
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
@@ -72,7 +73,7 @@ wiki:
 	svn checkout https://get-flash-videos.googlecode.com/svn/wiki/ $@
 
 changelog-update:
-	@fgrep -q '$(MAIN) ($(VERSION))' debian/changelog || dch -v $(VERSION)-1
+	@fgrep -q '$(MAIN) ($(VERSION)-1)' debian/changelog || dch -v $(VERSION)-1
 
 wiki-update: wiki
 	@cd wiki && svn up
