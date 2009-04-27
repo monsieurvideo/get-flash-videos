@@ -24,6 +24,7 @@ use Getopt::Long;
 use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
+use FlashVideo::Utils;
 
 use constant VERSION => "1.7";
 
@@ -37,9 +38,8 @@ Usage: $0 [OPTION]... url [filename]
 
 Options:
   -d --debug   Print extra debugging information.
-  -p --play    Play the video rather than saving locally.
-     --player  Player to use for the video (default:
-                 mplayer -really-quiet %s).
+  -p --play    Start playing the video once enough has been downloaded.
+     --player  Player to use for the video (default: mplayer -really-quiet %s).
   -q --quiet   Be quiet (only print errors).
   -u --update  Update to latest version.
   -v --version Print version.
@@ -76,13 +76,15 @@ our %opt = (
   quiet => 0,
 );
 
+read_conf();
+
 GetOptions(
   "yes|y"      => \$opt{yes},
   "version|v"  => \$opt{version},
   "update|u"   => \$opt{update},
   "help|h"     => \$opt{help},
   "play|p"     => \$opt{play},
-  "player=s" => \$opt{player},
+  "player=s"   => \$opt{player},
   "debug|d"    => \$opt{debug},
   "quiet|q"    => \$opt{quiet},
 );
@@ -105,21 +107,21 @@ $url = "http://$url" if $url !~ m!^\w+:!;
 # Might be downloading from a site that uses Brightcove or other similar
 # Flash RTMP streaming server. These are handled differently. Need to get
 # the page to determine this.
-print STDERR "Downloading $url\n";
+info "Downloading $url";
 my $browser = FlashVideo::URLFinder::get_browser();
 $browser->get($url);
 
 # (Redirect check is for Youtube which sometimes redirects to login page
 # for "mature" videos.)
 if (!$browser->success and !$browser->response->is_redirect) {
-  print STDERR "Couldn't download '$url': " . $browser->response->status_line . "\n";
+  error "Couldn't download '$url': " . $browser->response->status_line;
 }
 
 # Figure out what package we need to use to get either the HTTP URL or
 # rtmpdump data for the video. 
 my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
 
-print STDERR "Using method '", lc((split /::/, $package)[-1]), "' for $url\n";
+info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
 
 my ($actual_url, @suggested_fnames);
 
@@ -142,11 +144,11 @@ my $suggested_filename = $suggested_fnames[-1];
 
 if (!$opt{play}) {
   if (!$opt{yes} && @suggested_fnames > 1) {
-    print "There are different suggested filenames, please choose:\n";
+    print "There are different suggested filenames, please choose:";
     my $count;
     foreach my $filename (@suggested_fnames) {
       $count++;
-      print "$count - $filename\n";
+      print "$count - $filename";
     }
 
     print "\nWhat filename would you like to use: ";
@@ -168,6 +170,23 @@ for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
   } else {
     # HTTP
     FlashVideo::Downloader->new->$action($data, $save_as, $browser) || exit 1;
+  }
+}
+
+exit 0;
+
+sub read_conf {
+  for my $file("/etc/get_flash_videosrc", "$ENV{HOME}/.get_flash_videosrc") {
+    open my $fh, "<", $file or next;
+
+    while(<$fh>) {
+      s/\r?\n//;
+      next if /^\s*(#|$)/;
+
+      my($n, $v) = split /\s*=\s*/;
+      $v = 1 unless defined $v;
+      $opt{$n} = $v;
+    }
   }
 }
 
@@ -203,7 +222,7 @@ sub update {
   }
 
   if($newer) {
-    print STDERR "Newer version ($version) available, downloading..\n";
+    info "Newer version ($version) available, downloading..";
     die "Cannot update -- unable to write to $0\n" unless -w $0;
 
     my $new_file = $0 . ".new";
@@ -214,9 +233,9 @@ sub update {
       rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
       chmod 0755, $0;
 
-      print STDERR "New version installed as $0\n";
-      print STDERR "(previous version backed up to $0.old).\n";
-      print STDERR "$info\n";
+      info "New version installed as $0";
+      info "(previous version backed up to $0.old).";
+      info $info;
       exit 0;
     } else {
       die "Download failed: " . $browser->response->status_line;

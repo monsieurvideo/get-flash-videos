@@ -64,6 +64,26 @@ yes, or the default option if choosing from a list.
 
 =back
 
+=head1 CONFIGURATION
+
+On startup I<get_flash_videos> will read the configuration files located at
+F</etc/get_flash_videosrc> and then F<~/.get_flash_videosrc>.
+
+The files follow a simple C<name = value> convention where the name matches the
+long version of the command line options. For example if you want to specify the
+default player, to always say yes and to always run the player the file might
+look like:
+
+  player = my-video-player %s 2>/dev/null; rm -f %s
+  yes
+
+  # Always play the video
+  play
+
+Options given on the command line will override these options, with the
+exception that it is not currently possible to disable an option enabled in the
+configuration file from the command line.
+
 =head1 BUGS
 
 Third party sites are a moving target therefore it is possible support for some
