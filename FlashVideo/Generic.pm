@@ -3,6 +3,7 @@ package FlashVideo::Generic;
 
 use strict;
 use constant MAX_REDIRECTS => 5;
+use constant EXTENSIONS    => qr/\.(?:flv|mp4|mov|wmv)/;
 
 use FlashVideo::Utils;
 use Memoize;
@@ -28,8 +29,8 @@ sub find_video {
   }
 
   my @flv_urls = map {
-    (m|http://.+?(http://.+?\.flv)|) ? $1 : $_
-  } ($browser->content =~ m'(http://[-:/a-zA-Z0-9%_.?=&]+\.(?:flv|mp4))'g);
+    (m{http://.+?(http://.+?@{[EXTENSIONS]})}) ? $1 : $_
+  } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]})}g);
   if (@flv_urls) {
     memoize("LWP::Simple::head");
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
@@ -71,7 +72,7 @@ sub find_file_param {
 
   if($param =~ /(?:video|movie|file)['"]?\s*[=:]\s*['"]?([^&'"]+)/
       || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/
-      || $param =~ /['"=](.*?\.(?:flv|mp4))/) {
+      || $param =~ /['"=](.*?@{[EXTENSIONS]})/) {
     my $file = $1;
 
     my $actual_url = guess_file($browser, $file);
@@ -108,7 +109,7 @@ sub guess_file {
         # give up now.
         return if $browser->content =~ /<html[^>]*>/i;
 
-        if($browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+\.(flv|mp4)
+        if($browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]}
             # Grab any params that might be used for auth..
             (?:\?[-:/a-zA-Z0-9%_.?=&]+)?)!x) {
           # Found a video URL

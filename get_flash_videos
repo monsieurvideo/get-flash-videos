@@ -144,11 +144,11 @@ my $suggested_filename = $suggested_fnames[-1];
 
 if (!$opt{play}) {
   if (!$opt{yes} && @suggested_fnames > 1) {
-    print "There are different suggested filenames, please choose:";
+    print "There are different suggested filenames, please choose:\n";
     my $count;
     foreach my $filename (@suggested_fnames) {
       $count++;
-      print "$count - $filename";
+      print "$count - $filename\n";
     }
 
     print "\nWhat filename would you like to use: ";

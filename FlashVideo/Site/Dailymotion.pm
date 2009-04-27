@@ -8,6 +8,8 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
+  $browser->allow_redirects;
+
   my $filename;
   if ($browser->content =~ /<h1[^>]*>(.*?)<\//) {
     $filename = title_to_filename($1);
@@ -17,7 +19,12 @@ sub find_video {
   my $video;
   if ($browser->content =~ /"video", "([^"]+)/) {
     $video = uri_unescape($1);
-  } elsif ($embed_url =~ m!/swf/!) {
+  } else {
+    if ($embed_url !~ m!/swf/!) {
+      $browser->uri =~ m!video(?:%2F|/)([^_]+)!;
+      $embed_url = "http://www.dailymotion.com/swf/$1";
+    }
+
     $browser->get($embed_url);
 
     die "Must have Compress::Zlib for embedded Dailymotion videos\n"
@@ -49,7 +56,6 @@ sub find_video {
   }
 
   my $url = (sort { $b->{width} <=> $a->{width} } @streams)[0]->{url};
-  $browser->allow_redirects;
 
   return $url, $filename;
 }
