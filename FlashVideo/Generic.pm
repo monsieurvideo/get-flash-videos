@@ -93,7 +93,7 @@ sub guess_file {
 
   my $uri = URI->new_abs($file, $browser->uri);
 
-  print STDERR "Guessed ", $uri->as_string, ", trying...\n";
+  info "Guessed $uri trying...";
 
   if($uri) {
     (my $exists, $uri) = url_exists($browser, $uri);
@@ -118,7 +118,7 @@ sub guess_file {
           # Try once more, one level deeper..
           return guess_file($browser, $1, 1);
         } else {
-          print STDERR "Tried $uri, but no video URL found\n";
+          info "Tried $uri, but no video URL found";
         }
       } else {
         return $uri->as_string;

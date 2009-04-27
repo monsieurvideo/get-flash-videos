@@ -31,12 +31,12 @@ sub find_video {
   elsif($browser->uri =~ m!/(b[0-9a-z]{7})(?:/|$)!) {
     # Looks like a pid..
     my @gi_cmd = (qw(get_iplayer -g --pid), $1);
-    print STDERR "get_flash_videos does not support iplayer, but get_iplayer does..\n";
-    print STDERR "Attempting to run '@gi_cmd'\n";
+    error "get_flash_videos does not support iplayer, but get_iplayer does..";
+    info "Attempting to run '@gi_cmd'";
     exec @gi_cmd;
     # Probably not installed..
-    print STDERR "Please download get_iplayer from http://linuxcentre.net/getiplayer/\n";
-    print STDERR "and install in your PATH\n";
+    error "Please download get_iplayer from http://linuxcentre.net/getiplayer/\n" .
+      "and install in your PATH";
     exit 1;
   }
   else {
@@ -80,13 +80,13 @@ sub find_video {
               "&identifier=$info->{identifier}&kind=$info->{kind}" .
               "&application=$info->{application}&cb=123";
 
-    print STDERR "Got BBC auth URL for 'secure' video: $url\n";
+    debug "Got BBC auth URL for 'secure' video: $url";
 
     $browser->get($url);
 
     # BBC redirects us to the original URL which is odd, but oh well.
     if (my $redirect = $browser->response->header('Location')) {
-      print STDERR "BBC auth URL redirects to: $url\n";
+      debug "BBC auth URL redirects to: $url";
       $browser->get($redirect);
     }
 

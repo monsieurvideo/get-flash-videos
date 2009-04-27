@@ -28,8 +28,8 @@ sub find_video {
       print "Ok, need your password (will be displayed): ";
       chomp(my $password = <STDIN>);
       unless ($username and $password) {
-        print "You must supply Youtube account details.\n";
-        exit;
+        error "You must supply Youtube account details.";
+        exit 1;
       }
 
       $browser->get("http://youtube.com/login");
@@ -38,8 +38,8 @@ sub find_video {
                            password => $password);
       $browser->submit();
       if ($browser->content =~ /your login was incorrect/) {
-        print "Couldn't log you in, check your username and password.\n";
-        exit;
+        error "Couldn't log you in, check your username and password.";
+        exit 1;
       }
 
       $browser->get($confirmation_url);
@@ -48,8 +48,8 @@ sub find_video {
       $browser->click_button(name => "action_confirm");
 
       if ($browser->response->code != 303) {
-        print "Unexpected response from Youtube.\n";
-        exit;
+        error "Unexpected response from Youtube.";
+        exit 1;
       }
       $browser->get($browser->response->header('Location'));
     }

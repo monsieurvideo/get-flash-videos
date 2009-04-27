@@ -108,7 +108,7 @@ EOF
     # In some cases, Brightcove doesn't use RTMP streaming - the file is
     # downloaded via HTTP.
     if (!$d->{FLVFullLengthStreamed}) {
-      print STDERR "Brightcove HTTP download detected\n";
+      info "Brightcove HTTP download detected";
       return ($d->{FLVFullLengthURL}, $args->{flv});
     }
 
