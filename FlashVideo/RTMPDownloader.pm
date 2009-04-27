@@ -19,11 +19,9 @@ sub download {
 
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
-  if ($::opt{play} && exists $rtmp_data->{live}) {
+  if (delete $rtmp_data->{live} && $::opt{play}) {
     # Playing live stream, we pipe this straight to the player, rather than
     # saving on disk.
-    delete $rtmp_data->{live};
-
     pipe($r_fh, $w_fh);
 
     my $pid = fork;
@@ -76,7 +74,6 @@ sub download {
     # Should be about enough..
     if(defined $self->{stream} && $self->{downloaded} > 300_000) {
       $self->{stream}->();
-      $self->{stream} = undef;
     }
   }
 

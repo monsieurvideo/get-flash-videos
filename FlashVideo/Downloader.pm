@@ -16,6 +16,8 @@ sub play {
   my ($self, $url, $file, $browser) = @_;
 
   $self->{stream} = sub {
+    $self->{stream} = undef;
+
     my $pid = fork;
     die "Fork failed" unless defined $pid;
     if(!$pid) {
@@ -44,6 +46,7 @@ sub download {
     # resume.
     if ($offset == $response->header('Content-Length')) {
       error "File $file has been fully downloaded.";
+      $self->{stream}->() if defined $self->{stream};
       return;
     }
     
@@ -99,7 +102,6 @@ sub download {
         if(defined $self->{stream}) {
           if($self->{downloaded} > 300_000) {
             $self->{stream}->();
-            $self->{stream} = undef;
           }
         }
 
@@ -193,6 +195,9 @@ sub _check_magic {
 
   # FLV
   if(substr($data, 0, 3) eq 'FLV') {
+    return 1;
+  # ASF
+  } elsif(substr($data, 0, 4) eq "\x30\x26\xb2\x75") {
     return 1;
   # ISO
   } elsif(substr($data, 4, 4) eq 'ftyp') {
