@@ -1,3 +1,32 @@
+get-flash-videos (1.7-1) stable; urgency=low
+
+  * Add sites:
+    - Blip (explicit support -- mostly worked with generic before)
+    - GrindTV, Stupidvideos and RingTV (all same platform)
+
+  * Fix sites:
+    - Dailymotion (embedded videos)
+    - Google Video (some files didn't work)
+    - Break (minor change to embedding method)
+    - BBC (Support for playing live streams, needs a patched rtmpdump:
+       http://get-flash-videos.googlecode.com/svn/misc/rtmpdump-fcsubscribe.patch,
+       this is still rather buggy)
+
+  * New --play option, for playing the video as well as downloading it.
+    There is also an associated --player option to specify the player to use.
+
+  * New --debug and --quiet options to print more and less output respectively.
+
+  * Now reads config files from /etc/get_flash_videosrc and
+    ~/.get_flash_videosrc, in a simple name = value format that matches the
+    command line options.
+
+  * Report progress for RTMP downloads in the same way as HTTP downloads.
+
+  * Release now includes a Debian package.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Sun, 26 Apr 2009 21:29:18 +0100
+
 get-flash-videos (1.6-1) stable; urgency=low
 
   * Resume support for RTMP downloads.
