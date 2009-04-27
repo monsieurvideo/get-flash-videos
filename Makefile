@@ -53,8 +53,8 @@ DESTDIR ?=
 install: $(MAIN)-$(VERSION) $(MAIN).1.gz
 	mkdir -p $(DESTDIR)/usr/bin
 	cp -p $(MAIN)-$(VERSION) $(DESTDIR)/usr/bin/$(MAIN)
-	mkdir -p $(DESTDIR)/usr/man/man1
-	cp -p $(MAIN).1.gz $(DESTDIR)/usr/man/man1
+	mkdir -p $(DESTDIR)/usr/share/man/man1
+	cp -p $(MAIN).1.gz $(DESTDIR)/usr/share/man/man1
 
 # For project people to easily make releases.
 
@@ -65,6 +65,7 @@ release: $(MAIN)-$(VERSION) changelog-update wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 	svn commit -m "Version $(VERSION)" debian/changelog
+	svn cp https://get-flash-videos.googlecode.com/svn/trunk https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION)
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
@@ -82,4 +83,10 @@ wiki-update: wiki
 	@svn diff wiki/Installation.wiki wiki/Version.wiki | grep -q . || (echo "Version already released" && exit 1)
 	@svn diff wiki/Installation.wiki wiki/Version.wiki && echo "OK? (ctrl-c to abort)" && read F
 
-.PHONY: all clean release release-combined check wiki-update install
+deb:
+	mkdir -p /tmp/deb
+	svn co https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION) /tmp/deb/$(VERSION)
+	cd /tmp/deb/$(VERSION) && dpkg-buildpackage
+	googlecode_upload.py -l "Featured" -s "Version $(VERSION) -- Debian package, for Debian and Ubuntu" -p get-flash-videos /tmp/deb/get-flash-videos_$(VERSION)-1_all.deb
+
+.PHONY: all clean release release-combined check wiki-update install deb
