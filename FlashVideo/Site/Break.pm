@@ -27,7 +27,7 @@ sub find_video {
 
   die "Unable to extract path and filename" unless $path and $filename;
 
-  my $video_path = ($browser->content =~ /videoPath',\s*'([^']+)/)[0];
+  my $video_path = ($browser->content =~ /videoPath\s*(?:',|=)\s*['"]([^'"]+)/)[0];
 
   # I want to follow redirects now.
   $browser->allow_redirects;
