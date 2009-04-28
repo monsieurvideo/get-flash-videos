@@ -26,7 +26,7 @@ use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 use FlashVideo::Utils;
 
-use constant VERSION => "1.7";
+use constant VERSION => "1.8";
 
 use constant VER_INFO => <<EOF;
 get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
