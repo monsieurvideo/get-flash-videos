@@ -24,13 +24,13 @@ sub find_video {
   my ($possible_filename, $actual_url, $title, $got_url);
   if ($browser->content =~ /<title>(.*?)<\/title>/i) {
     $title = $1;
-    $title =~ s/^(?:\w+\.com)[[:punct:] ]+//g;
+    $title =~ s/^(?:\w+\.com)[[:punct:] ]+//gi;
     $title = title_to_filename($title); 
   }
 
   my @flv_urls = map {
-    (m{http://.+?(http://.+?@{[EXTENSIONS]})}) ? $1 : $_
-  } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]})}g);
+    (m{http://.+?(http://.+?@{[EXTENSIONS]}i)}) ? $1 : $_
+  } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]}i)}g);
   if (@flv_urls) {
     memoize("LWP::Simple::head");
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
@@ -70,9 +70,9 @@ sub find_video {
 sub find_file_param {
   my($browser, $param) = @_;
 
-  if($param =~ /(?:video|movie|file)['"]?\s*[=:]\s*['"]?([^&'"]+)/
-      || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/
-      || $param =~ /['"=](.*?@{[EXTENSIONS]})/) {
+  if($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/i
+      || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
+      || $param =~ /['"=](.*?@{[EXTENSIONS]})/i) {
     my $file = $1;
 
     my $actual_url = guess_file($browser, $file);
@@ -90,7 +90,7 @@ sub guess_file {
   my($browser, $file, $once) = @_;
 
   # Contains lots of URI encoding, so try escaping..
-  $file = uri_unescape($file) if scalar(() = $file =~ /%[A-F0-9]{2}/g) > 3;
+  $file = uri_unescape($file) if scalar(() = $file =~ /%[A-F0-9]{2}/gi) > 3;
 
   my $uri = URI->new_abs($file, $browser->uri);
 
@@ -109,13 +109,13 @@ sub guess_file {
         # give up now.
         return if $browser->content =~ /<html[^>]*>/i;
 
-        if($browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]}
+        if($browser->content =~ m!(http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
             # Grab any params that might be used for auth..
-            (?:\?[-:/a-zA-Z0-9%_.?=&]+)?)!x) {
+            (?:\?[-:/a-z0-9%_.?=&]+)?)!xi) {
           # Found a video URL
           return $1;
         } elsif(!defined $once
-            && $browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+)!) {
+            && $browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+)!i) {
           # Try once more, one level deeper..
           return guess_file($browser, $1, 1);
         } else {
