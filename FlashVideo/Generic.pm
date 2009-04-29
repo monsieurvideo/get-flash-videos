@@ -30,7 +30,7 @@ sub find_video {
 
   my @flv_urls = map {
     (m{http://.+?(http://.+?@{[EXTENSIONS]}i)}) ? $1 : $_
-  } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]}i)}g);
+  } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]})}gi);
   if (@flv_urls) {
     memoize("LWP::Simple::head");
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
