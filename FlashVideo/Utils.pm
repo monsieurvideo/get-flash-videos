@@ -5,8 +5,7 @@ use strict;
 use base 'Exporter';
 use HTML::Entities;
 
-our @EXPORT = qw(title_to_filename get_video_filename get_timestamp_in_iso8601_format
-  debug info error);
+our @EXPORT = qw(title_to_filename get_video_filename debug info error);
 
 sub title_to_filename {
   my($title, $type) = @_;
