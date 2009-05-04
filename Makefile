@@ -81,7 +81,7 @@ changelog-update:
 
 wiki-update: wiki
 	@cd wiki && svn up
-	@perl -pi -e's/$(MAIN)-\d+\.\d+/$(MAIN)-$(VERSION)/g' wiki/Installation.wiki
+	@perl -pi -e's/(get[-_]flash[-_]videos[-_])\d+\.\d+/$${1}$(VERSION)/g' wiki/Installation.wiki
 	@perl -pi -e's/\d+\.\d+/$(VERSION)/g' wiki/Version.wiki
 	@svn diff wiki/Installation.wiki wiki/Version.wiki | grep -q . || (echo "Version already released" && exit 1)
 	@svn diff wiki/Installation.wiki wiki/Version.wiki && echo "OK? (ctrl-c to abort)" && read F
@@ -89,7 +89,7 @@ wiki-update: wiki
 deb: release-main
 	mkdir -p /tmp/deb
 	svn co https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION) /tmp/deb/$(VERSION)
-	cd /tmp/deb/$(VERSION) && dpkg-buildpackage
+	cd /tmp/deb/$(VERSION) && (dpkg-buildpackage || echo "Ignoring return value..")
 	googlecode_upload.py -l "Type-Package,OpSys-Linux" -s "Version $(VERSION) -- Debian package, for Debian and Ubuntu" -p get-flash-videos /tmp/deb/get-flash-videos_$(VERSION)-1_all.deb
 	rm -rf /tmp/deb/$(VERSION)
 
