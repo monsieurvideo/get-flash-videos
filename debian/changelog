@@ -1,3 +1,11 @@
+get-flash-videos (1.8-1) stable; urgency=low
+
+  * Added support for Megavideo, Spike.com and Wat.tv.
+
+  * Some fixes to generic to support more sites.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Mon, 04 May 2009 20:43:12 -0000
+
 get-flash-videos (1.7-1) stable; urgency=low
 
   * Add sites:
