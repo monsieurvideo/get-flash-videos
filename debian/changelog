@@ -1,3 +1,13 @@
+get-flash-videos (1.9-1) stable; urgency=low
+
+  * Add support for Mtvnservices (used by various sites, including
+    comedycentral).
+
+  * Fix support for Megavideo and GrindTV which didn't work correctly in the
+    previous release.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Tue, 05 May 2009 20:54:40 -0000
+
 get-flash-videos (1.8-1) stable; urgency=low
 
   * Added support for Megavideo, Spike.com and Wat.tv.
