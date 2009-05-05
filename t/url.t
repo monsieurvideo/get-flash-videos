@@ -6,8 +6,6 @@ use Test::More;
 use File::Path;
 use FlashVideo::Downloader;
 
-BEGIN { $ENV{PERL5LIB} = "../.." }
-
 # We don't want to do this unless they really meant it, as it downloads a lot.
 unless($ENV{SITE} || $ENV{SURE}) {
   plan skip_all => "RTFS";
@@ -27,7 +25,7 @@ for my $url_info(@urls) {
 
   diag "Testing $note";
 
-  my $pid = open my $out_fh, "-|", "../../get_flash_videos --yes '$url' 2>&1";
+  my $pid = open my $out_fh, "-|", "../../$ENV{SCRIPT} --yes '$url' 2>&1";
 
   while(<$out_fh>) {
     DEBUG && diag $_;

@@ -13,8 +13,10 @@ clean:
 # Build the main get_flash_videos, by combining the modules and sites into one
 # file, for easier download and installation.
 
-$(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules
-	$(COMBINE) --name="$(MAIN)" --include="^FlashVideo::" $(MAIN) .sitemodules > $@
+$(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules \
+  utils/combine-header
+	$(COMBINE) --name="$(MAIN)" --include="^FlashVideo::" \
+	  utils/combine-header .sitemodules $(MAIN) > $@
 	chmod a+x $@
 
 # This makes sure to 'use' all the Site modules, so that the combiner can pick
@@ -39,8 +41,8 @@ combined-$(MAIN): $(COMBINE) $(COMBINED_SOURCES)
 	chmod a+x $@
 
 # Run our Perl tests.
-check: $(MAIN)
-	$(MAKE) -C t $@
+check: $(MAIN)-$(VERSION)
+	$(MAKE) -C t $@ SCRIPT=$^
 
 # Manpage
 $(MAIN).1: $(MAIN).pod
