@@ -30,7 +30,7 @@ Print extra debugging information.
 
 =item B<-f>, B<--filename>
 
-Save downloaded via to the specified filename. Usually this shouldn't be
+Save downloaded file to the specified filename. Usually this shouldn't be
 necessary, as C<get_flash_videos> tries to use a meaningful name for the
 video.
 
