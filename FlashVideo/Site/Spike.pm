@@ -2,6 +2,8 @@
 package FlashVideo::Site::Spike;
 
 use strict;
+use base 'FlashVideo::Site::Mtvnservices';
+
 use FlashVideo::Utils;
 use URI::Escape;
 
@@ -12,6 +14,8 @@ sub find_video {
   if(!$has_xml_simple) {
     die "Must have XML::Simple installed to download Spike videos";
   }
+
+  my $page_url = $browser->uri->as_string;
 
   my $config_url;
   if($browser->content =~ /config_url\s*=\s*["']([^"']+)/) {
@@ -27,34 +31,7 @@ sub find_video {
   my $feed = uri_unescape($xml->{player}->{feed});
   die "Unable to find feed URL\n" unless $feed;
 
-  $browser->get($feed);
-  $xml = XML::Simple::XMLin($browser->content);
-
-  my $filename = title_to_filename($xml->{channel}->{title})
-    || get_video_filename();
-
-  my $mediagen_url = $xml->{channel}->{item}->{"media:group"}->{"media:content"}->{url};
-  die "Unable to find mediagen URL\n" unless $mediagen_url;
-
-  $browser->get($mediagen_url);
-  $xml = XML::Simple::XMLin($browser->content);
-
-  my $rendition = $xml->{video}->{item}->{rendition};
-  $rendition = [ $rendition ] unless ref $rendition eq 'ARRAY';
-
-  my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
-
-  if($url =~ /^rtmp:/) {
-    return {
-      flv => $filename,
-      rtmp => $url
-    };
-  }
-
-  # I want to follow redirects now.
-  $browser->allow_redirects;
-
-  return $url, $filename;
+  return $self->handle_feed($feed, $browser, $page_url);
 }
 
 1;

@@ -5,6 +5,8 @@ use strict;
 use FlashVideo::Utils;
 use URI::Escape;
 
+use constant FP_KEY => "Genuine Adobe Flash Player 001";
+
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
@@ -12,6 +14,8 @@ sub find_video {
   if(!$has_xml_simple) {
     die "Must have XML::Simple installed to download Mtvnservices videos";
   }
+
+  my $page_url = $browser->uri->as_string;
 
   if($embed_url !~ /mtvnservices/) {
     if($browser->content =~ m!(http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.-_]+)!) {
@@ -41,15 +45,21 @@ sub find_video {
 
   $feed =~ s/\{([^}]+)\}/$param{$1}/g;
 
+  return $self->handle_feed($feed, $browser, $page_url, $param{uri});
+}
+
+sub handle_feed {
+  my($self, $feed, $browser, $page_url, $uri) = @_;
+
   $browser->get($feed);
-  $xml = XML::Simple::XMLin($browser->content);
+  my $xml = XML::Simple::XMLin($browser->content);
 
   my $filename = title_to_filename($xml->{channel}->{title})
     || get_video_filename();
 
   my $items = $xml->{channel}->{item};
   my $item = ref $items eq 'ARRAY' ?
-    (grep { $_->{guid}->{content} eq $param{uri} } @$items)[0] :
+    (grep { $_->{guid}->{content} eq $uri } @$items)[0] :
     $items;
 
   my $mediagen_url = $item->{"media:group"}->{"media:content"}->{url};
@@ -64,17 +74,39 @@ sub find_video {
 
   my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
 
-  if($url =~ /^rtmp:/) {
-    return {
-      flv => $filename,
-      rtmp => $url
-    };
-  }
-
   # I want to follow redirects now.
   $browser->allow_redirects;
 
+  if($url =~ /^rtmp:/) {
+    return {
+      flv => $filename,
+      rtmp => $url,
+      pageUrl => $page_url,
+      $self->swfhash($browser, "http://media.mtvnservices.com/player/release/")
+    };
+  }
+
   return $url, $filename;
+}
+
+sub swfhash {
+  my($self, $browser, $url) = @_;
+
+  die "Must have Compress::Zlib and Digest::SHA for Mtvnservices RTMP downloads\n"
+      unless eval {
+        require Compress::Zlib;
+        require Digest::SHA;
+      };
+
+  $browser->get($url);
+
+  my $data = "F" . substr($browser->content, 1, 7)
+                 . Compress::Zlib::uncompress(substr $browser->content, 8);
+
+  return
+    swfsize => length $data,
+    swfhash => Digest::SHA::hmac_sha256_hex($data, FP_KEY),
+    swfUrl  => $url;
 }
 
 sub can_handle {
