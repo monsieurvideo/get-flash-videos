@@ -25,6 +25,7 @@ use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 use FlashVideo::Utils;
+use FlashVideo::GoogleVideoSearch;
 
 use constant VERSION => "1.10";
 
@@ -34,16 +35,17 @@ EOF
 
 use constant USAGE => VER_INFO . <<EOF;
 
-Usage: $0 [OPTION]... url [filename]
+Usage: $0 [OPTION]... url
 
 Options:
-  -d --debug   Print extra debugging information.
-  -p --play    Start playing the video once enough has been downloaded.
-     --player  Player to use for the video (default: mplayer -really-quiet %s).
-  -q --quiet   Be quiet (only print errors).
-  -u --update  Update to latest version.
-  -v --version Print version.
-  -y --yes     Say yes to any questions (don't prompt for any information).
+  -d --debug    Print extra debugging information.
+  -f --filename Filename.
+  -p --play     Start playing the video once enough has been downloaded.
+     --player   Player to use for the video (default: mplayer -really-quiet %s).
+  -q --quiet    Be quiet (only print errors).
+  -u --update   Update to latest version.
+  -v --version  Print version.
+  -y --yes      Say yes to any questions (don't prompt for any information).
 
 EOF
 
@@ -68,6 +70,7 @@ EOF
 
 our %opt = (
   yes => 0,
+  filename => '',
   version => 0,
   update => 0,
   play => 0,
@@ -80,6 +83,7 @@ read_conf();
 
 GetOptions(
   "yes|y"      => \$opt{yes},
+  "filename|f" => \$opt{filename},
   "version|v"  => \$opt{version},
   "update|u"   => \$opt{update},
   "help|h"     => \$opt{help},
@@ -99,8 +103,53 @@ if($opt{version}) {
 
 binmode STDERR, ":utf8";
 
-my ($url, $filename) = @ARGV;
+my (@urls) = @ARGV;
+my $url = $urls[0];
 $url or die USAGE;
+
+# Search string can either be quoted or unquoted (for ultimate laziness)
+my $search;
+if ( ((@urls == 1) and $url !~ m'\.') or @urls > 1) {
+  $search = join ' ', @urls;
+}
+
+if ($search) {
+  if (my @results = FlashVideo::GoogleVideoSearch::search($search)) {
+    if ($opt{yes} or @results == 1) {
+      my $message = (@results == 1) ?
+        "Downloading only match for '$search': '$results[0]->{name}'" :
+        "Downloading first match for '$search': '$results[0]->{name}'" ;
+      info $message;
+           
+      $url = $results[0]->{url};
+    }
+    else {
+      print "Search for '$search' found these results:\n";
+      my $count = 1;
+      foreach my $result (@results) {
+
+        print sprintf("[%2d]", $count) . " $result->{name}\n";
+        $count++;
+      }
+
+      print "Enter the number of the video you want to download: ";
+      chomp(my $choice = <STDIN>);
+
+      $choice--;
+      if (!$results[$choice]) {
+        print STDERR "'$choice' is an invalid choice.\n";
+        exit;
+      }
+
+      $url = $results[$choice]->{url};
+    }
+  }
+  else {
+    print STDERR "No results found for '$search'.\n";
+    exit;
+  }
+  
+}
 
 $url = "http://$url" if $url !~ m!^\w+:!;
 
@@ -159,7 +208,7 @@ if (!$opt{play}) {
   }
 }
 
-my $save_as = $filename || $suggested_filename;
+my $save_as = $opt{filename} || $suggested_filename;
 
 my $action = $opt{play} ? "play" : "download";
 

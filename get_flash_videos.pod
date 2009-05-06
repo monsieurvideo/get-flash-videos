@@ -4,12 +4,17 @@ get_flash_videos - Video downloader for various Flash-based video hosting sites
 
 =head1 SYNOPSIS
 
-get_flash_videos [OPTION]... URL [FILENAME]
+get_flash_videos [OPTION]... URL
+
+get_flash_videos [OPTION]... search
 
 =head1 DESCRIPTION
 
-Download the Flash video from the web page given in C<URL> saving as
-C<FILENAME>. If no filename is supplied, a suitable one will be chosen.
+Download the Flash video from the web page given in C<URL>, choosing a
+suitable filename. Use C<--filename> if you want to set the filename
+yourself. If C<search> is specified (either quoted or unquoted),
+C<get_flash_videos> will search Google Video for C<search>, and present a
+list of results.
 
 I<get-flash-videos> attempts to support many video sites, therefore there is no
 list of supported sites in this manual page as it frequently changes, see the
@@ -22,6 +27,12 @@ website for a list.
 =item B<-d>, B<--debug>
 
 Print extra debugging information.
+
+=item B<-f>, B<--filename>
+
+Save downloaded via to the specified filename. Usually this shouldn't be
+necessary, as C<get_flash_videos> tries to use a meaningful name for the
+video.
 
 =item B<-p>, B<--play>
 
@@ -60,7 +71,7 @@ Print the version of I<get_flash_videos>.
 =item B<-y>, B<--yes>
 
 Do not prompt with any questions, just say 'yes'. This means either literally
-yes, or the default option if choosing from a list.
+yes, or the default or first option if choosing from a list.
 
 =back
 
