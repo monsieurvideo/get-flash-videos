@@ -29,7 +29,7 @@ sub find_video {
   }
 
   my @flv_urls = map {
-    (m{http://.+?(http://.+?@{[EXTENSIONS]}i)}) ? $1 : $_
+    (m{http://.+?(http://.+?@{[EXTENSIONS]})}i) ? $1 : $_
   } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]})}gi);
   if (@flv_urls) {
     memoize("LWP::Simple::head");
@@ -58,8 +58,14 @@ sub find_video {
   }
 
   my @filenames;
-  push @filenames, $possible_filename if $possible_filename;
+
+  # The actual filename, provided it looks like it might be reasonable
+  # (not just numbers)..
+  push @filenames, $possible_filename if $possible_filename
+    && $possible_filename !~ /^[0-9_.]+@{[EXTENSIONS]}$/;
+  # The title of the page, if it isn't similar to the filename..
   push @filenames, $title if $title && $title !~ /\Q$possible_filename\E/i;
+  # A title with just the timestamp in it..
   push @filenames, get_video_filename() if !@filenames;
   
   return ($actual_url, @filenames) if $got_url;
