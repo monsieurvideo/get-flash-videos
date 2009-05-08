@@ -132,7 +132,7 @@ sub download {
 sub progress {
   my($self) = @_;
 
-  return unless -t;
+  return unless -t STDERR;
   return if $::opt{quiet};
 
   if ($self->{content_length}) {
