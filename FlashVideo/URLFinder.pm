@@ -24,8 +24,8 @@ sub find_package {
     # element (avoids grabbing things like codebase attribute).
     # Also look at embedded scripts for sites which embed their content that way.
  
-    URLS: for my $possible_url(
-        $browser->content =~ m!(?:<object[^>]+>.*?|<(?:script|embed) [^>]*src=["']?)(http://[^"'> ]+)!gx) {
+    for my $possible_url($browser->content =~
+        m!(?:<object[^>]+>.*?|<(?:script|embed|iframe) [^>]*src=["']?)(http://[^"'> ]+)!gix) {
       $package = find_package_url($possible_url, $browser);
       return $package, $possible_url if defined $package;
     }
