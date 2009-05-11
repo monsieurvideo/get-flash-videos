@@ -86,6 +86,22 @@ sub download {
         if (!$self->{content_length}) {
           $self->{content_length} = $response->header('Content-Length')
                                     + $offset;
+
+          if($response->header('Content-encoding') =~ /gzip/i) {
+            # Some idiot is serving us this gzipped, despite us not asking for
+            # that. They need to lay off the crack, but we'll humor them.
+            eval { require Compess::Zlib; } or
+              die "Must have Compress::Zlib installed to download from these jokers.\n";
+
+            my($inflate, $status) = Compress::Zlib::inflateInit();
+
+            $self->{filter} = sub {
+              my($data) = @_;
+
+              my($output, $status) = $inflate->inflate($data);
+              return $output;
+            }
+          }
         }
 
         if ($offset and !$response->header('Content-Range')) {
@@ -94,6 +110,10 @@ sub download {
         }
         else {
           $self->{downloaded} = $offset unless $self->{downloaded};
+        }
+
+        if($self->{filter}) {
+          $data = $self->{filter}->($data);
         }
 
         my $fh = $self->{fh};

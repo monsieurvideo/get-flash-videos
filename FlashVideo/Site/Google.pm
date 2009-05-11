@@ -34,4 +34,11 @@ sub find_video {
   return ($url, $filename);
 }
 
+sub can_handle {
+  my($self, $browser, $url) = @_;
+
+  return $browser->response->header('Location') =~ /google/i
+    || $browser->content =~ /googleplayer\.swf/;
+}
+
 1;
