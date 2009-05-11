@@ -11,10 +11,11 @@ get_flash_videos [OPTION]... search
 =head1 DESCRIPTION
 
 Download the Flash video from the web page given in C<URL>, choosing a
-suitable filename. Use C<--filename> if you want to set the filename
-yourself. If C<search> is specified (either quoted or unquoted),
+suitable filename.
+
+Alternatively if C<search> is specified (either quoted or unquoted),
 C<get_flash_videos> will search Google Video for C<search>, and present a
-list of results.
+list of videos to download.
 
 I<get-flash-videos> attempts to support many video sites, therefore there is no
 list of supported sites in this manual page as it frequently changes, see the
