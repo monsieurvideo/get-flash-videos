@@ -1,3 +1,14 @@
+get-flash-videos (1.10-1) stable; urgency=low
+
+  * Support for searching Google Video and downloading matching videos.
+
+  * Handle rtmpdump 1.5 output (we now need version 1.5, won't work very well
+    on older versions).
+
+  * Fixes for Mtvnservices sites requiring SWF verification.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Mon, 11 May 2009 18:11:09 +0100
+
 get-flash-videos (1.9-1) stable; urgency=low
 
   * Add support for Mtvnservices (used by various sites, including
