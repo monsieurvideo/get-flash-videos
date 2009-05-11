@@ -56,7 +56,7 @@ sub download {
 
     for(@parts) {
       # Hide almost everything from rtmpdump, it's less confusing this way.
-      if(/^((?:DEBUG:|WARNING:|Closing connection).*)\n/) {
+      if(/^((?:DEBUG:|WARNING:|Closing connection|ERROR: No playpath found).*)\n/) {
         debug "rtmpdump: $1";
       } elsif(/^(ERROR: .*)\n/) {
         info "rtmpdump: $1";

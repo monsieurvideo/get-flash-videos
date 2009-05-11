@@ -22,7 +22,7 @@ sub find_video {
   }
 
   my ($possible_filename, $actual_url, $title, $got_url);
-  if ($browser->content =~ /<title>(.*?)<\/title>/i) {
+  if ($browser->content =~ /<title>(.*?)<\/title>/is) {
     $title = $1;
     $title =~ s/^(?:\w+\.com)[[:punct:] ]+//gi;
     $title = title_to_filename($title); 
@@ -41,12 +41,14 @@ sub find_video {
 
   if(!$got_url) {
     RE: for my $regex(
-        qr{(?si)<embed.*flashvars=["']?([^"'>]+)},
-        qr{(?si)<embed.*src=["']?([^"'>]+)},
+        qr{(?si)<embed.*?flashvars=["']?([^"'>]+)},
+        qr{(?si)<embed.*?src=["']?([^"'>]+)},
         qr{(?si)<object[^>]*>.*?<param [^>]*value=["']?([^"'>]+)},
+        qr{(?si)<object[^>]*>(.*?)</object>},
         # Attempt to handle scripts using flashvars / swfobject
         qr{(?si)<script[^>]*>(.*?)</script>}) {
-      for my $param($browser->content =~ /$regex/g) {
+
+      for my $param($browser->content =~ /$regex/gi) {
         ($actual_url, $possible_filename) = find_file_param($browser->clone, $param);
 
         if($actual_url) {
@@ -76,9 +78,11 @@ sub find_video {
 sub find_file_param {
   my($browser, $param) = @_;
 
+
   if($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/i
       || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
-      || $param =~ /['"=](.*?@{[EXTENSIONS]})/i) {
+      || $param =~ /['"=](.*?@{[EXTENSIONS]})/i
+      || $param =~ /([^ ]+@{[EXTENSIONS]})/i) {
     my $file = $1;
 
     my $actual_url = guess_file($browser, $file);

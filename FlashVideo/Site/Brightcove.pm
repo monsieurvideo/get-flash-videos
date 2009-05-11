@@ -6,7 +6,7 @@ use FlashVideo::Utils;
 use MIME::Base64;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $embed_url) = @_;
 
   my $has_amf_packet = eval { require Data::AMF::Packet };
   if (!$has_amf_packet) {
@@ -24,15 +24,20 @@ sub find_video {
   $player_id ||= ($browser->content =~ /flashVars.*playerID=(\d+)/i)[0];
   $video_id ||= ($browser->content =~ /flashVars.*videoID=(\d+)/i)[0];
 
-  # Support "viral" videos
-  my $current_url = $browser->uri->as_string;
-  if (!$video_id and $current_url =~ /bctid=(\d+)/) {
-    $video_id = $1;
-  }
-
   if(!$player_id && $browser->content =~ /brightcove.player.create\(['"]?(\d+)['"]?,\s*['"]?(\d+)/) {
     $video_id = $1;
     $player_id = $2;
+  }
+
+  # Support "viral" videos
+  for my $url($browser->uri->as_string, $embed_url) {
+    if($url =~ /bctid=(\d+)/) {
+      $video_id ||= $1;
+    }
+
+    if($url =~ /bcpid(\d+)/) {
+      $player_id ||= $1;
+    }
   }
 
   if (!$player_id) {
@@ -128,6 +133,8 @@ EOF
 
 sub can_handle {
   my($self, $browser, $url) = @_;
+
+  return 1 if $url && URI->new($url)->host eq 'link.brightcove.com';
 
   return $browser->content =~ /(playerI[dD]|brightcove.player.create)/
     && $browser->content =~ /brightcove/i;
