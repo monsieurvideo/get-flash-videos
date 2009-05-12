@@ -14,8 +14,15 @@ sub title_to_filename {
   my $has_extension = $title =~ /\.[a-z0-9]{3,4}$/;
 
   $title = decode_entities($title);
+
+  # Some sites have double-encoded entities, so handle this
+  if ($title =~ /&(?:\w+|#(?:\d+|x[A-F0-9]+));/) {
+    # Double-encoded - decode again
+    $title = decode_entities($title);
+  }
+
   $title =~ s/\s+/_/g;
-  $title =~ s/[^\w\-,()]/_/g;
+  $title =~ s/[^\w\-,()&]/_/g;
   $title =~ s/^_+|_+$//g;   # underscores at the start and end look bad
 
   $title .= ".$type" unless $has_extension;
