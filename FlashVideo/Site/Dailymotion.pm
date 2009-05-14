@@ -10,11 +10,8 @@ sub find_video {
 
   $browser->allow_redirects;
 
-  my $filename;
-  if ($browser->content =~ /<h1[^>]*>(.*?)<\//) {
-    $filename = title_to_filename($1);
-  }
-  $filename ||= get_video_filename();
+  $browser->content =~ /<h1[^>]*>(.*?)<\//;
+  my $filename = title_to_filename($1);
 
   my $video;
   if ($browser->content =~ /"video", "([^"]+)/) {

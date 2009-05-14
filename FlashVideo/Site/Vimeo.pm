@@ -31,7 +31,7 @@ sub find_video {
     die "Couldn't parse Vimeo XML : $@";
   }
 
-  my $filename = title_to_filename($xml->{video}->{caption}) || get_video_filename();
+  my $filename = title_to_filename($xml->{video}->{caption});
   my $request_signature = $xml->{request_signature};
   my $request_signature_expires = $xml->{request_signature_expires};
 

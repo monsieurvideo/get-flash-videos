@@ -32,8 +32,7 @@ sub find_video {
   $browser->get($embed_url);
 
   if ($browser->content =~ /&source=(http.*?flv)&/) {
-    return (uri_unescape($1), (title_to_filename($title) ||
-        get_video_filename()) );
+    return uri_unescape($1), title_to_filename($title);
   }
   else {
     die "Couldn't extract Flash video URL from embed page";

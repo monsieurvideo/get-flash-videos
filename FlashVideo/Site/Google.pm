@@ -23,15 +23,11 @@ sub find_video {
     $url =~ s/^=//;
   }
 
-  my $filename;
-  if ($browser->content =~ /<title>(.*?)<\/title>/) {
-    $filename = title_to_filename($1);
-  }
-  $filename ||= get_video_filename();
+  my $filename = title_to_filename(extract_title($browser));
 
   $browser->allow_redirects;
 
-  return ($url, $filename);
+  return $url, $filename;
 }
 
 sub can_handle {

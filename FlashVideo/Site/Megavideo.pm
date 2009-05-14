@@ -36,7 +36,7 @@ sub find_video {
   my $s  = ($browser->content =~ /\ss="(\d+)/)[0];
 
   my $title = uri_unescape(($browser->content =~ /title="([^"]+)/)[0]);
-  my $filename = title_to_filename($title) || get_video_filename();
+  my $filename = title_to_filename($title);
 
   my $url = "http://www$s.$site/files/" . _decrypt($un, $k1, $k2) . "/";
 

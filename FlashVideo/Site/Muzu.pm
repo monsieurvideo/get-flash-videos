@@ -8,11 +8,8 @@ use HTML::Entities;
 sub find_video {
   my ($self, $browser) = @_;
 
-  my $filename;
-  if ($browser->content =~ /id="trackHeading">(.*?)</) {
-    $filename = title_to_filename(decode_entities($1));
-  }
-  $filename ||= get_video_filename();
+  $browser->content =~ /id="trackHeading">(.*?)</;
+  my $filename = title_to_filename(decode_entities($1));
 
   my $flashvars = ($browser->content =~ m'flashvars:"([^"]+)')[0];
   die "Unable to extract flashvars" unless $flashvars;

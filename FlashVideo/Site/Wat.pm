@@ -18,7 +18,7 @@ sub find_video {
   my $title = json_escape(($browser->content =~ /title":"(.*?)",/)[0]);
   my $url   = json_escape(($browser->content =~ /files.*?url":"(.*?)",/)[0]);
 
-  my $filename = title_to_filename($title) || get_video_filename();
+  my $filename = title_to_filename($title);
 
   $browser->allow_redirects;
 
@@ -31,8 +31,6 @@ sub json_escape {
 
   $s =~ s/\\u([0-9a-f]{1,4})/chr hex $1/eg;
   $s =~ s/\\//g;
-
-  eval { require utf8 } && utf8::upgrade($s);
 
   return $s;
 }

@@ -3,6 +3,7 @@ package FlashVideo::Site::Youtube;
 
 use strict;
 use constant MAX_REDIRECTS => 5;
+use Encode;
 use FlashVideo::Utils;
 
 sub find_video {
@@ -79,22 +80,22 @@ sub find_video {
     die "Couldn't extract mysterious t parameter";
   }
 
-  my $file_functor = sub {
-    my($type) = @_;
+  my $page_info = extract_info($browser);
 
-    if ($browser->content =~ /<meta name="title" content="(.+?)" ?\/? ?>/ or
-        $browser->content =~ /<div id="vidTitle">\s+<span ?>(.+?)<\/span>/ or
-        $browser->content =~ /<div id="watch-vid-title">\s*<div ?>(.+?)<\/div>/) {
-      return title_to_filename($1, $type);
-    } else {
-      # Have to make up own our filename :( 
-      return get_video_filename($type);
+  my $title;
+  if ($page_info->{meta_title}) {
+    $title = $page_info->{meta_title};
+  } elsif ($browser->content =~ /<div id="vidTitle">\s+<span ?>(.+?)<\/span>/ or
+      $browser->content =~ /<div id="watch-vid-title">\s*<div ?>(.+?)<\/div>/) {
+    $title = $1;
+
+    if($page_info->{charset}) {
+      $title = decode($page_info->{charset}, $title);
     }
-  };
+  }
 
   my $fetcher = sub {
     my($url, $filename) = @_;
-    my $browser = $browser->clone;
     my $response = $browser->get($url);
     my $redirects = 0;
     while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
@@ -111,17 +112,17 @@ sub find_video {
 
   # Try HD
   my @ret = $fetcher->("http://youtube.com/get_video?fmt=22&video_id=$video_id&t=$t",
-    $file_functor->("mp4"));
+    title_to_filename($title, "mp4"));
   return @ret if @ret;
 
   # Try HQ
   my @ret = $fetcher->("http://youtube.com/get_video?fmt=18&video_id=$video_id&t=$t",
-    $file_functor->("mp4"));
+    title_to_filename($title, "mp4"));
   return @ret if @ret;
 
   # Otherwise get normal
   my @ret = $fetcher->("http://youtube.com/get_video?video_id=$video_id&t=$t",
-    $file_functor->());
+    title_to_filename($title));
 
   die "Unable to find video URL" unless @ret;
 

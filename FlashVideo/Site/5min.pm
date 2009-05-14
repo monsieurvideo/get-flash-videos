@@ -7,11 +7,7 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser) = @_;
 
-  my $filename;
-  if ($browser->content =~ /<meta name="title" content="(.+?)"/s) {
-    $filename = title_to_filename($1);
-  }
-  $filename ||= get_video_filename();
+  my $filename = title_to_filename(extract_info($browser)->{meta_title});
 
   my $url;
   if ($browser->content =~ m{videoID=(\d+)}) {
@@ -31,7 +27,7 @@ sub find_video {
     $url = $1 if $res->content =~ /vidURL\W+([^"]+)/;
   }
 
-  return ($url, $filename);
+  return $url, $filename;
 }
 
 1;

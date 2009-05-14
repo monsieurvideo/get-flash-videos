@@ -22,11 +22,7 @@ sub find_video {
   }
 
   my ($possible_filename, $actual_url, $title, $got_url);
-  if ($browser->content =~ /<title>(.*?)<\/title>/is) {
-    $title = $1;
-    $title =~ s/^(?:\w+\.com)[[:punct:] ]+//gi;
-    $title = title_to_filename($title); 
-  }
+  $title = extract_title($browser);
 
   my @flv_urls = map {
     (m{http://.+?(http://.+?@{[EXTENSIONS]})}i) ? $1 : $_
@@ -65,8 +61,12 @@ sub find_video {
   # (not just numbers)..
   push @filenames, $possible_filename if $possible_filename
     && $possible_filename !~ /^[0-9_.]+@{[EXTENSIONS]}$/;
+
   # The title of the page, if it isn't similar to the filename..
-  push @filenames, $title if $title && $title !~ /\Q$possible_filename\E/i;
+  my $ext = ($actual_url =~ /(\w+)$/)[0];
+  push @filenames, title_to_filename($title, $ext) if
+    $title && $title !~ /\Q$possible_filename\E/i;
+
   # A title with just the timestamp in it..
   push @filenames, get_video_filename() if !@filenames;
   

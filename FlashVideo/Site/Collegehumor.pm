@@ -32,8 +32,8 @@ sub find_video {
   }
 
   my $title = $xml->{video}->{caption};
-  $title = ($browser->content =~ /<title>(.*?)[|<]/)[0] if ref $title;
-  my $filename = title_to_filename($title) || get_video_filename();
+  $title = extract_title($browser) if ref $title;
+  my $filename = title_to_filename($title);
 
   my $url = $xml->{video}->{file};
 

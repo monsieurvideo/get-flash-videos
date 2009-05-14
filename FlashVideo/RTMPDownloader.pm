@@ -74,6 +74,11 @@ sub download {
         for my $l(split /\n/) {
           info $l if /\w/;
         }
+
+        if(/open3/) {
+          error "\nMake sure you have 'rtmpdump' installed and available on your PATH.";
+          return 0;
+        }
       } else {
         # Hack; assume lack of newline means it was an incomplete read..
         $buf = $_;

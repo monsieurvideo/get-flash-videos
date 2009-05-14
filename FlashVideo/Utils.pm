@@ -4,12 +4,62 @@ package FlashVideo::Utils;
 use strict;
 use base 'Exporter';
 use HTML::Entities;
+use HTML::TokeParser;
+use Encode;
 
-our @EXPORT = qw(title_to_filename get_video_filename debug info error);
+our @EXPORT = qw(extract_title extract_info title_to_filename get_video_filename
+  debug info error);
+
+sub extract_title {
+  my($browser) = @_;
+  return extract_info($browser)->{title};
+}
+
+sub extract_info {
+  my($browser) = @_;
+  my($title, $meta_title);
+
+  my $charset = parse_charset($browser->response->header("Content-type"));
+
+  my $p = HTML::TokeParser->new(\$browser->content);
+  while(my $token = $p->get_tag("title", "meta")) {
+    my($tag, $attr) = @$token;
+
+    if($tag eq 'meta' && $attr->{"http-equiv"} =~ /Content-type/i) {
+      $charset ||= parse_charset($attr->{content});
+    } elsif($tag eq 'meta' && $attr->{name} =~ /title/i) {
+      $meta_title = $attr->{content};
+    } elsif($tag eq 'title') {
+      $title = $p->get_trimmed_text;
+    }
+  }
+
+  if($charset) {
+    $title = decode($charset, $title);
+    $meta_title = decode($charset, $meta_title);
+  }
+
+  return {
+    title => $title, 
+    meta_title => $meta_title,
+    charset => $charset
+  };
+}
+
+sub parse_charset {
+  my($field) = @_;
+  return(($field =~ /;\s*charset=([^ ]+)/i)[0]);
+}
 
 sub title_to_filename {
   my($title, $type) = @_;
   $type ||= "flv";
+
+  # Extract the extension if we're passed a URL.
+  $type = $1 if $type =~ /\.(\w+)$/;
+
+  # We want \w below to match non-ASCII characters.
+  utf8::upgrade($title);
 
   my $has_extension = $title =~ /\.[a-z0-9]{3,4}$/;
 
@@ -24,6 +74,9 @@ sub title_to_filename {
   $title =~ s/\s+/_/g;
   $title =~ s/[^\w\-,()&]/_/g;
   $title =~ s/^_+|_+$//g;   # underscores at the start and end look bad
+ 
+  # If we have nothing then return a filestamped filename.
+  return get_video_filename($type) unless $title;
 
   $title .= ".$type" unless $has_extension;
   return $title;

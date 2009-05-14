@@ -21,11 +21,7 @@ sub find_video {
     die "Couldn't find gdaKey parameter.";
   }
 
-  my $filename;
-  if ($browser->content =~ /<title>(.*?)<\/title>/) {
-    $filename = title_to_filename($1);
-  }
-  $filename ||= get_video_filename();
+  my $filename = title_to_filename(extract_title($browser));
 
   return ($url, $filename);
 }

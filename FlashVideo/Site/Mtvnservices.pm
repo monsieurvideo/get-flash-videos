@@ -54,8 +54,7 @@ sub handle_feed {
   $browser->get($feed);
   my $xml = XML::Simple::XMLin($browser->content);
 
-  my $filename = title_to_filename($xml->{channel}->{title})
-    || get_video_filename();
+  my $filename = title_to_filename($xml->{channel}->{title});
 
   my $items = $xml->{channel}->{item};
   my $item = ref $items eq 'ARRAY' ?

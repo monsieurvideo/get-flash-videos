@@ -7,10 +7,10 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser) = @_;
 
-  my $title = ($browser->content =~ /<title>(.*?)[<]/)[0];
+  my $title = extract_title($browser);
   $title =~ s/^\w+\s+-\s*//;
   $title =~ s/\s*-\s+\w+$//;
-  my $filename = title_to_filename($title) || get_video_filename();
+  my $filename = title_to_filename($title);
 
   my $url = "http://cache." . $browser->uri->host . "/assets/video/" .
     ($browser->content =~ /newVideoPlayer\("([^"]+)/)[0];

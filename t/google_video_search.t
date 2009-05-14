@@ -1,7 +1,6 @@
 #!perl
 use strict;
 use lib qw(..);
-use constant DEBUG => $ENV{DEBUG};
 use Test::More tests => 2;
 use FlashVideo::GoogleVideoSearch;
 

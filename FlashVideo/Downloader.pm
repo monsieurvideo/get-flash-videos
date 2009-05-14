@@ -216,6 +216,9 @@ sub _check_magic {
   # FLV
   if(substr($data, 0, 3) eq 'FLV') {
     return 1;
+  # MP3
+  } elsif(substr($data, 0, 3) eq 'ID3') {
+    return 1;
   # ASF
   } elsif(substr($data, 0, 4) eq "\x30\x26\xb2\x75") {
     return 1;
@@ -223,7 +226,7 @@ sub _check_magic {
   } elsif(substr($data, 4, 4) eq 'ftyp') {
     return 1;
   # Other QuickTime
-  } elsif(substr($data, 4, 4) eq 'moov') {
+  } elsif(substr($data, 4, 4) eq 'moov' || substr($data, 4, 4) eq 'mdat') {
     return 1;
   }
 

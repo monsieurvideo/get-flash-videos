@@ -23,9 +23,9 @@ sub find_video {
   die "No ID found\n" unless $id;
 
   my $title = ($browser->content =~ /name="title" content="([^"]+)/i)[0];
-  $title = ($browser->content =~ /<title>([^<]+)/i)[0] unless $title;
+  $title = extract_title($browser) unless $title;
 
-  my $filename = title_to_filename($title) || get_video_filename();
+  my $filename = title_to_filename($title);
 
   # I want to follow redirects now.
   $browser->allow_redirects;

@@ -39,10 +39,8 @@ sub find_video {
   my $content = $xml->{channel}->{item}->{"media:group"}->{"media:content"};
 
   my $url = ref $content eq 'ARRAY' ? $content->[0]->{url} : $content->{url};
-  my $extension = ($url =~ /\.(\w+)$/)[0];
 
-  my $filename = title_to_filename($xml->{channel}->{item}->{title}, $extension)
-    || get_video_filename($extension);
+  my $filename = title_to_filename($xml->{channel}->{item}->{title}, $url);
 
   # I want to follow redirects now.
   $browser->allow_redirects;
