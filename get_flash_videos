@@ -36,6 +36,9 @@ EOF
 use constant USAGE => VER_INFO . <<EOF;
 
 Usage: $0 [OPTION]... url
+       $0 [OPTION]... search string
+
+Downloads video at 'url' or searches Google Video Search for 'search string'.
 
 Options:
   -d --debug    Print extra debugging information.
