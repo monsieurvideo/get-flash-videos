@@ -105,6 +105,7 @@ if($opt{version}) {
 }
 
 binmode STDERR, ":utf8";
+binmode STDOUT, ":utf8";
 
 my (@urls) = @ARGV;
 my $url = $urls[0];

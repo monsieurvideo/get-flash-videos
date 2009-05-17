@@ -19,36 +19,21 @@ sub extract_info {
   my($browser) = @_;
   my($title, $meta_title);
 
-  my $charset = parse_charset($browser->ct);
-
   my $p = HTML::TokeParser->new(\$browser->content);
   while(my $token = $p->get_tag("title", "meta")) {
     my($tag, $attr) = @$token;
 
-    if($tag eq 'meta' && $attr->{"http-equiv"} =~ /Content-type/i) {
-      $charset ||= parse_charset($attr->{content});
-    } elsif($tag eq 'meta' && $attr->{name} =~ /title/i) {
+    if($tag eq 'meta' && $attr->{name} =~ /title/i) {
       $meta_title = $attr->{content};
     } elsif($tag eq 'title') {
       $title = $p->get_trimmed_text;
     }
   }
 
-  if($charset && !Encode::is_utf8($title)) {
-    $title = decode($charset, $title);
-    $meta_title = decode($charset, $meta_title);
-  }
-
   return {
     title => $title, 
     meta_title => $meta_title,
-    charset => $charset
   };
-}
-
-sub parse_charset {
-  my($field) = @_;
-  return(($field =~ /;\s*charset=([^ ]+)/i)[0]);
 }
 
 sub title_to_filename {

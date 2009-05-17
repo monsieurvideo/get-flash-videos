@@ -88,10 +88,6 @@ sub find_video {
   } elsif ($browser->content =~ /<div id="vidTitle">\s+<span ?>(.+?)<\/span>/ or
       $browser->content =~ /<div id="watch-vid-title">\s*<div ?>(.+?)<\/div>/) {
     $title = $1;
-
-    if($page_info->{charset}) {
-      $title = decode($page_info->{charset}, $title);
-    }
   }
 
   my $fetcher = sub {
