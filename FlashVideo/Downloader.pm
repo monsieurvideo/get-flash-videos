@@ -6,7 +6,10 @@ use FlashVideo::Utils;
 
 sub new {
   my $class = shift;
-  my $self = {};
+
+  my $self = {
+    has_readkey => eval { require Term::ReadKey }
+  };
 
   bless $self, $class;
   return $self;
@@ -155,6 +158,8 @@ sub progress {
   return unless -t STDERR;
   return if $::opt{quiet};
 
+  my $progress_text;
+
   if ($self->{content_length}) {
     my $percent = int(
       ($self->{downloaded} / $self->{content_length}) * 100
@@ -162,17 +167,46 @@ sub progress {
     if ( ($percent != $self->{percent}) and $percent) {
       my $downloaded_kib = _bytes_to_kib($self->{downloaded});
       my $total_kib      = _bytes_to_kib($self->{content_length});
-      print STDERR "\r$self->{filename}: $percent% " .
-      "($downloaded_kib / $total_kib KiB)";
+      $progress_text = ": $percent% ($downloaded_kib / $total_kib KiB)";
     }
     $self->{percent} = $percent;
-  }
-  else {
+  } else {
     # Handle lame servers that don't tell us how big the file is
     my $data_transferred = _bytes_to_kib($self->{downloaded});;
     if ($data_transferred != $self->{data_transferred}) {
-      print STDERR "\r$self->{filename}: $data_transferred KiB";
+      $progress_text = ": $data_transferred KiB";
     }
+  }
+
+  if($progress_text) {
+    my $width = $self->terminal_width;
+
+    my $filename = $self->{filename};
+    my $filename_len = $width - length($progress_text);
+
+    if($filename_len < length $filename) {
+      # 3 for "..."
+      my $rem = 3 + length($filename) - $filename_len;
+      # Try and chop off somewhere near the end, but not the very end..
+      my $pos = length($filename) - $rem - 12;
+      $pos = 0 if $pos < 0;
+      substr($filename, $pos, $rem) = "...";
+    }
+
+    print STDERR "\r$filename$progress_text";
+  }
+}
+
+sub terminal_width {
+  my($self) = @_;
+
+  if($self->{has_readkey}
+      && (my($width) = Term::ReadKey::GetTerminalSize())) {
+    return $width;
+  } elsif($ENV{COLUMNS}) {
+    return $ENV{COLUMNS};
+  } else {
+    return 80;
   }
 }
 

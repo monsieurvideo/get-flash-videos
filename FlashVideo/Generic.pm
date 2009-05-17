@@ -53,6 +53,16 @@ sub find_video {
         }
       }
     }
+
+    if(!$got_url) {
+      for my $iframe($browser->content =~ /<iframe[^>]+src=["']?([^"'>]+)/gi) {
+        $iframe = URI->new_abs($iframe, $browser->uri);
+        debug "Found iframe: $iframe";
+        my $sub_browser = $browser->clone;
+        $sub_browser->get($iframe);
+        ($got_url, $actual_url) = eval { $self->find_video($sub_browser) };
+      }
+    }
   }
 
   my @filenames;
@@ -78,7 +88,6 @@ sub find_video {
 sub find_file_param {
   my($browser, $param) = @_;
 
-
   if($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/i
       || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
       || $param =~ /['"=](.*?@{[EXTENSIONS]})/i
@@ -91,6 +100,10 @@ sub find_file_param {
 
       return $actual_url, $possible_filename;
     }
+  }
+
+  if($param =~ m{(rtmp://[^ &"']+)}) {
+    info "This looks like RTMP ($1), no generic support yet..";
   }
   
   return;

@@ -19,7 +19,7 @@ sub extract_info {
   my($browser) = @_;
   my($title, $meta_title);
 
-  my $charset = parse_charset($browser->response->header("Content-type"));
+  my $charset = parse_charset($browser->ct);
 
   my $p = HTML::TokeParser->new(\$browser->content);
   while(my $token = $p->get_tag("title", "meta")) {
@@ -34,7 +34,7 @@ sub extract_info {
     }
   }
 
-  if($charset) {
+  if($charset && !Encode::is_utf8($title)) {
     $title = decode($charset, $title);
     $meta_title = decode($charset, $meta_title);
   }

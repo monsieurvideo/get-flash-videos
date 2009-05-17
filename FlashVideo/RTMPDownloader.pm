@@ -91,7 +91,7 @@ sub download {
     }
   }
 
-  if(!$self->check_file($rtmp_data->{flv})) {
+  if(-s $rtmp_data->{flv} < 100 || !$self->check_file($rtmp_data->{flv})) {
     error "Download failed, no valid file downloaded";
     unlink $rtmp_data->{flv};
     return 0;

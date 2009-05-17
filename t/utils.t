@@ -18,14 +18,8 @@ use FlashVideo::Utils;
     return $self->{content};
   }
 
-  sub response {
+  sub ct {
     my($self) = @_;
-    return $self;
-  }
-
-  sub header {
-    my($self, $name) = @_;
-    die unless $name =~ /Content-type/i;
     return $self->{ct};
   }
 }
