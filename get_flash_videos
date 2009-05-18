@@ -69,6 +69,7 @@ Check for updates by running: $0 --update
 
 If the latest version does not support this please open a bug (or
 contribute a patch!) at http://code.google.com/p/get-flash-videos/
+make sure you include the output with --debug enabled.
 EOF
 
 our %opt = (
