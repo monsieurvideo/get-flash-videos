@@ -1,3 +1,19 @@
+get-flash-videos (1.11-1) stable; urgency=low
+
+  * Added support for Flickr, fora.tv, Gawker.
+
+  * Fixes to support more embedding types for Brightcove.
+
+  * Fixes to generic to work on more sites.
+
+  * Some i18n fixes for title extraction.
+
+  * Fix for the download progress on long filenames.
+
+  * Fix for a build issue in the combined script.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Mon, 18 May 2009 20:50:40 +0100
+
 get-flash-videos (1.10-1) stable; urgency=low
 
   * Support for searching Google Video and downloading matching videos.
