@@ -1,3 +1,9 @@
+get-flash-videos (1.12-1) jaunty; urgency=low
+
+  * Add missing WWW::Mechanize::Link to the combined script, so search works.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Mon, 18 May 2009 20:55:46 +0100
+
 get-flash-videos (1.11-1) stable; urgency=low
 
   * Added support for Flickr, fora.tv, Gawker.
