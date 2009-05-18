@@ -31,7 +31,7 @@ $(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules \
 # need HTML::Parser, as this is XS, and optionally XML::Simple, but LWP and
 # Mechanize are included by this).
 
-COMBINED_SOURCES = utils/combine-head $(MAIN) .sitemodules
+COMBINED_SOURCES = utils/combine-head .sitemodules $(MAIN)
 
 combined-$(MAIN)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
