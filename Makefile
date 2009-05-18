@@ -70,7 +70,7 @@ release: release-main deb
 release-main: $(MAIN)-$(VERSION) changelog-update wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 	svn commit -m "Version $(VERSION)" debian/changelog
-	svn cp https://get-flash-videos.googlecode.com/svn/trunk https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION)
+	svn cp -m "Version $(VERSION)" https://get-flash-videos.googlecode.com/svn/trunk https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION)
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^

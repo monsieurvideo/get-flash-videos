@@ -14,5 +14,6 @@ use HTTP::Config ();
 use HTTP::Request::Common ();
 use LWP::Protocol::http ();
 use XML::Simple ();
+use WWW::Mechanize::Link ();
 
 1;
