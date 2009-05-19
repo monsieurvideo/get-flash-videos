@@ -122,6 +122,8 @@ sub find_video {
 
   die "Unable to find video URL" unless @ret;
 
+  $browser->allow_redirects;
+
   return @ret;
 }
 

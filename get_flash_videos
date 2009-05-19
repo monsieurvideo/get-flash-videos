@@ -27,11 +27,22 @@ use FlashVideo::RTMPDownloader;
 use FlashVideo::Utils;
 use FlashVideo::GoogleVideoSearch;
 
-use constant VERSION => "1.12";
+use constant VERSION => "1.13";
 
 use constant VER_INFO => <<EOF;
 get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
 EOF
+
+our %opt = (
+  yes => 0,
+  filename => '',
+  version => 0,
+  update => 0,
+  play => 0,
+  player => "mplayer -really-quiet %s",
+  debug => 0,
+  quiet => 0,
+);
 
 use constant USAGE => VER_INFO . <<EOF;
 
@@ -44,7 +55,7 @@ Options:
   -d --debug    Print extra debugging information.
   -f --filename Filename to save the video as.
   -p --play     Start playing the video once enough has been downloaded.
-     --player   Player to use for the video (default: mplayer -really-quiet %s).
+     --player   Player to use for the video (default: $opt{player}).
   -q --quiet    Be quiet (only print errors).
   -u --update   Update to latest version.
   -v --version  Print version.
@@ -71,17 +82,6 @@ If the latest version does not support this please open a bug (or
 contribute a patch!) at http://code.google.com/p/get-flash-videos/
 make sure you include the output with --debug enabled.
 EOF
-
-our %opt = (
-  yes => 0,
-  filename => '',
-  version => 0,
-  update => 0,
-  play => 0,
-  player => "mplayer -really-quiet %s",
-  debug => 0,
-  quiet => 0,
-);
 
 read_conf();
 
@@ -130,10 +130,10 @@ if ($search) {
     }
     else {
       print "Search for '$search' found these results:\n";
-      my $count = 1;
-      foreach my $result (@results) {
 
-        print sprintf("[%2d]", $count) . " $result->{name}\n";
+      my $count = 1;
+      for my $result(@results) {
+        printf "[%2d] %s\n", $count, $result->{name};
         $count++;
       }
 
@@ -143,7 +143,7 @@ if ($search) {
       $choice--;
       if (!$results[$choice]) {
         print STDERR "'$choice' is an invalid choice.\n";
-        exit;
+        exit 1;
       }
 
       $url = $results[$choice]->{url};
@@ -151,7 +151,7 @@ if ($search) {
   }
   else {
     print STDERR "No results found for '$search'.\n";
-    exit;
+    exit 1;
   }
   
 }
