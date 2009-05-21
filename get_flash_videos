@@ -86,15 +86,15 @@ EOF
 read_conf();
 
 GetOptions(
-  "yes|y"      => \$opt{yes},
-  "filename|f" => \$opt{filename},
-  "version|v"  => \$opt{version},
-  "update|u"   => \$opt{update},
-  "help|h"     => \$opt{help},
-  "play|p"     => \$opt{play},
-  "player=s"   => \$opt{player},
-  "debug|d"    => \$opt{debug},
-  "quiet|q"    => \$opt{quiet},
+  "yes|y"        => \$opt{yes},
+  "filename|f=s" => \$opt{filename},
+  "version|v"    => \$opt{version},
+  "update|u"     => \$opt{update},
+  "help|h"       => \$opt{help},
+  "play|p"       => \$opt{play},
+  "player=s"     => \$opt{player},
+  "debug|d"      => \$opt{debug},
+  "quiet|q"      => \$opt{quiet},
 );
 
 if($opt{version}) {
