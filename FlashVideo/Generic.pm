@@ -89,7 +89,7 @@ sub find_file_param {
   my($browser, $param) = @_;
 
   if($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/i
-      || $param =~ /(?:config|playlist)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
+      || $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
       || $param =~ /['"=](.*?@{[EXTENSIONS]})/i
       || $param =~ /([^ ]+@{[EXTENSIONS]})/i) {
     my $file = $1;
