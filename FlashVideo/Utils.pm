@@ -7,8 +7,10 @@ use HTML::Entities;
 use HTML::TokeParser;
 use Encode;
 
+use constant FP_KEY => "Genuine Adobe Flash Player 001";
+
 our @EXPORT = qw(extract_title extract_info title_to_filename get_video_filename
-  debug info error);
+  debug info error swfhash);
 
 sub extract_title {
   my($browser) = @_;
@@ -34,6 +36,26 @@ sub extract_info {
     title => $title, 
     meta_title => $meta_title,
   };
+}
+
+sub swfhash {
+  my($browser, $url) = @_;
+
+  die "Must have Compress::Zlib and Digest::SHA for this RTMP download\n"
+      unless eval {
+        require Compress::Zlib;
+        require Digest::SHA;
+      };
+
+  $browser->get($url);
+
+  my $data = "F" . substr($browser->content, 1, 7)
+                 . Compress::Zlib::uncompress(substr $browser->content, 8);
+
+  return
+    swfsize => length $data,
+    swfhash => Digest::SHA::hmac_sha256_hex($data, FP_KEY),
+    swfUrl  => $url;
 }
 
 sub title_to_filename {

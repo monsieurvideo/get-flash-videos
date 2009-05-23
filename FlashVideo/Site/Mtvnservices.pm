@@ -5,8 +5,6 @@ use strict;
 use FlashVideo::Utils;
 use URI::Escape;
 
-use constant FP_KEY => "Genuine Adobe Flash Player 001";
-
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
@@ -81,31 +79,11 @@ sub handle_feed {
       flv => $filename,
       rtmp => $url,
       pageUrl => $page_url,
-      $self->swfhash($browser, "http://media.mtvnservices.com/player/release/")
+      swfhash($browser, "http://media.mtvnservices.com/player/release/")
     };
   }
 
   return $url, $filename;
-}
-
-sub swfhash {
-  my($self, $browser, $url) = @_;
-
-  die "Must have Compress::Zlib and Digest::SHA for Mtvnservices RTMP downloads\n"
-      unless eval {
-        require Compress::Zlib;
-        require Digest::SHA;
-      };
-
-  $browser->get($url);
-
-  my $data = "F" . substr($browser->content, 1, 7)
-                 . Compress::Zlib::uncompress(substr $browser->content, 8);
-
-  return
-    swfsize => length $data,
-    swfhash => Digest::SHA::hmac_sha256_hex($data, FP_KEY),
-    swfUrl  => $url;
 }
 
 sub can_handle {
