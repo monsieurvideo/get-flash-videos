@@ -8,9 +8,24 @@ use HTML::TokeParser;
 use Encode;
 
 use constant FP_KEY => "Genuine Adobe Flash Player 001";
+use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv)/;
+use constant MAX_REDIRECTS => 5;
 
-our @EXPORT = qw(extract_title extract_info title_to_filename get_video_filename
-  debug info error swfhash);
+our @EXPORT = qw(debug info error
+  extract_title extract_info title_to_filename get_video_filename url_exists
+  EXTENSIONS);
+
+sub debug(@) {
+  print STDERR "@_\n" if $::opt{debug};
+}
+
+sub info(@) {
+  print STDERR "@_\n" unless $::opt{quiet};
+}
+
+sub error(@) {
+  print STDERR "@_\n";
+}
 
 sub extract_title {
   my($browser) = @_;
@@ -58,19 +73,35 @@ sub swfhash {
     swfUrl  => $url;
 }
 
+sub url_exists {
+  my($browser, $url) = @_;
+
+  $browser->head($url);
+  my $response = $browser->response;
+  return $url if $response->code == 200;
+
+  my $redirects = 0;
+  while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
+      and ($redirects < MAX_REDIRECTS) ) {
+    $url = $response->header('Location');
+    $response = $browser->head($url);
+    debug "Redirected to $url (" . $response->code . ")";
+    if ($response->code == 200) {
+      return $url;
+    }
+    $redirects++;
+  }
+}
+
 sub title_to_filename {
   my($title, $type) = @_;
   $type ||= "flv";
 
   # Extract the extension if we're passed a URL.
-  $type = $1 if $type =~ /\.(\w+)$/;
+  $type = substr $1, 1 if $title =~ s/(@{[EXTENSIONS]})$//;
 
   # We want \w below to match non-ASCII characters.
   utf8::upgrade($title);
-
-  my $has_extension = $title =~ /\.[a-z0-9]{3,4}$/;
-
-  $title = decode_entities($title);
 
   # Some sites have double-encoded entities, so handle this
   if ($title =~ /&(?:\w+|#(?:\d+|x[A-F0-9]+));/) {
@@ -85,8 +116,7 @@ sub title_to_filename {
   # If we have nothing then return a filestamped filename.
   return get_video_filename($type) unless $title;
 
-  $title .= ".$type" unless $has_extension;
-  return $title;
+  return "$title.$type";
 }
 
 sub get_video_filename {
@@ -101,18 +131,6 @@ sub get_timestamp_in_iso8601_format {
   return sprintf("%04d%02d%02d%02d%02d%02d", 
                  $time->year + 1900, $time->mon + 1, 
                  $time->mday, $time->hour, $time->min, $time->sec); 
-}
-
-sub debug(@) {
-  print STDERR "@_\n" if $::opt{debug};
-}
-
-sub info(@) {
-  print STDERR "@_\n" unless $::opt{quiet};
-}
-
-sub error(@) {
-  print STDERR "@_\n";
 }
 
 1;

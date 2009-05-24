@@ -2,7 +2,6 @@
 package FlashVideo::Site::Youtube;
 
 use strict;
-use constant MAX_REDIRECTS => 5;
 use Encode;
 use FlashVideo::Utils;
 
@@ -92,32 +91,23 @@ sub find_video {
 
   my $fetcher = sub {
     my($url, $filename) = @_;
-    my $response = $browser->get($url);
-    my $redirects = 0;
-    while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
-             and ($redirects < MAX_REDIRECTS) ) {
-      my $url = $response->header('Location');
-      $response = $browser->head($url);
-      if ($response->code == 200) {
-        return ($url, $filename);
-      }
-      $redirects++;
-    }
+    $url = url_exists($browser, $url, 1);
+    return $url, $filename if $url;
     return;
   };
 
   # Try HD
-  my @ret = $fetcher->("http://youtube.com/get_video?fmt=22&video_id=$video_id&t=$t",
+  my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=22&video_id=$video_id&t=$t",
     title_to_filename($title, "mp4"));
   return @ret if @ret;
 
   # Try HQ
-  my @ret = $fetcher->("http://youtube.com/get_video?fmt=18&video_id=$video_id&t=$t",
+  my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=18&video_id=$video_id&t=$t",
     title_to_filename($title, "mp4"));
   return @ret if @ret;
 
   # Otherwise get normal
-  my @ret = $fetcher->("http://youtube.com/get_video?video_id=$video_id&t=$t",
+  my @ret = $fetcher->("http://www.youtube.com/get_video?video_id=$video_id&t=$t",
     title_to_filename($title));
 
   die "Unable to find video URL" unless @ret;

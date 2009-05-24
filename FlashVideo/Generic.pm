@@ -2,9 +2,6 @@
 package FlashVideo::Generic;
 
 use strict;
-use constant MAX_REDIRECTS => 5;
-use constant EXTENSIONS    => qr/\.(?:flv|mp4|mov|wmv)/;
-
 use FlashVideo::Utils;
 use Memoize;
 use LWP::Simple;
@@ -32,10 +29,10 @@ sub find_video {
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
     $possible_filename = (split /\//, $flv_urls[-1])[-1];
 
-    ($got_url, $actual_url) = url_exists($browser->clone, $flv_urls[-1]);
+    $actual_url = url_exists($browser->clone, $flv_urls[-1]);
   }
 
-  if(!$got_url) {
+  if(!$actual_url) {
     RE: for my $regex(
         qr{(?si)<embed.*?flashvars=["']?([^"'>]+)},
         qr{(?si)<embed.*?src=["']?([^"'>]+)},
@@ -45,16 +42,19 @@ sub find_video {
         qr{(?si)<script[^>]*>(.*?)</script>}) {
 
       for my $param($browser->content =~ /$regex/gi) {
-        ($actual_url, $possible_filename) = find_file_param($browser->clone, $param);
+        (my $url, $possible_filename) = find_file_param($browser->clone, $param);
 
-        if($actual_url) {
-          ($got_url, $actual_url) = url_exists($browser->clone, $actual_url);
-          last RE if $got_url;
+        if($url) {
+          my $resolved_url = url_exists($browser->clone, $url);
+          if($resolved_url) {
+            $actual_url = $resolved_url;
+            last RE;
+          }
         }
       }
     }
 
-    if(!$got_url) {
+    if(!$actual_url) {
       for my $iframe($browser->content =~ /<iframe[^>]+src=["']?([^"'>]+)/gi) {
         $iframe = URI->new_abs($iframe, $browser->uri);
         debug "Found iframe: $iframe";
@@ -121,9 +121,9 @@ sub guess_file {
   info "Guessed $orig_uri trying...";
 
   if($orig_uri) {
-    my($exists, $uri) = url_exists($browser, $orig_uri);
+    my $uri = url_exists($browser, $orig_uri);
 
-    if($exists) {
+    if(defined $uri) {
       my $content_type = $browser->response->header("Content-type");
 
       if($content_type =~ m!^(text|application/xml)!) {
@@ -155,25 +155,6 @@ sub guess_file {
   }
 
   return;
-}
-
-sub url_exists {
-  my($browser, $url) = @_;
-
-  $browser->head($url);
-  my $response = $browser->response;
-  return 1, $url if $response->code == 200;
-
-  my $redirects = 0;
-  while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
-      and ($redirects < MAX_REDIRECTS) ) {
-    $url = $response->header('Location');
-    $response = $browser->head($url);
-    if ($response->code == 200) {
-      return 1, $url;
-    }
-    $redirects++;
-  }
 }
 
 1;
