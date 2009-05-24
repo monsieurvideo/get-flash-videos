@@ -50,7 +50,7 @@ sub find_video {
   }
 
   my $playlist = eval {
-    XML::Simple::XMLin($browser->content)
+    XML::Simple::XMLin($browser->content, KeyAttr => {item => 'kind'})
   };
 
   if ($@) {
@@ -58,14 +58,16 @@ sub find_video {
   }
 
   my $sound = ($playlist->{item}->{guidance} !~ /has no sound/);
+
   my $info = $playlist->{item}->{media}->{connection};
+  $info = $playlist->{item}->{programme}->{media}->{connection} unless $info;
 
   $info->{application} ||= "ondemand";
 
   my $data = {
     app      => $info->{application},
     tcUrl    => "rtmp://$info->{server}/$info->{application}",
-    swfUrl   => "http://www.bbc.co.uk/player/emp/2.10.7938_7967/9player.swf",
+    swfUrl   => "http://news.bbc.co.uk/player/emp/2.11.7978_8433/9player.swf",
     pageUrl  => $page_url,
     rtmp     => "rtmp://" .  $info->{server} . "/$info->{application}",
     playpath => $info->{identifier},
