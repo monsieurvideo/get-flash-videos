@@ -6,7 +6,11 @@ use FlashVideo::Utils;
 use URI::Escape;
 
 sub find_video {
-  my($self, $browser) = @_;
+  my($self, $browser, $embed_url) = @_;
+
+  if(URI->new($embed_url)->host eq "embed.break.com") {
+    $browser->get($embed_url);
+  }
 
   if($browser->uri->host eq "embed.break.com") {
     # Embedded video
