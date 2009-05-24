@@ -91,7 +91,8 @@ sub find_file_param {
   if($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/i
       || $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
       || $param =~ /['"=](.*?@{[EXTENSIONS]})/i
-      || $param =~ /([^ ]+@{[EXTENSIONS]})/i) {
+      || $param =~ /([^ ]+@{[EXTENSIONS]})/i
+      || $param =~ /SWFObject\(["']([^"']+)/) {
     my $file = $1;
 
     my $actual_url = guess_file($browser, $file);
@@ -115,12 +116,12 @@ sub guess_file {
   # Contains lots of URI encoding, so try escaping..
   $file = uri_unescape($file) if scalar(() = $file =~ /%[A-F0-9]{2}/gi) > 3;
 
-  my $uri = URI->new_abs($file, $browser->uri);
+  my $orig_uri = URI->new_abs($file, $browser->uri);
 
-  info "Guessed $uri trying...";
+  info "Guessed $orig_uri trying...";
 
-  if($uri) {
-    (my $exists, $uri) = url_exists($browser, $uri);
+  if($orig_uri) {
+    my($exists, $uri) = url_exists($browser, $orig_uri);
 
     if($exists) {
       my $content_type = $browser->response->header("Content-type");
@@ -144,6 +145,9 @@ sub guess_file {
         } else {
           info "Tried $uri, but no video URL found";
         }
+      } elsif($content_type =~ m!application/! && $uri ne $orig_uri) {
+        # We were redirected, maybe something in the new URL?
+        return((find_file_param($browser, $uri))[0]);
       } else {
         return $uri->as_string;
       }
