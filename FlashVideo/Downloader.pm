@@ -129,7 +129,7 @@ sub download {
         }
 
         if(!$self->{downloaded} && length $data > 16) {
-          if(!$self->_check_magic($data)) {
+          if(!$self->check_magic($data)) {
             error "Sorry, file does not look like a media file, aborting.";
             exit 1;
           }
@@ -237,10 +237,10 @@ sub check_file {
   my $data;
   read $fh, $data, 16;
 
-  return $self->_check_magic($data);
+  return $self->check_magic($data);
 }
 
-sub _check_magic {
+sub check_magic {
   my($self, $data) = @_;
 
   # This is a very simple check to ensure we have a media file.

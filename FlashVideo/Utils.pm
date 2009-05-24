@@ -78,6 +78,7 @@ sub url_exists {
 
   $browser->head($url);
   my $response = $browser->response;
+  debug "Exists on $url: " . $response->code;
   return $url if $response->code == 200;
 
   my $redirects = 0;

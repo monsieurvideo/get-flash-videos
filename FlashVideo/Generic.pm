@@ -7,6 +7,10 @@ use Memoize;
 use LWP::Simple;
 use URI::Escape;
 
+my $video_re = qr!http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
+                  # Grab any params that might be used for auth..
+                  (?:\?[-:/a-z0-9%_.?=&]+)?!xi;
+
 sub find_video {
   my ($self, $browser) = @_;
 
@@ -18,12 +22,12 @@ sub find_video {
       unless $browser->success;
   }
 
-  my ($possible_filename, $actual_url, $title, $got_url);
+  my ($possible_filename, $actual_url, $title);
   $title = extract_title($browser);
 
   my @flv_urls = map {
     (m{http://.+?(http://.+?@{[EXTENSIONS]})}i) ? $1 : $_
-  } ($browser->content =~ m{(http://[-:/a-zA-Z0-9%_.?=&]+@{[EXTENSIONS]})}gi);
+  } ($browser->content =~ m{($video_re)}gi);
   if (@flv_urls) {
     memoize("LWP::Simple::head");
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
@@ -60,7 +64,7 @@ sub find_video {
         debug "Found iframe: $iframe";
         my $sub_browser = $browser->clone;
         $sub_browser->get($iframe);
-        ($got_url, $actual_url) = eval { $self->find_video($sub_browser) };
+        ($actual_url) = eval { $self->find_video($sub_browser) };
       }
     }
   }
@@ -80,7 +84,7 @@ sub find_video {
   # A title with just the timestamp in it..
   push @filenames, get_video_filename() if !@filenames;
   
-  return ($actual_url, @filenames) if $got_url;
+  return $actual_url, @filenames if $actual_url;
 
   die "No URLs found";
 }
@@ -121,21 +125,29 @@ sub guess_file {
   info "Guessed $orig_uri trying...";
 
   if($orig_uri) {
-    my $uri = url_exists($browser, $orig_uri);
+    my $uri = url_exists($browser->clone, $orig_uri);
 
-    if(defined $uri) {
+    if($uri) {
       my $content_type = $browser->response->header("Content-type");
 
       if($content_type =~ m!^(text|application/xml)!) {
+        # Just in case someone serves the video itself as text/plain.
+        $browser->add_header("Range", "bytes=0-10000");
         $browser->get($uri);
+        $browser->delete_header("Range");
+
+        if(FlashVideo::Downloader->check_magic($browser->content)
+            || $uri =~ m!$video_re!) {
+          # It's a video..
+          debug "Found a video at $uri";
+          return $uri;
+        }
 
         # If this looks like HTML we have no hope of guessing right, so
         # give up now.
         return if $browser->content =~ /<html[^>]*>/i;
 
-        if($browser->content =~ m!(http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
-            # Grab any params that might be used for auth..
-            (?:\?[-:/a-z0-9%_.?=&]+)?)!xi) {
+        if($browser->content =~ m!($video_re)!) {
           # Found a video URL
           return $1;
         } elsif(!defined $once
@@ -150,6 +162,18 @@ sub guess_file {
         return((find_file_param($browser, $uri))[0]);
       } else {
         return $uri->as_string;
+      }
+    } else {
+      # Try using the location of the .swf file as the base, if it's different.
+      if($browser->content =~ /["']([^ ]+\.swf)/) {
+        my $swf_uri = URI->new_abs($1, $browser->uri);
+        if($swf_uri) {
+          my $new_uri = URI->new_abs($file, $swf_uri);
+          debug "Found SWF: $swf_uri -> $new_uri";
+          if($new_uri ne $uri) {
+            return guess_file($browser, $new_uri);
+          }
+        }
       }
     }
   }
