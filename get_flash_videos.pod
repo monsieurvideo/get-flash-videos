@@ -96,6 +96,32 @@ Options given on the command line will override these options, with the
 exception that it is not currently possible to disable an option enabled in the
 configuration file from the command line.
 
+=head1 EXAMPLES
+
+Play a video (may prompt for filename still, override with -y):
+
+    get_flash_videos -p http://some.site/video 
+
+Download a video (note quotes are required for URLs with special characters
+like C<&> in):
+
+    get_flash_videos "http://some.site/video?f=1&v=1234" 
+
+Play the URL on the clipboard (UNIX):
+
+    xclip -o | xargs get_flash_videos -y -p 
+
+Play the URL on the clipboard (OSX):
+
+    pbpaste | xargs get_flash_videos -y -p 
+
+(Note if there is text on the clipboard rather than a URL above then
+get_flash_videos will search for it).
+
+Play the first video matching "Open Source":
+
+    get_flash_videos -y -p Open Source 
+
 =head1 BUGS
 
 Third party sites are a moving target therefore it is possible support for some
