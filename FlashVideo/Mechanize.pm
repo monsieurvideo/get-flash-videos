@@ -1,6 +1,7 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Mechanize;
 use WWW::Mechanize;
+use FlashVideo::Downloader;
 use Encode;
 
 use strict;
@@ -71,7 +72,7 @@ sub update_html {
 
 sub _parse_charset {
   my($field) = @_;
-  return(($field =~ /;\s*charset=([^-_.:a-z0-9]+)/i)[0]);
+  return(($field =~ /;\s*charset=([-_.:a-z0-9]+)/i)[0]);
 }
 
 1;

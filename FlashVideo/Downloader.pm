@@ -96,10 +96,16 @@ sub download {
               exit 1;
             };
 
-            my($inflate, $status) = Compress::Zlib::inflateInit();
+            my($inflate, $status) = Compress::Zlib::inflateInit(
+              -WindowBits => -Compress::Zlib::MAX_WBITS());
+            error "inflateInit failed: $status" if $status;
 
             $self->{filter} = sub {
               my($data) = @_;
+
+              if(!$self->{downloaded}) {
+                Compress::Zlib::_removeGzipHeader(\$data);
+              }
 
               my($output, $status) = $inflate->inflate($data);
               return $output;
@@ -114,6 +120,8 @@ sub download {
         else {
           $self->{downloaded} = $offset unless $self->{downloaded};
         }
+
+        my $len = length $data;
 
         if($self->{filter}) {
           $data = $self->{filter}->($data);
@@ -135,9 +143,13 @@ sub download {
           }
         }
 
-        $self->{downloaded} += length $data;
+        $self->{downloaded} += $len;
         $self->progress;
     }, ':read_size_hint' => 16384);
+
+  if($browser->response->header("X-Died")) {
+    error $browser->response->header("X-Died");
+  }
 
   close $self->{fh};
 
