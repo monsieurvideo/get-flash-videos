@@ -71,13 +71,14 @@ sub find_video {
 
   my @filenames;
 
+  $possible_filename =~ s/\?.*//;
   # The actual filename, provided it looks like it might be reasonable
   # (not just numbers)..
   push @filenames, $possible_filename if $possible_filename
     && $possible_filename !~ /^[0-9_.]+@{[EXTENSIONS]}$/;
 
   # The title of the page, if it isn't similar to the filename..
-  my $ext = ($actual_url =~ /(\w+)$/)[0];
+  my $ext = substr(($actual_url =~ /(@{[EXTENSIONS]})$/)[0], 1);
   push @filenames, title_to_filename($title, $ext) if
     $title && $title !~ /\Q$possible_filename\E/i;
 
