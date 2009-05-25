@@ -91,10 +91,10 @@ sub download {
                                     + $offset;
 
           if($response->header('Content-encoding') =~ /gzip/i) {
-            # Some idiot is serving us this gzipped, despite us not asking for
-            # that. They need to lay off the crack, but we'll humor them.
-            eval { require Compess::Zlib; } or
-              die "Must have Compress::Zlib installed to download from these jokers.\n";
+            eval { require Compress::Zlib; } or do {
+              error "Must have Compress::Zlib installed to download from this site.\n";
+              exit 1;
+            };
 
             my($inflate, $status) = Compress::Zlib::inflateInit();
 
