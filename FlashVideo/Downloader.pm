@@ -137,12 +137,12 @@ sub download {
 
         $self->{downloaded} += length $data;
         $self->progress;
-    }, ':read_size_hint' => '10240');
+    }, ':read_size_hint' => 16384);
 
   close $self->{fh};
 
   if ($browser->success) {
-    info "\nDone. Saved " . $response->header('Content-Length') . " bytes "
+    info "\nDone. Saved " . ($self->{downloaded} - $offset) . " bytes "
           . "to $file.";
     return 1;
   } else {

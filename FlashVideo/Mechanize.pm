@@ -49,17 +49,20 @@ sub update_html {
     # do the inverse. This is fucking frail and will probably break.
     $html = Encode::encode("iso-8859-1", $html) if Encode::is_utf8($html);
 
-    my $p = HTML::TokeParser->new(\$html);
-    while(my $token = $p->get_tag("meta")) {
-      my($tag, $attr) = @$token;
-      if($tag eq 'meta' && $attr->{"http-equiv"} =~ /Content-type/i) {
-        $charset ||= _parse_charset($attr->{content});
+    # Check this doesn't look like a video..
+    if(!FlashVideo::Downloader->check_magic($html)) {
+      my $p = HTML::TokeParser->new(\$html);
+      while(my $token = $p->get_tag("meta")) {
+        my($tag, $attr) = @$token;
+        if($tag eq 'meta' && $attr->{"http-equiv"} =~ /Content-type/i) {
+          $charset ||= _parse_charset($attr->{content});
+        }
       }
-    }
 
-    if($charset) {
-      eval { $html = decode($charset, $html) };
-      FlashVideo::Utils::error("Failed decoding as $charset: $@") if $@;
+      if($charset) {
+        eval { $html = decode($charset, $html) };
+        FlashVideo::Utils::error("Failed decoding as $charset: $@") if $@;
+      }
     }
   }
 
@@ -68,7 +71,7 @@ sub update_html {
 
 sub _parse_charset {
   my($field) = @_;
-  return(($field =~ /;\s*charset=([^ ]+)/i)[0]);
+  return(($field =~ /;\s*charset=([^-_.:a-z0-9]+)/i)[0]);
 }
 
 1;

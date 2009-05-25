@@ -1,4 +1,4 @@
-get-flash-videos (1.12-1) jaunty; urgency=low
+get-flash-videos (1.12-1) stable; urgency=low
 
   * Add missing WWW::Mechanize::Link to the combined script, so search works.
 
