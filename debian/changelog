@@ -1,4 +1,18 @@
-get-flash-videos (1.12-1) stable; urgency=low
+get-flash-videos (1.13-1) hysterical-hyena; urgency=low
+
+  * Add support for Youku.
+
+  * Fixes for Break, BBC, YouTube.
+
+  * Enhancements to generic support to support some more sites.
+
+  * Bug fix for gzipped downloads.
+
+  * Bug fix for --filename option.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Mon, 25 May 2009 21:07:26 +0100
+
+get-flash-videos (1.12-1) goaty-goodness; urgency=low
 
   * Add missing WWW::Mechanize::Link to the combined script, so search works.
 
