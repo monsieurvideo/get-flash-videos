@@ -128,9 +128,14 @@ JSON structure:
   die "Youku rejected our attempt to get the video, we're probably out of date"
     unless $browser->response->code eq 302 and $url;
 
+  # Sometimes, for whatever reason, the location we get back is missing
+  # the file extension
+  debug "Video location is $url";
+  $url = "$url.$stream" unless $url =~ /$stream$/;
+
   # Video title is in escaped unicode format
   my ( $title ) = ( $json =~ /"title":"([^"]+)"/ );
-  $title =~ s/\\u([a-f0-9]+)/chr(hex $1)/egi;
+  $title =~ s/\\u([a-f0-9]{4})/chr(hex $1)/egi;
 
   # Use the video title as the filename when available
   my $filename = get_video_filename( $stream );
