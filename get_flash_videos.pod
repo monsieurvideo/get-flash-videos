@@ -4,14 +4,14 @@ get_flash_videos - Video downloader for various Flash-based video hosting sites
 
 =head1 SYNOPSIS
 
-get_flash_videos [OPTION]... URL
+get_flash_videos [OPTION]... URL1 [URL2] [URL3] [URLn]
 
 get_flash_videos [OPTION]... search
 
 =head1 DESCRIPTION
 
-Download the Flash video from the web page given in C<URL>, choosing a
-suitable filename.
+Download the Flash video from the web pages given in C<URL1>, C<URL2> and
+so on, choosing suitable filenames for each.
 
 Alternatively if C<search> is specified (either quoted or unquoted),
 C<get_flash_videos> will search Google Video for C<search>, and present a

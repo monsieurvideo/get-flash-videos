@@ -154,7 +154,7 @@ sub download {
   close $self->{fh};
 
   if ($browser->success) {
-    info "\nDone. Saved " . ($self->{downloaded} - $offset) . " bytes "
+    info "\nSaved " . ($self->{downloaded} - $offset) . " bytes "
           . "to $file.";
     return 1;
   } else {

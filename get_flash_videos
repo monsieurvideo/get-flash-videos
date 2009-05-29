@@ -46,10 +46,11 @@ our %opt = (
 
 use constant USAGE => VER_INFO . <<EOF;
 
-Usage: $0 [OPTION]... url
+Usage: $0 [OPTION]... url1 [url2 url3 urln]
        $0 [OPTION]... search string
 
-Downloads video at 'url' or searches Google Video Search for 'search string'.
+Downloads videos at url1, url2 and so on or searches Google Video Search
+for 'search string'.
 
 Options:
   -d --debug    Print extra debugging information.
@@ -109,14 +110,16 @@ binmode STDERR, ":utf8";
 binmode STDOUT, ":utf8";
 
 my (@urls) = @ARGV;
-my $url = $urls[0];
-$url or die USAGE;
+@urls > 0 or die USAGE;
 
 # Search string can either be quoted or unquoted (for ultimate laziness)
 my $search;
-if ( ((@urls == 1) and $url !~ m'\.') or @urls > 1) {
+if ( ((@urls == 1) and $urls[0] !~ m'\.') or
+     ( (@urls > 1) and ! grep /^http:\/\/|^[\w\-]+\.[\w\-]+/, @urls)) {
   $search = join ' ', @urls;
 }
+
+my @download_urls;
 
 if ($search) {
   if (my @results = FlashVideo::GoogleVideoSearch::search($search)) {
@@ -126,7 +129,7 @@ if ($search) {
         "Downloading first match for '$search': '$results[0]->{name}'" ;
       info $message;
            
-      $url = $results[0]->{url};
+      push @download_urls, $results[0]->{url};
     }
     else {
       print "Search for '$search' found these results:\n";
@@ -137,16 +140,23 @@ if ($search) {
         $count++;
       }
 
-      print "Enter the number of the video you want to download: ";
+      print "Enter the number(s) of the videos to download " .
+            "(separate multiple with comma or space): ";
       chomp(my $choice = <STDIN>);
+      
+      print STDERR "Invalid choice.\n" and exit 1 unless defined $choice;
 
-      $choice--;
-      if (!$results[$choice]) {
-        print STDERR "'$choice' is an invalid choice.\n";
-        exit 1;
+      my @choices = split / ?, ?| /, $choice;
+
+      foreach (@choices) {
+        if (!$results[$choice]) {
+          print STDERR "'$choice' is an invalid choice.\n";
+          exit 1;
+        }
+
+        $_--;
+        push @download_urls, $results[$_]->{url};
       }
-
-      $url = $results[$choice]->{url};
     }
   }
   else {
@@ -155,79 +165,103 @@ if ($search) {
   }
   
 }
-
-$url = "http://$url" if $url !~ m!^\w+:!;
-
-# Might be downloading from a site that uses Brightcove or other similar
-# Flash RTMP streaming server. These are handled differently. Need to get
-# the page to determine this.
-info "Downloading $url";
-my $browser = FlashVideo::URLFinder::get_browser();
-$browser->get($url);
-
-# (Redirect check is for Youtube which sometimes redirects to login page
-# for "mature" videos.)
-if (!$browser->success and !$browser->response->is_redirect) {
-  error "Couldn't download '$url': " . $browser->response->status_line;
+else {
+  @download_urls = @urls;
 }
 
-# Figure out what package we need to use to get either the HTTP URL or
-# rtmpdump data for the video. 
-my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
+my $download_count = 0;
 
-info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
-
-my ($actual_url, @suggested_fnames);
-
-eval {
-  ($actual_url, @suggested_fnames) =
-    $package->find_video($browser, $possible_url);
-};
-
-if(!$actual_url) {
-  if($@ =~ /^Must have | requires /) {
-    my $error = "$@";
-    $error =~ s/at $0.*//;
-    die "$error" . REQ_INFO;
-  } else {
-    die "Error: $@" . FRIENDLY_FAILURE;
+foreach my $url (@download_urls) {
+  if (download($url)) {
+    $download_count++;
   }
 }
 
-my $suggested_filename = $suggested_fnames[-1];
-
-if (!$opt{play}) {
-  if (!$opt{yes} && @suggested_fnames > 1) {
-    print "There are different suggested filenames, please choose:\n";
-    my $count;
-    foreach my $filename (@suggested_fnames) {
-      $count++;
-      print "$count - $filename\n";
-    }
-
-    print "\nWhat filename would you like to use: ";
-    chomp(my $chosen_fname = <STDIN>);
-
-    $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
-      $suggested_fnames[-1];
-  }
+if ($download_count) {
+  info "Done: downloaded $download_count videos.";
 }
-
-my $save_as = $opt{filename} || $suggested_filename;
-
-my $action = $opt{play} ? "play" : "download";
-
-for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
-  if(ref $data eq 'HASH') {
-    # RTMP data
-    FlashVideo::RTMPDownloader->new()->$action($data) || exit 1;
-  } else {
-    # HTTP
-    FlashVideo::Downloader->new->$action($data, $save_as, $browser) || exit 1;
-  }
+else {
+  info "Couldn't download any videos.";
 }
 
 exit 0;
+
+sub download {
+  my $url = shift;
+
+  $url = "http://$url" if $url !~ m!^\w+:!;
+
+  # Might be downloading from a site that uses Brightcove or other similar
+  # Flash RTMP streaming server. These are handled differently. Need to get
+  # the page to determine this.
+  info "Downloading $url";
+  my $browser = FlashVideo::URLFinder::get_browser();
+  $browser->get($url);
+
+  # (Redirect check is for Youtube which sometimes redirects to login page
+  # for "mature" videos.)
+  if (!$browser->success and !$browser->response->is_redirect) {
+    error "Couldn't download '$url': " . $browser->response->status_line;
+  }
+
+  # Figure out what package we need to use to get either the HTTP URL or
+  # rtmpdump data for the video. 
+  my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
+
+  info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
+
+  my ($actual_url, @suggested_fnames);
+
+  eval {
+    ($actual_url, @suggested_fnames) =
+      $package->find_video($browser, $possible_url);
+  };
+
+  if(!$actual_url) {
+    if($@ =~ /^Must have | requires /) {
+      my $error = "$@";
+      $error =~ s/at $0.*//;
+      die "$error" . REQ_INFO;
+    } else {
+      die "Error: $@" . FRIENDLY_FAILURE;
+    }
+  }
+
+  my $suggested_filename = $suggested_fnames[-1];
+
+  if (!$opt{play}) {
+    if (!$opt{yes} && @suggested_fnames > 1) {
+      print "There are different suggested filenames, please choose:\n";
+      my $count;
+      foreach my $filename (@suggested_fnames) {
+        $count++;
+        print "$count - $filename\n";
+      }
+
+      print "\nWhat filename would you like to use: ";
+      chomp(my $chosen_fname = <STDIN>);
+
+      $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
+        $suggested_fnames[-1];
+    }
+  }
+
+  my $save_as = $opt{filename} || $suggested_filename;
+
+  my $action = $opt{play} ? "play" : "download";
+
+  for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
+    if(ref $data eq 'HASH') {
+      # RTMP data
+      FlashVideo::RTMPDownloader->new()->$action($data) || exit 1;
+    } else {
+      # HTTP
+      FlashVideo::Downloader->new->$action($data, $save_as, $browser) || exit 1;
+    }
+  }
+
+  return 1;
+}
 
 sub read_conf {
   for my $file("/etc/get_flash_videosrc", "$ENV{HOME}/.get_flash_videosrc") {
