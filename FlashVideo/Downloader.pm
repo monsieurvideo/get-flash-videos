@@ -176,12 +176,13 @@ sub progress {
     my $percent = int(
       ($self->{downloaded} / $self->{content_length}) * 100
     );
-    if ( ($percent != $self->{percent}) and $percent) {
+    if ($percent && ($percent != $self->{percent} || time != $self->{last_time})) {
       my $downloaded_kib = _bytes_to_kib($self->{downloaded});
       my $total_kib      = _bytes_to_kib($self->{content_length});
       $progress_text = ": $percent% ($downloaded_kib / $total_kib KiB)";
+      $self->{last_time} = time;
+      $self->{percent} = $percent;
     }
-    $self->{percent} = $percent;
   } else {
     # Handle lame servers that don't tell us how big the file is
     my $data_transferred = _bytes_to_kib($self->{downloaded});;
