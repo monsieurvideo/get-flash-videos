@@ -93,12 +93,11 @@ sub find_video {
 sub find_file_param {
   my($browser, $param) = @_;
 
-  if($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/i
-      || $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/i
-      || $param =~ /['"=](.*?@{[EXTENSIONS]})/i
-      || $param =~ /([^ ]+@{[EXTENSIONS]})/i
-      || $param =~ /SWFObject\(["']([^"']+)/) {
-    my $file = $1;
+  for my $file($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/gi,
+      $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/gi,
+      $param =~ /['"=](.*?@{[EXTENSIONS]})/gi,
+      $param =~ /([^ ]+@{[EXTENSIONS]})/gi,
+      $param =~ /SWFObject\(["']([^"']+)/) {
 
     my $actual_url = guess_file($browser, $file);
     if($actual_url) {
@@ -164,7 +163,7 @@ sub guess_file {
       } else {
         return $uri->as_string;
       }
-    } else {
+    } elsif(not defined $once) {
       # Try using the location of the .swf file as the base, if it's different.
       if($browser->content =~ /["']([^ ]+\.swf)/) {
         my $swf_uri = URI->new_abs($1, $browser->uri);
@@ -172,7 +171,7 @@ sub guess_file {
           my $new_uri = URI->new_abs($file, $swf_uri);
           debug "Found SWF: $swf_uri -> $new_uri";
           if($new_uri ne $uri) {
-            return guess_file($browser, $new_uri);
+            return guess_file($browser, $new_uri, 1);
           }
         }
       }
