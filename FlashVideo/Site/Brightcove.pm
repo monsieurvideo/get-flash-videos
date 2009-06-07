@@ -15,15 +15,19 @@ sub find_video {
 
   my ($video_id, $player_id);
 
-  $video_id  = ($browser->content =~ /videoId["'\] ]*=["' ]*(\d+)/i)[0];
-  $player_id = ($browser->content =~ /playerId["'\] ]*=["' ]*(\d+)/i)[0];
+  # URL params, JSON, etc..
+  $video_id  = ($browser->content =~ /(?:clip|video)Id["'\] ]*[:=]["' ]*(\d+)/i)[0];
+  $player_id = ($browser->content =~ /playerId["'\] ]*[:=]["' ]*(\d+)/i)[0];
 
+  # <object> params
   $player_id ||= ($browser->content =~ /<param name=["']?playerID["']? value=["'](\d+) ?["']/i)[0];
   $video_id ||= ($browser->content =~ /<param name=["']?\@?video(?:Player|id)["']? value=["'](\d+)["']/i)[0];
 
+  # flashVar params (e.g. <embed>)
   $player_id ||= ($browser->content =~ /flashVars.*playerID=(\d+)/i)[0];
   $video_id ||= ($browser->content =~ /flashVars.*videoID=(\d+)/i)[0];
 
+  # Brightcove JavaScript API
   if(!$player_id && $browser->content =~ /brightcove.player.create\(['"]?(\d+)['"]?,\s*['"]?(\d+)/) {
     $video_id = $1;
     $player_id = $2;
