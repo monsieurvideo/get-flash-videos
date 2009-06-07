@@ -100,6 +100,7 @@ sub title_to_filename {
 
   # Extract the extension if we're passed a URL.
   $type = substr $1, 1 if $title =~ s/(@{[EXTENSIONS]})$//;
+  $type = substr $1, 1 if $type =~ s/(@{[EXTENSIONS]})$//;
 
   # We want \w below to match non-ASCII characters.
   utf8::upgrade($title);
