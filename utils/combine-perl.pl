@@ -63,6 +63,14 @@ sub process_file {
 
     if(/^(?:require|\s*use) ([^ ;(]+)/) {
       my $module = $1;
+      my $base = "";
+
+      if($module eq 'base') {
+        $base = $_;
+        /use\s+base\s+([^;]+)/ && ($module = eval $1);
+        $_ = "use $module;";
+      }
+
       # Pass version dependencies through
       $output .= $_, next unless $module =~ /^[A-Z]/i;
 
@@ -89,11 +97,16 @@ sub process_file {
           die "Unable to handle use for: $module ($file:$.)\n";
         }
 
-        next if $done{$module}++;
-        my $module_file = module_to_file($module, "$file:$.");
-        my $module_path = module_to_path($module);
-        $pre .= "BEGIN { \$INC{'$module_path'}++; }\n";
-        $pre .= process_file($module_file);
+        unless($done{$module}++) {
+          my $module_file = module_to_file($module, "$file:$.");
+          my $module_path = module_to_path($module);
+          $pre .= "BEGIN { \$INC{'$module_path'}++; }\n";
+          $pre .= process_file($module_file);
+        }
+      }
+
+      if($base) {
+        $output .= $base;
       }
     } elsif(/^=(?!cut)\w+/) {
       while(<$fh>) {

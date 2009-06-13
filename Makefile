@@ -23,8 +23,7 @@ $(MAIN)-$(VERSION): $(COMBINE) $(MAIN) FlashVideo/* .sitemodules \
 # them all up.
 
 .sitemodules: FlashVideo/Site/*.pm
-	(echo FlashVideo/Site/Megavideo.pm; ls $^) \
-	  | sed -e 's!/!::!g' -e 's/\.pm$$/ ();/' -e 's/^/use /' > $@
+	ls $^ | sed -e 's!/!::!g' -e 's/\.pm$$/ ();/' -e 's/^/use /' > $@
 
 # Build a combined version which also includes our dependencies, this makes it
 # easier for people who cannot install Perl modules. (Note that it does still
