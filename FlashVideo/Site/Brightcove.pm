@@ -8,11 +8,6 @@ use MIME::Base64;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_amf_packet = eval { require Data::AMF::Packet };
-  if (!$has_amf_packet) {
-    die "Must have Data::AMF::Packet installed to download Brightcove videos";
-  }
-
   my ($video_id, $player_id);
 
   # URL params, JSON, etc..
@@ -48,6 +43,17 @@ sub find_video {
     die "Unable to extract Brightcove IDs from page";
   }
 
+  return $self->amfgateway($browser, $player_id, $video_id);
+}
+
+sub amfgateway {
+  my($self, $browser, $player_id, $video_id, $video_ref) = @_;
+
+  my $has_amf_packet = eval { require Data::AMF::Packet };
+  if (!$has_amf_packet) {
+    die "Must have Data::AMF::Packet installed to download Brightcove videos";
+  }
+
   my $packet = Data::AMF::Packet->deserialize(decode_base64(<<EOF));
 AAAAAAABAEhjb20uYnJpZ2h0Y292ZS50ZW1wbGF0aW5nLlRlbXBsYXRpbmdGYWNhZGUuZ2V0Q29u
 dGVudEZvclRlbXBsYXRlSW5zdGFuY2UAAi8yAAACNQoAAAACAEH4tP+1EAAAEAA1Y29tLmJyaWdo
@@ -71,6 +77,10 @@ EOF
     $packet->messages->[0]->{value}->[1]->{videoId} = "$video_id";
   }
 
+  if(defined $video_ref) {
+    $packet->messages->[0]->{value}->[1]->{videoRefId} = "$video_ref";
+  }
+
   my $data = $packet->serialize;
 
   $browser->post(
@@ -82,7 +92,7 @@ EOF
   die "Failed to post to Brightcove AMF gateway"
     unless $browser->response->is_success;
 
-  my $packet = Data::AMF::Packet->deserialize($browser->content);
+  $packet = Data::AMF::Packet->deserialize($browser->content);
 
   my @found;
   for (@{$packet->messages->[0]->{value}}) {
