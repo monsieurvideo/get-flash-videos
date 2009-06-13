@@ -93,7 +93,7 @@ sub find_video {
 sub find_file_param {
   my($browser, $param) = @_;
 
-  for my $file($param =~ /(?:video|movie|file)['"]?\s*[=:,]\s*['"]?([^&'" ]+)/gi,
+  for my $file($param =~ /(?:video|movie|file)_?(?:href|src|url)?['"]?\s*[=:,]\s*['"]?([^&'" ]+)/gi,
       $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/gi,
       $param =~ /['"=](.*?@{[EXTENSIONS]})/gi,
       $param =~ /([^ ]+@{[EXTENSIONS]})/gi,
