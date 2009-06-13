@@ -5,7 +5,9 @@ VERSION := $(shell ./$(MAIN) --version 2>&1 | awk '{print $$3}')
 TARGETS = combined-$(MAIN) combined-$(MAIN)-$(VERSION) \
 	  $(MAIN)-$(VERSION) $(MAIN).1 $(MAIN).1.gz
 
-all: $(MAIN)-$(VERSION)
+default: $(MAIN)-$(VERSION)
+
+all: $(TARGETS)
 
 clean:
 	rm -f $(TARGETS) .sitemodules
@@ -48,7 +50,7 @@ $(MAIN).1: $(MAIN).pod
 	pod2man -c "User commands" -r "$(MAIN)-$(VERSION)" $^ > $@
 
 $(MAIN).1.gz: $(MAIN).1
-	gzip $^
+	gzip -f $^
 
 # Install
 DESTDIR ?=

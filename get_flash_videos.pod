@@ -4,20 +4,20 @@ get_flash_videos - Video downloader for various Flash-based video hosting sites
 
 =head1 SYNOPSIS
 
-get_flash_videos [OPTION]... URL1 [URL2] [URL3] [URLn]
+get_flash_videos [OPTION]... URL...
 
-get_flash_videos [OPTION]... search
+get_flash_videos [OPTION]... SEARCH
 
 =head1 DESCRIPTION
 
-Download the Flash video from the web pages given in C<URL1>, C<URL2> and
-so on, choosing suitable filenames for each.
+Download the Flash video from the web pages given in C<URL>, choosing
+suitable filenames for each.
 
-Alternatively if C<search> is specified (either quoted or unquoted),
-C<get_flash_videos> will search Google Video for C<search>, and present a
+Alternatively if C<SEARCH> is specified (either quoted or unquoted),
+B<get_flash_videos> will search Google Video for C<SEARCH>, and present a
 list of videos to download.
 
-I<get-flash-videos> attempts to support many video sites, therefore there is no
+B<get-flash-videos> attempts to support many video sites, therefore there is no
 list of supported sites in this manual page as it frequently changes, see the
 website for a list.
 
@@ -25,21 +25,21 @@ website for a list.
 
 =over 4
 
-=item B<-d>, B<--debug>
+=item I<-d>, I<--debug>
 
 Print extra debugging information.
 
-=item B<-f>, B<--filename>
+=item I<-f>, I<--filename>
 
 Save downloaded file to the specified filename. Usually this shouldn't be
 necessary, as C<get_flash_videos> tries to use a meaningful name for the
 video.
 
-=item B<-p>, B<--play>
+=item I<-p>, I<--play>
 
 Begin playing the video once enough of the file has been downloaded.
 
-=item B<--player=I<CMD>>
+=item I<--player=C<CMD>>
 
 Specify the player to use for the C<--play> option. Any occurrence of C<%s> in
 this string will be replaced with the filename of the video (appropriately
@@ -53,11 +53,11 @@ You may wish to automatically delete the video after you have viewed it:
 
   mplayer -really-quiet %s; rm %s
 
-=item B<-q>, B<--quiet>
+=item I<-q>, I<--quiet>
 
 Be quiet, only print errors.
 
-=item B<-u>, B<--update>
+=item I<-u>, I<--update>
 
 Check the I<get-flash-videos> website for a newer version. If a newer version is
 available download it and replace the running version with it. You will need to
@@ -65,11 +65,11 @@ run this as a user with permission to write to the location of the
 F<get_flash_videos> program. If you installed using a packaging system it is
 recommended to use that to upgrade, not this option.
 
-=item B<-v>, B<--version>
+=item I<-v>, I<--version>
 
-Print the version of I<get_flash_videos>.
+Print the version of B<get_flash_videos>.
 
-=item B<-y>, B<--yes>
+=item I<-y>, I<--yes>
 
 Do not prompt with any questions, just say 'yes'. This means either literally
 yes, or the default or first option if choosing from a list.
@@ -78,7 +78,7 @@ yes, or the default or first option if choosing from a list.
 
 =head1 CONFIGURATION
 
-On startup I<get_flash_videos> will read the configuration files located at
+On startup B<get_flash_videos> will read the configuration files located at
 F</etc/get_flash_videosrc> and then F<~/.get_flash_videosrc>.
 
 The files follow a simple C<name = value> convention where the name matches the
@@ -98,7 +98,7 @@ configuration file from the command line.
 
 =head1 EXAMPLES
 
-Play a video (may prompt for filename still, override with -y):
+Play a video (may prompt for filename still, override with I<-y>):
 
     get_flash_videos -p http://some.site/video 
 
@@ -133,7 +133,7 @@ L<http://code.google.com/p/get-flash-videos/issues/list>.
 
 =head1 HACKING
 
-If you'd like to change or improve I<get-flash-videos> (for example adding
+If you'd like to change or improve B<get-flash-videos> (for example adding
 support for another site), please see the project wiki where there's an
 overview to help you get started, and a detailed tutorial on adding support
 for a new site:
