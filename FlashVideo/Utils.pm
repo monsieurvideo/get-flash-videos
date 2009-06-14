@@ -13,7 +13,7 @@ use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
-  EXTENSIONS);
+  swfhash EXTENSIONS);
 
 sub debug(@) {
   print STDERR "@_\n" if $::opt{debug};
