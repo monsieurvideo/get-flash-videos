@@ -63,7 +63,7 @@ sub _process_xml {
   my $xml = eval { XML::Simple::XMLin($xml_string) };
   die "Couldn't parse XML: $@" if $@;
 
-  my($server, $app, $playpath);
+  my($server, $playpath);
   my $uriData = $xml->{assetInfo}->{uriData};
 
   if($uriData->{streamUri} =~ m{rtmpe://([^/]+)/\w+/(.*)}) {
@@ -77,16 +77,14 @@ sub _process_xml {
   $server = Socket::inet_ntoa(scalar gethostbyname($server));
   my $url = "rtmpe://$server:1935/$app";
 
-  my $filename = _generate_filename($xml->{assetInfo});
-
   return {
+    rtmp     => $url,
+    tcUrl    => $url,
     app      => $app,
     playpath => $playpath,
-    tcUrl    => $url,
     auth     => $uriData->{token},
-    rtmp     => $url,
     pageUrl  => (split /#/, $browser->uri->as_string)[0],
-    flv      => $filename,
+    flv      => _generate_filename($xml->{assetInfo}),
 
     swfhash($browser,
       "http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer-4.3.2.swf"),
@@ -97,7 +95,7 @@ sub _generate_filename {
   my($asset) = @_;
 
   my $title = $asset->{brandTitle};
-  if($title =~ /\Q$asset->{episodeTitle}\E/i) {
+  if($asset->{episodeTitle} =~ /\Q$title\E/i) {
     $title = $asset->{episodeTitle};
   } else {
     $title .= " - $asset->{episodeTitle}";
