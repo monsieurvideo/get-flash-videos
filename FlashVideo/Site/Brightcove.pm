@@ -8,6 +8,7 @@ use MIME::Base64;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
+  my $metadata = { };
   my ($video_id, $player_id);
 
   # URL params, JSON, etc..
@@ -28,26 +29,32 @@ sub find_video {
     $player_id = $2;
   }
 
-  # Support "viral" videos
+  # Support direct links to videos
   for my $url($browser->uri->as_string, $embed_url) {
-    if($url =~ /bctid=(\d+)/) {
+    if($url =~ /(?:videoID|bctid)=?(\d+)/i) {
       $video_id ||= $1;
     }
 
-    if($url =~ /bcpid(\d+)/) {
+    if($url =~ /(?:playerID|bcpid)=?(\d+)/i) {
       $player_id ||= $1;
+    }
+
+    if($url =~ /(?:lineupID|bclid)=?(\d+)/i) {
+      $metadata->{lineupId} ||= $1;
     }
   }
 
-  if (!$player_id) {
-    die "Unable to extract Brightcove IDs from page";
-  }
+  debug "Extracted playerId: $player_id, video_id: $video_id"
+    if $player_id or $video_id;
 
-  return $self->amfgateway($browser, $player_id, $video_id);
+  die "Unable to extract Brightcove IDs from page" unless $player_id;
+
+  $metadata->{videoId} = $video_id;
+  return $self->amfgateway($browser, $player_id, $metadata);
 }
 
 sub amfgateway {
-  my($self, $browser, $player_id, $video_id, $video_ref) = @_;
+  my($self, $browser, $player_id, $metadata) = @_;
 
   my $has_amf_packet = eval { require Data::AMF::Packet };
   if (!$has_amf_packet) {
@@ -73,12 +80,10 @@ EOF
     $packet->messages->[0]->{value}->[0] = "$player_id";
   }
 
-  if (defined $video_id) {
-    $packet->messages->[0]->{value}->[1]->{videoId} = "$video_id";
-  }
-
-  if(defined $video_ref) {
-    $packet->messages->[0]->{value}->[1]->{videoRefId} = "$video_ref";
+  if (ref $metadata) {
+    for(keys %$metadata) {
+      $packet->messages->[0]->{value}->[1]->{$_} = "$metadata->{$_}";
+    }
   }
 
   my $data = $packet->serialize;
@@ -94,6 +99,10 @@ EOF
 
   $packet = Data::AMF::Packet->deserialize($browser->content);
 
+  if(ref $packet->messages->[0]->{value} ne 'ARRAY') {
+    die "Unexpected data from AMF gateway";
+  }
+
   my @found;
   for (@{$packet->messages->[0]->{value}}) {
     if ($_->{data}->{videoDTO}) {
@@ -107,8 +116,10 @@ EOF
   my @rtmpdump_commands;
 
   for my $d (@found) {
+    next if $metadata->{videoId} && $d->{id} != $metadata->{videoId};
+
     my $host = ($d->{FLVFullLengthURL} =~ m!rtmp://(.*?)/!)[0];
-    my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z]+/.*?)(?:&|$)!)[0];
+    my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z0-9:]+/.*?)(?:&|$)!)[0];
     my $app = ($d->{FLVFullLengthURL} =~ m!//.*?/(.*?)/&!)[0];
     my $filename = ($d->{FLVFullLengthURL} =~ m!&.*?/([^/&]+)(?:&|$)!)[0];
 
@@ -116,7 +127,7 @@ EOF
       swfUrl => "http://admin.brightcove.com/viewer/federated/f_012.swf?bn=590&pubId=$d->{publisherId}",
       app => $app,
       tcUrl => "rtmp://$host/$app",
-      auth => ($d->{FLVFullLengthURL} =~ /&([a-z]+\/.*)/)[0],
+      auth => ($d->{FLVFullLengthURL} =~ /^[^&]+&(.*)$/)[0],
       rtmp => "rtmp://$host/$app",
       playpath => $file,
       flv => "$filename.flv"
@@ -148,7 +159,7 @@ EOF
 sub can_handle {
   my($self, $browser, $url) = @_;
 
-  return 1 if $url && URI->new($url)->host eq 'link.brightcove.com';
+  return 1 if $url && URI->new($url)->host =~ /\.brightcove\.com$/;
 
   return $browser->content =~ /(playerI[dD]|brightcove.player.create)/
     && $browser->content =~ /brightcove/i;

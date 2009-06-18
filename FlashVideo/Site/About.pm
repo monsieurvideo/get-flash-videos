@@ -18,7 +18,7 @@ sub find_video {
   my($player_id) = $browser->content =~ /playerId.*?(\d+)/;
   die "Unable to extract playerId" unless $player_id;
 
-  return $self->amfgateway($browser, $player_id, undef, $video_ref);
+  return $self->amfgateway($browser, $player_id, { videoRefId => $video_ref });
 }
 
 sub can_handle {
