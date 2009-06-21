@@ -4,6 +4,7 @@ package FlashVideo::URLFinder;
 use strict;
 use FlashVideo::Mechanize;
 use FlashVideo::Generic;
+use FlashVideo::Utils;
 use URI;
 
 # The main issue is getting a URL for the actual video, so we handle this
@@ -27,7 +28,8 @@ sub find_package {
     for my $possible_url($browser->content =~
         m!(?:<object[^>]+>.*?|<(?:script|embed|iframe) [^>]*src=["']?)(http://[^"'> ]+)!gixs) {
       $package = find_package_url($possible_url, $browser);
-      return $package, $possible_url if defined $package;
+    
+      return _found($package, $possible_url) if defined $package;
     }
   }
 
@@ -48,7 +50,7 @@ sub find_package {
     $package = "FlashVideo::Generic";
   }
 
-  return $package, $url;
+  return _found($package, $url);
 }
 
 # Split the URLs into parts and see if we have a package with this name.
@@ -86,5 +88,12 @@ sub get_browser {
 
   return $browser;
 }
+
+sub _found {
+  my($package, $url) = @_;
+  info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
+  return $package, $url;
+}
+
 
 1;
