@@ -97,15 +97,11 @@ sub download {
     return 0;
   }
 
-  if($self->{percent} > 95) {
-    # Note we hide the progress, our download guess was only an estimate, so this
-    # should be less confusing..
-    info "\rSaved", -s $self->{filename}, "bytes to $self->{filename}.";
-  } else {
+  if($self->{percent} < 95) {
     info "\nrtmpdump exited early? Incomplete download possible -- try running again to resume.";
   }
 
-  return 1;
+  return -s $self->{filename};
 }
 
 1;

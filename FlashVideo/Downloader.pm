@@ -154,9 +154,7 @@ sub download {
   close $self->{fh};
 
   if ($browser->success) {
-    info "\nSaved " . ($self->{downloaded} - $offset) . " bytes "
-          . "to $file.";
-    return 1;
+    return $self->{downloaded} - $offset;
   } else {
     unlink $file unless -s $file;
     error "Couldn't download $url: " .  $browser->response->status_line;

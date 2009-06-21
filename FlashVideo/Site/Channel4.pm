@@ -115,5 +115,11 @@ sub _generate_filename {
   return title_to_filename($title);
 }
 
+sub can_handle {
+  my($self, $browser) = @_;
+
+  return $browser->content =~ /catch-up.*play-(\d+)/;
+}
+
 1;
 

@@ -25,7 +25,7 @@ sub find_package {
     # Also look at embedded scripts for sites which embed their content that way.
  
     for my $possible_url($browser->content =~
-        m!(?:<object[^>]+>.*?|<(?:script|embed|iframe) [^>]*src=["']?)(http://[^"'> ]+)!gix) {
+        m!(?:<object[^>]+>.*?|<(?:script|embed|iframe) [^>]*src=["']?)(http://[^"'> ]+)!gixs) {
       $package = find_package_url($possible_url, $browser);
       return $package, $possible_url if defined $package;
     }

@@ -29,28 +29,31 @@ use FlashVideo::GoogleVideoSearch;
 
 use constant VERSION => "1.14";
 
+our %opt;
+BEGIN {
+  %opt = (
+    yes => 0,
+    filename => '',
+    version => 0,
+    update => 0,
+    play => 0,
+    player => "mplayer -really-quiet %s",
+    debug => 0,
+    quiet => 0,
+  );
+}
+
 use constant VER_INFO => <<EOF;
 get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
 EOF
 
-our %opt = (
-  yes => 0,
-  filename => '',
-  version => 0,
-  update => 0,
-  play => 0,
-  player => "mplayer -really-quiet %s",
-  debug => 0,
-  quiet => 0,
-);
-
 use constant USAGE => VER_INFO . <<EOF;
 
-Usage: $0 [OPTION]... url1 [url2 url3 urln]
+Usage: $0 [OPTION]... URL...
        $0 [OPTION]... search string
 
-Downloads videos at url1, url2 and so on or searches Google Video Search
-for 'search string'.
+Downloads videos from the web pages given in URL or searches Google Video
+Search for 'search string'.
 
 Options:
   -d --debug    Print extra debugging information.
@@ -143,18 +146,16 @@ if ($search) {
       print "Enter the number(s) of the videos to download " .
             "(separate multiple with comma or space): ";
       chomp(my $choice = <STDIN>);
+      $choice ||= 1;
       
-      print STDERR "Invalid choice.\n" and exit 1 unless defined $choice;
+      for(split /[ ,]+/, $choice) {
+        $_--;
 
-      my @choices = split / ?, ?| /, $choice;
-
-      foreach (@choices) {
-        if (!$results[$choice]) {
-          print STDERR "'$choice' is an invalid choice.\n";
+        if (!$results[$_]) {
+          print STDERR "'$_' is an invalid choice.\n";
           exit 1;
         }
 
-        $_--;
         push @download_urls, $results[$_]->{url};
       }
     }
@@ -172,22 +173,20 @@ else {
 my $download_count = 0;
 
 foreach my $url (@download_urls) {
-  if (download($url)) {
+  if (download($url, @download_urls - $download_count)) {
     $download_count++;
   }
 }
 
-if ($download_count) {
-  info "Done: downloaded $download_count videos.";
-}
-else {
+if($download_count == 0) {
   info "Couldn't download any videos.";
+  exit 1;
 }
 
 exit 0;
 
 sub download {
-  my $url = shift;
+  my($url, $remaining) = @_;
 
   $url = "http://$url" if $url !~ m!^\w+:!;
 
@@ -251,13 +250,19 @@ sub download {
   my $action = $opt{play} ? "play" : "download";
 
   for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
+    my $downloader;
     if(ref $data eq 'HASH') {
       # RTMP data
-      FlashVideo::RTMPDownloader->new()->$action($data) || exit 1;
+      $downloader = FlashVideo::RTMPDownloader->new;
     } else {
       # HTTP
-      FlashVideo::Downloader->new->$action($data, $save_as, $browser) || exit 1;
+      $downloader = FlashVideo::Downloader->new;
     }
+
+    my $size = $downloader->$action($data, $save_as, $browser) || exit 1;
+
+    info "\n" . ($remaining == 1 ? "Done. " : "")
+      . "Saved $size bytes to $downloader->{filename}";
   }
 
   return 1;
