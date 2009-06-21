@@ -24,6 +24,8 @@ sub find_video {
 
     my($package, $possible_url) = FlashVideo::URLFinder::find_package($redirect, $browser);
 
+    die "Recursion detected" if $package eq __PACKAGE__;
+
     return $package->find_video($browser, $possible_url);
   } else {
     die "Redirect URL not found";
