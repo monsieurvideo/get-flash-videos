@@ -207,13 +207,8 @@ sub download {
   # rtmpdump data for the video. 
   my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
 
-  info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
-
-  my ($actual_url, @suggested_fnames);
-
-  eval {
-    ($actual_url, @suggested_fnames) =
-      $package->find_video($browser, $possible_url);
+  my($actual_url, @suggested_fnames) = eval {
+    $package->find_video($browser, $possible_url);
   };
 
   if(!$actual_url) {
@@ -237,7 +232,7 @@ sub download {
         print "$count - $filename\n";
       }
 
-      print "\nWhat filename would you like to use: ";
+      print "\nWhich filename would you like to use?: ";
       chomp(my $chosen_fname = <STDIN>);
 
       $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
