@@ -84,7 +84,7 @@ sub url_exists {
   my $redirects = 0;
   while ( ($response->code =~ /^30\d/) and ($response->header('Location'))
       and ($redirects < MAX_REDIRECTS) ) {
-    $url = $response->header('Location');
+    $url = URI->new_abs($response->header('Location'), $url);
     $response = $browser->head($url);
     debug "Redirected to $url (" . $response->code . ")";
     if ($response->code == 200) {

@@ -18,9 +18,8 @@ sub find_video {
   $browser->get($videourl);
 
   if($browser->content =~ /url=(http:.*?)["']/) {
-    my $redirect = $1;
+    my $redirect = url_exists($browser, $1);
 
-    $browser->allow_redirects;
     $browser->get($redirect);
 
     my($package, $possible_url) = FlashVideo::URLFinder::find_package($redirect, $browser);
