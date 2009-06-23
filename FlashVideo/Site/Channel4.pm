@@ -118,7 +118,7 @@ sub _generate_filename {
 sub can_handle {
   my($self, $browser) = @_;
 
-  return $browser->content =~ /catch-up.*play-(\d+)/;
+  return $browser->content =~ /catch-up.*(\d+)/;
 }
 
 1;
