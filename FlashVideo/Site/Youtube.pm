@@ -13,6 +13,8 @@ sub find_video {
     if ($browser->response->header('Location') =~ m!/swf/.*video_id=([^&]+)!) {
       # We ended up on a embedded SWF
       $browser->get("http://www.youtube.com/watch?v=$1");
+    } elsif($embed_url =~ m!/v/([-a-z0-9]+)!i) {
+      $browser->get("http://www.youtube.com/watch?v=$1");
     }
   }
 
