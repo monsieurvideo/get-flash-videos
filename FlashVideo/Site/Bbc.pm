@@ -28,6 +28,11 @@ sub find_video {
 
     $playlist_xml = URI->new_abs($path, $browser->uri) . "/media/emp/playlists/$id.xml";
   }
+  elsif($browser->content =~ /setPlaylist\s*\(([^)]+)/) {
+    my $path = $1;
+    $path =~ s/['"]//g;
+    $playlist_xml = URI->new_abs($path, $browser->uri);
+  }
   elsif($browser->uri =~ m!/(b[0-9a-z]{7})(?:/|$)!) {
     # Looks like a pid..
     my @gi_cmd = (qw(get_iplayer -g --pid), $1);
