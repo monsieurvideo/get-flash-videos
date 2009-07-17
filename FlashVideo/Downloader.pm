@@ -128,7 +128,7 @@ sub download {
         }
 
         my $fh = $self->{fh};
-        print $fh $data;
+        print $fh $data || die "Unable to write to '$file': $!\n";
 
         if(defined $self->{stream}) {
           if($self->{downloaded} > 300_000) {
@@ -151,7 +151,7 @@ sub download {
     error $browser->response->header("X-Died");
   }
 
-  close $self->{fh};
+  close $self->{fh} || die "Unable to write to '$file': $!";
 
   if ($browser->success) {
     return $self->{downloaded} - $offset;
