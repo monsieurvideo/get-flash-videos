@@ -21,7 +21,8 @@ sub find_video {
 sub can_handle {
   my($self, $browser, $url) = @_;
 
-  return $url =~ /last\.fm/ && $url =~ /\+video/;
+  # Don't trigger on YouTube IDs
+  return $url =~ /last\.fm/ && $url =~ m{\+video/\d{2,}};
 }
 
 1;
