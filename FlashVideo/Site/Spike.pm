@@ -31,7 +31,9 @@ sub find_video {
   my $feed = uri_unescape($xml->{player}->{feed});
   die "Unable to find feed URL\n" unless $feed;
 
-  return $self->handle_feed($feed, $browser, $page_url);
+  $browser->get($feed);
+
+  return $self->handle_feed($browser->content, $browser, $page_url);
 }
 
 1;

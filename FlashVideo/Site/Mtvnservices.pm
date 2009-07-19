@@ -5,6 +5,8 @@ use strict;
 use FlashVideo::Utils;
 use URI::Escape;
 
+my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.-_]+};
+
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
@@ -15,8 +17,8 @@ sub find_video {
 
   my $page_url = $browser->uri->as_string;
 
-  if($embed_url !~ /mtvnservices/) {
-    if($browser->content =~ m!(http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.-_]+)!) {
+  if($embed_url !~ $MTVN_URL) {
+    if($browser->content =~ m!($MTVN_URL)!) {
       $embed_url = $1;
     } else {
       die "Unable to find embedding URL";
@@ -37,20 +39,27 @@ sub find_video {
 
   $browser->get($param{CONFIG_URL});
   my $xml = XML::Simple::XMLin($browser->content);
+  #die Dumper( $xml); use Data::Dumper;
 
-  my $feed = uri_unescape($xml->{player}->{feed});
-  die "Unable to find feed URL\n" unless $feed;
+  if($xml->{player}->{feed} && !ref $xml->{player}->{feed}) {
+    my $feed = uri_unescape($xml->{player}->{feed});
+    $feed =~ s/\{([^}]+)\}/$param{$1}/g;
 
-  $feed =~ s/\{([^}]+)\}/$param{$1}/g;
+    $browser->get($feed);
 
-  return $self->handle_feed($feed, $browser, $page_url, $param{uri});
+    return $self->handle_feed($browser->content, $browser, $page_url, $param{uri});
+  } elsif(ref $xml->{player}->{feed}->{rss}) {
+    # We must already have a feed embedded..
+    return $self->handle_feed($xml->{player}->{feed}->{rss}, $browser, $page_url, $param{uri});
+  } else {
+    die "Unable to find feed\n";
+  }
 }
 
 sub handle_feed {
   my($self, $feed, $browser, $page_url, $uri) = @_;
 
-  $browser->get($feed);
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = ref $feed ? $feed : XML::Simple::XMLin($feed);
 
   my $filename = title_to_filename($xml->{channel}->{title});
 
@@ -74,7 +83,7 @@ sub handle_feed {
   # I want to follow redirects now.
   $browser->allow_redirects;
 
-  if($url =~ /^rtmp:/) {
+  if($url =~ /^rtmpe?:/) {
     return {
       flv => $filename,
       rtmp => $url,
