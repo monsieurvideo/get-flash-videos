@@ -39,7 +39,6 @@ sub find_video {
 
   $browser->get($param{CONFIG_URL});
   my $xml = XML::Simple::XMLin($browser->content);
-  #die Dumper( $xml); use Data::Dumper;
 
   if($xml->{player}->{feed} && !ref $xml->{player}->{feed}) {
     my $feed = uri_unescape($xml->{player}->{feed});
