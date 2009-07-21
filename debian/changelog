@@ -1,3 +1,23 @@
+get-flash-videos (1.14-1) idiotic-iguana; urgency=low
+
+  * Added support for:
+    - Last.fm
+    - Expertvillage
+    - Tudou
+    - Truveo (incomplete)
+
+  * Fixed:
+    - Youku
+    - BBC (more embedding types)
+
+  * Support for downloading multiple videos.
+
+  * More sites work with generic.
+
+  * Misc. clean-ups.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Tue, 21 Jul 2009 18:09:12 +0100
+
 get-flash-videos (1.13-1) hysterical-hyena; urgency=low
 
   * Add support for Youku.
