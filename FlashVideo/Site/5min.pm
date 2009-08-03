@@ -9,23 +9,8 @@ sub find_video {
 
   my $filename = title_to_filename(extract_info($browser)->{meta_title});
 
-  my $url;
-  if ($browser->content =~ m{videoID=(\d+)}) {
-    my $id = $1;
-
-    my $res = $browser->post(
-      "http://www.5min.com/handlers/smartplayerhandler.ashx", {
-        referrerURL => "none",
-        autoStart   => "None",
-        sid         => 0,
-        func        => "InitializePlayer",
-        overlay     => "None",
-        videoID     => $id,
-        isEmbed     => "false"
-      }
-    );
-    $url = $1 if $res->content =~ /vidURL\W+([^"]+)/;
-  }
+  # They now pass the URL as a param, so the generic code can extract it.
+  my $url = (FlashVideo::Generic->find_video($browser, $browser->uri))[0];
 
   return $url, $filename;
 }
