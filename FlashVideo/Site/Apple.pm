@@ -1,8 +1,6 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Site::Apple;
-
 use strict;
-use FlashVideo::Utils;
 
 sub find_video {
   my ($self, $browser) = @_;
@@ -11,7 +9,7 @@ sub find_video {
     # We weren't given a quicktime link, so find one..
     my @urls = sort
       { ($b =~ /(\d+)p\.mov/)[0] <=> ($a =~ /(\d+)p\.mov/)[0] }
-        $browser->content =~ /"([^"]+\.mov)"/g;
+        $browser->content =~ /['"]([^'"]+\.mov)['"]/g;
 
     die "No .mov URLs found on page" unless @urls;
 
@@ -19,7 +17,7 @@ sub find_video {
   }
 
   my $url = $self->handle_mov($browser);
-  my $filename = ($url->path =~ m!([^/]+)$!)[0];
+  my $filename = ($url->path =~ m{([^/]+)$})[0];
 
   return $url, $filename;
 }
@@ -32,10 +30,7 @@ sub handle_mov {
   # I'm an iPhone (not a PC)
   $browser->agent("Apple iPhone OS v2.0.1 CoreMedia v1.0.0.5B108");
 
-  print "I HAS", $browser->content;
-
-  # I'm guessing '!' means a relative link, we'll see if this breaks..
-  if($browser->content =~ /url\s*\0+!(.*?)\0/) {
+  if($browser->content =~ /url\s*\0+[\1-!]*(.*?)\0/) {
     return URI->new_abs($1, $browser->uri)
   } else {
     die "Cannot find link in .mov";
