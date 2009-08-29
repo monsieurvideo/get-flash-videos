@@ -71,12 +71,23 @@ EOF
   my $rtmp_url = $rtmp_urls[0];
   my($host, $app, $playpath) = $rtmp_url =~ m'rtmp://([^/]+)/(\w+)(/[^?]+)';
 
+  if($host eq 'flash.onf.ca') {
+    # Special case, clips served from here need two parts of the path for the app.
+    $playpath =~ s{^(/[^/]+)/}{};
+    $app .= $1;
+    # And no file extension
+    $playpath =~ s{\.\w+$}{};
+  } else {
+    # Anything else needs mp4: prefixed
+    $playpath = "mp4:$playpath";
+  }
+
   # Oooh!
   return {
     flv => title_to_filename($title),
     rtmp => $rtmp_url,
     app => $app,
-    playpath => "mp4:$playpath"
+    playpath => $playpath
   };
 }
 
