@@ -59,7 +59,18 @@ sub find_video {
   };
 
   if ($@) {
-    die "Couldn't parse BBC XML playlist: $@";
+    # Try to fix their potentially broken XML..
+    eval {
+      my $content = $browser->content;
+      if ($content !~ m{</media>}) {
+        $content .= "\n</media></item></playlist>\n";
+      }
+      $playlist = XML::Simple::XMLin($content, KeyAttr => {item => 'kind'})
+    };
+
+    if ($@) {
+      die "Couldn't parse BBC XML playlist: $@";
+    }
   }
 
   my $sound = ($playlist->{item}->{guidance} !~ /has no sound/);
