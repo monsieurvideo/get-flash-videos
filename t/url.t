@@ -34,7 +34,9 @@ for my $url_info(@urls) {
   waitpid $pid, 0;
   ok $? == 0, $note;
 
-  my @files = <*.{mp4,flv}>;
+  DEBUG && diag "Files in directory: ", <*>;
+
+  my @files = <*.{mp4,flv,mov}>;
   ok @files == 1, "One file downloaded";
 
   ok($files[0] !~ /^video\d{14}\./, "Has good filename");
