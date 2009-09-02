@@ -99,6 +99,11 @@ EOF
 
   $packet = Data::AMF::Packet->deserialize($browser->content);
 
+  if($::opt{debug}) {
+    require Data::Dumper;
+    debug Dumper($packet);
+  }
+
   if(ref $packet->messages->[0]->{value} ne 'ARRAY') {
     die "Unexpected data from AMF gateway";
   }
