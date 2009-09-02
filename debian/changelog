@@ -1,3 +1,15 @@
+get-flash-videos (1.15-1) jettisoned-jackdaw; urgency=low
+
+  * Added support for:
+    - Apple
+    - nfb.ca
+
+  * Fixes for:
+    - 5min
+    - BBC
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Wed, 02 Sep 2009 20:00:48 +0100
+
 get-flash-videos (1.14-1) idiotic-iguana; urgency=low
 
   * Added support for:
