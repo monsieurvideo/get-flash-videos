@@ -21,11 +21,52 @@ sub play {
   $self->{stream} = sub {
     $self->{stream} = undef;
 
-    my $pid = fork;
-    die "Fork failed" unless defined $pid;
-    if(!$pid) {
-      exec $self->replace_filename($::opt{player}, $file);
-      die "Exec failed\n";
+    if ($^O =~ /win32/i and $::opt{player} =~ /mplayer/) {
+      # mplayer is the default - but most Windows users won't have it. If no
+      # other player is specified, check to see if VLC is installed, and if so,
+      # use it. In future perhaps this should use Win32::FileOp's
+      # ShellExecute (possibly with SW_SHOWMAXIMIZED depending on video
+      # resolution) to open in the default media player. However, this
+      # isn't ideal as media players tend to pinch each other's file
+      # associations.
+      if (my $vlc_binary = FlashVideo::Utils::get_vlc_exe_from_registry()) {
+        require Win32::Process;
+        require File::Basename;
+        require File::Spec;
+        $file = File::Spec->rel2abs($file);
+
+        # For absolutely no valid reason, Win32::Process::Create requires
+        # *just* the EXE filename (for example vlc.exe) and then any
+        # subsequent parameters as the "commandline parameters". Since
+        # when is the EXE filename (which, of course, has already been
+        # supplied) a commandline parameter?!
+        my $binary_no_path = File::Basename::basename $vlc_binary;
+
+        my $binary_just_path = File::Basename::dirname $vlc_binary; 
+
+        # Note info() is used because the player is launched when >=n% of
+        # the video is complete (so the user doesn't have to wait until
+        # it's all downloaded). die() wouldn't be good as we then wouldn't
+        # download the remainder of the video.
+        my $process;
+        Win32::Process::Create(
+          $process,
+          $vlc_binary,
+          "$binary_no_path $file",
+          1,
+          32, # NORMAL_PRIORITY_CLASS
+          $binary_just_path,
+        ) or info "Couldn't launch VLC ($vlc_binary): " . Win32::GetLastError();
+      }
+    }
+    else {
+      # *nix
+      my $pid = fork;
+      die "Fork failed" unless defined $pid;
+      if(!$pid) {
+        exec $self->replace_filename($::opt{player}, $file);
+        die "Exec failed\n";
+      }
     }
   };
 

@@ -73,6 +73,8 @@ sub handle_feed {
   $browser->get($mediagen_url);
   $xml = XML::Simple::XMLin($browser->content);
 
+  use Data::Dumper; print Dumper $xml;
+
   my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
     ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};
   $rendition = [ $rendition ] unless ref $rendition eq 'ARRAY';

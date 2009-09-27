@@ -135,4 +135,63 @@ sub get_timestamp_in_iso8601_format {
                  $time->mday, $time->hour, $time->min, $time->sec); 
 }
 
+sub get_vlc_exe_from_registry {
+  if ($^O !~ /MSWin/i) {
+    die "Doesn't make sense to call this except on Windows";
+  }
+
+  my $HAS_WIN32_REGISTRY = eval { require Win32::Registry };
+
+  die "Win32::Registry required for JustWorks(tm) playing on Windows"
+    unless $HAS_WIN32_REGISTRY;
+
+  require Win32::Registry;
+
+  # This module, along with Win32::TieRegistry, is horrible and primarily
+  # works by exporting various symbols into the calling package.
+  # Win32::TieRegistry does not offer an easy way of getting the $Registry
+  # object if you require the module rather than use-ing it.
+  Win32::Registry->import();
+  
+  # Ignoring the fact that polluting your caller's namespace is bad
+  # practice, it's also evil because I now have to disable strict so that
+  # Perl won't complain that $HKEY_LOCAL_MACHINE which is exported into my
+  # package at runtime doesn't exist.
+  my $local_machine;
+
+  {
+    no strict 'vars';
+    $local_machine = $::HKEY_LOCAL_MACHINE;
+  }
+
+  my $key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';
+
+  $local_machine->Open($key, my $reg);
+
+  # Believe it or not, this is Perl, not C
+  my @applications;
+  $reg->GetKeys(\@applications);
+
+  my $vlc_binary;
+
+  foreach my $application (@applications) {
+    next unless $application =~ /VLC Media Player/i;
+
+    $reg->Open($application, my $details);
+
+    my %app_properties;
+    $details->GetValues(\%app_properties);
+
+    # These values are arrayrefs with value name, type and data. data is
+    # what we care about.
+    if ($app_properties{DisplayIcon}->[-1] =~ /\.exe$/i) {
+      # Assume this is the VLC executable
+      $vlc_binary = $app_properties{DisplayIcon}->[-1];
+      last;
+    }
+  }
+  
+  return $vlc_binary;
+}
+
 1;
