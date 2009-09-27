@@ -45,13 +45,18 @@ Specify the player to use for the C<--play> option. Any occurrence of C<%s> in
 this string will be replaced with the filename of the video (appropriately
 shell escaped).
 
-The default is to use mplayer:
+The default on *nix operating systems is to use mplayer:
 
   mplayer -really-quiet %s
 
 You may wish to automatically delete the video after you have viewed it:
 
   mplayer -really-quiet %s; rm %s
+
+On Windows, if C<-p> or C<--play> is specified but no player is specified,
+VLC (if installed) will be used to play the video. There is no need to
+specify where you have installed VLC - this will be automatically retrieved
+from the registry.
 
 =item I<-q>, I<--quiet>
 
