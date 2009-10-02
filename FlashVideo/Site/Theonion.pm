@@ -40,6 +40,8 @@ sub find_video {
       XML::Simple::XMLin($browser->content);
     };
 
+    die "Couldn't parse The Onion XML: $@" if $@;
+
     if (my $title_from_rss = $video_rss->{channel}->{item}->[0]->{title}) {
       $title_from_rss = title_to_filename($title_from_rss); 
 
@@ -49,7 +51,7 @@ sub find_video {
     }
   }
 
-  return ($url, @filenames);
+  return $url, @filenames;
 }
 
 1;
