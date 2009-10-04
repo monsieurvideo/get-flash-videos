@@ -3,7 +3,6 @@ package FlashVideo::Site::Videojug;
 
 use strict;
 use FlashVideo::Utils;
-use LWP::Simple;
 
 my $playlist_url = "http://www.videojug.com/views/film/playlist.aspx?items=&userName=&ar=16_9&id=";
 
