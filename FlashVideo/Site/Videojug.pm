@@ -5,8 +5,13 @@ use strict;
 use FlashVideo::Utils;
 use LWP::Simple;
 
+my $playlist_url = "http://www.videojug.com/views/film/playlist.aspx?items=&userName=&ar=16_9&id=";
+
 sub find_video {
   my ($self, $browser) = @_;
+
+  die "Must have XML::Simple installed to download from Videojug"
+    unless eval { require XML::Simple };
 
   # Get the video ID
   my $video_id;
@@ -14,66 +19,52 @@ sub find_video {
   if ($browser->content =~
     /<meta name=["']video-id["'] content="([A-F0-9a-f\-]+)"/) {
     $video_id = $1;
-  }
-  else {
+  } else {
     die "Couldn't find video ID in Videojug page";
   }
 
-  # Get the base of the FLV filename, for example:
-  #   how-to-make-sushi-rice
-  # There are two methods of getting this -- looking for an image URL in
-  # the page, or looking at the URL itself. On some videos like 
-  #   http://www.videojug.com/film/how-to-make-homemade-bagels
-  # the URL doesn't match up with name itself, so it seems like the image
-  # URL is a more accurate test.
-  my $base_flv_filename;
+  $browser->get($playlist_url . $video_id);
 
-  # Appears in the page as an image link, for example:
-  # href="http://content5.videojug.com/b9/b9ae53fa-18b2-beee-828f-ff0008c918d8/how-to-make-new-york-style-bagels.PostIt.jpg"
-  if ($browser->content =~
-    m'<link rel="image_src"\s+href=".*?videojug\.com/([a-fA-F0-9]{2}/[a-fA-F0-9\-]{10,}/.*?)(?:PostIt)?(?:\.jpg)') {
-    $base_flv_filename = $1;
-    $base_flv_filename =~ s/\.$//;
-    $base_flv_filename = (split /\//, $base_flv_filename)[-1];
-  }
+=pod
 
-  if (!$base_flv_filename) {
-    if ($browser->uri()->as_string =~ m'/([^/]+)$') {
-      $base_flv_filename = $1;
-    }
-    else {
-      die "Couldn't extract base FLV filename for Videojug";
-    }
-  }
+  This XML gives us:
 
-  # Can't properly figure out which host videos are on, so try several. 
-  my @possible_hosts = ("content.videojug.com");
-  push @possible_hosts, map { "content$_.videojug.com" } (2 .. 5);
+  ...
+  <Locations>
+    <Location Name="content.videojug.com" Url="http://content.videojug.com/db/db67075d-e3f5-39af-9481-ff0008c9de32/" />
+    ...
+  </Locations>
+  <Items>
+    <Media Type="Video" Prefix="new-film-4" Title="How To Replace The Batteries In Your Laptop" Keywords="technology and cars,computers,made by you,installing computer parts,made by you competition" />
+  </Items>
+  ...
+  <Shapes>
+    <Shape Code="FS7" Locations="content.videojug.com, direct" />
+    ...
+  </Shapes>
 
-  # Do this before getting the video URL because url_exists() will alter
-  # $browser.
-  my $filename = title_to_filename(extract_title($browser));
+  'Shape' appears to refer to the quality of the video.
 
-  my $video_url;
+=cut
 
-  foreach my $possible_host (@possible_hosts) {
-    # The path is in the following format:
-    # /97/979c8432-d8b4-8a4a-e652-ff0008c93e69/how-to-air-kiss__FW8ENG.flv
-    # where the first directory is the first two characters of the video
-    # ID. The videos I've tested have __FW8ENG.flv at the end, but I can't
-    # figure out where this is being added.
+  my($video_url, $filename);
+  eval {
+    my $xml = XML::Simple::XMLin($browser->content);
 
-    my $url = sprintf "http://%s/%s/%s/%s__FW8ENG.flv",
-              $possible_host, substr($video_id, 0, 2), $video_id,
-              $base_flv_filename;
+    # Shape list seems to be sorted in order of quality, we'll go for the highest.
+    my $shape = $xml->{Shapes}->{Shape}->[-1];
+    # Find a location for this shape..
+    my $location = (grep { $shape->{Locations} =~ /\Q$_->{Name}\E/ }
+      @{$xml->{Locations}->{Location}})[0];
 
-    if (url_exists($browser, $url)) {
-      $video_url = $url;
-      last;
-    }
-  }
+    $video_url = sprintf "%s%s__%sENG.flv",
+      $location->{Url}, $xml->{Items}->{Media}->{Prefix}, $shape->{Code};
 
-  die "Couldn't get video URL" unless $video_url;
+    $filename = title_to_filename($xml->{Items}->{Media}->{Title});
+  };
+  die "Unable to retrieve/parse Videojug playlist. $@" if $@;
+
+  die "Couldn't find video URL" unless $video_url;
 
   return $video_url, $filename;
 }
