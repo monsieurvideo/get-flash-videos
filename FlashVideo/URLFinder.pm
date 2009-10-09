@@ -24,9 +24,11 @@ sub find_package {
     # Fairly lame heuristic, look for the first URL outside the <object>
     # element (avoids grabbing things like codebase attribute).
     # Also look at embedded scripts for sites which embed their content that way.
+    # TODO: extract all SWF URLs from the page and check to see if we've
+    # got a package for those.
  
     for my $possible_url($browser->content =~
-        m!(?:<object[^>]+>.*?|<(?:script|embed|iframe) [^>]*src=["']?)(http://[^"'> ]+)!gixs) {
+        m!(?:<object[^>]+>.*?|<(?:script|embed|iframe|param) [^>]*(?:src=["']?|name=["']src["']\ value=["']))(http://[^"'> ]+)!gixs) {
       $package = find_package_url($possible_url, $browser);
     
       return _found($package, $possible_url) if defined $package;
