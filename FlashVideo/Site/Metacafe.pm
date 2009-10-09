@@ -18,7 +18,9 @@ sub find_video {
   if ($browser->content =~ m'gdaKey=(.+?)&') {
     $url .= "?__gda__=" . uri_unescape($1);
   } else {
-    die "Couldn't find gdaKey parameter.";
+    # They're now using a session ID on the end of the URL like this:
+    # ?aksessionid=1255084734240_230066
+    # but it doesn't seem to actually be required.
   }
 
   my $filename = title_to_filename(extract_title($browser));
