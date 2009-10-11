@@ -14,14 +14,16 @@ sub find_video {
   }
 
   my $id;
-  if($embed_url =~ m!/(\d+)!) {
+  if($embed_url =~ m{flash/(\d+)}) {
     $id = $1;
-  } elsif($embed_url =~ m!/play/!) {
+  } else {
     $browser->get($embed_url);
 
     if($browser->response->is_redirect
         && $browser->response->header("Location") =~ m!(?:/|%2f)(\d+)!i) {
       $id = $1;
+    } else {
+      $id = ($browser->content =~ m!/rss/flash/(\d+)!)[0];
     }
   }
   die "No ID found\n" unless $id;
