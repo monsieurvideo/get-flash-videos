@@ -101,7 +101,7 @@ EOF
 
   if($::opt{debug}) {
     require Data::Dumper;
-    debug Dumper($packet);
+    debug Data::Dumper::Dumper($packet);
   }
 
   if(ref $packet->messages->[0]->{value} ne 'ARRAY') {
