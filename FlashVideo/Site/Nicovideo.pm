@@ -7,7 +7,7 @@ use URI::Escape;
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
-  my $id = ($embed_url =~ /(sm\d+)/)[0];
+  my $id = ($embed_url =~ /([ns]m\d+)/)[0];
   die "No ID found\n" unless $id;
 
   my $base = "http://ext.nicovideo.jp/thumb_watch/$id";
