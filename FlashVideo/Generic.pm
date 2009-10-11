@@ -40,6 +40,7 @@ sub find_video {
     RE: for my $regex(
         qr{(?si)<embed.*?flashvars=["']?([^"'>]+)},
         qr{(?si)<embed.*?src=["']?([^"'>]+)},
+        qr{(?si)<a[^>]* href=["']?([^"'>]+?@{[EXTENSIONS]})},
         qr{(?si)<object[^>]*>.*?<param [^>]*value=["']?([^"'>]+)},
         qr{(?si)<object[^>]*>(.*?)</object>},
         # Attempt to handle scripts using flashvars / swfobject
