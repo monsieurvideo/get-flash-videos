@@ -13,7 +13,7 @@ use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
-  swfhash EXTENSIONS);
+  swfhash EXTENSIONS get_user_config_dir);
 
 sub debug(@) {
   print STDERR "@_\n" if $::opt{debug};
@@ -192,6 +192,18 @@ sub get_vlc_exe_from_registry {
   }
   
   return $vlc_binary;
+}
+
+# Returns a path to the user's configuration data and/or plugins directory.
+sub get_user_config_dir {
+  # On Windows, use "Application Data" and "get_flash_videos". On other
+  # platforms, use the user's home directory (specified by the HOME
+  # environment variable) and ".get_flash_videos". Note that on Windows,
+  # the directory has no . prefix as historically, Windows and Windows
+  # applications tend to make dealing with such directories awkward.
+
+  return $^O eq 'win32' ? "$ENV{APPDATA}/get_flash_videos"
+                        : "$ENV{HOME}/.get_flash_videos";
 }
 
 1;

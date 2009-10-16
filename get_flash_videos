@@ -27,6 +27,8 @@ use FlashVideo::RTMPDownloader;
 use FlashVideo::Utils;
 use FlashVideo::GoogleVideoSearch;
 
+unshift @INC, \&plugin_loader;
+
 use constant VERSION => "1.16";
 
 our %opt;
@@ -108,6 +110,18 @@ if($opt{version}) {
   exit update();
 } elsif($opt{help}) {
   die USAGE;
+}
+
+if ($opt{debug}) {
+  my $plugin_dir = get_plugin_dir();
+
+  if (my @plugins = glob "$plugin_dir/*.pm") {
+    debug @plugins . " plugins installed:";
+    debug "- $_" for @plugins;
+  }
+  else {
+    debug "No plugins installed";
+  }
 }
 
 binmode STDERR, ":utf8";
@@ -334,3 +348,32 @@ sub update {
   }
 }
 
+# Coderef to this in @INC means Perl will call it for every module that it
+# tries to load, including our internal FlashVideo::Site:: modules. Use
+# this to load plugins off disk to support seperately distributed plugins.
+sub plugin_loader {
+  my (undef, $module) = @_;
+
+  if ($module =~ m'^FlashVideo/Site/(.*)') {
+    # Don't want to force people to have a FlashVideo/Site directory
+    # structure in their plugins directory, as this makes it harder to
+    # install plugins manually.
+    my $plugin_name = $1;
+
+    my $plugin_dir = get_plugin_dir();
+
+    debug "Trying to open plugin $plugin_dir/$plugin_name";
+
+    if (open my $plugin_fh, '<', "$plugin_dir/$plugin_name") {
+      return $plugin_fh; # Perl then reads the plugin from the FH
+    }
+  }
+  
+  return;
+}
+
+# This is called in debug mode to get a list of installed plugins, so have
+# it as a separate function.
+sub get_plugin_dir {
+  return get_user_config_dir() . "/plugins";
+}
