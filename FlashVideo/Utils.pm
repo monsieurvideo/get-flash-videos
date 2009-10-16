@@ -13,7 +13,7 @@ use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
-  swfhash EXTENSIONS get_user_config_dir);
+  swfhash swfhash_data EXTENSIONS get_user_config_dir);
 
 sub debug(@) {
   print STDERR "@_\n" if $::opt{debug};
@@ -64,8 +64,14 @@ sub swfhash {
 
   $browser->get($url);
 
-  my $data = "F" . substr($browser->content, 1, 7)
-                 . Compress::Zlib::uncompress(substr $browser->content, 8);
+  return swfhash_data($browser->content, $url);
+}
+
+sub swfhash_data {
+  my ($data, $url) = @_;
+
+  $data = "F" . substr($data, 1, 7)
+              . Compress::Zlib::uncompress(substr $data, 8);
 
   return
     swfsize => length $data,
