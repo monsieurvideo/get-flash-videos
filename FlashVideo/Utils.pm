@@ -56,12 +56,6 @@ sub extract_info {
 sub swfhash {
   my($browser, $url) = @_;
 
-  die "Must have Compress::Zlib and Digest::SHA for this RTMP download\n"
-      unless eval {
-        require Compress::Zlib;
-        require Digest::SHA;
-      };
-
   $browser->get($url);
 
   return swfhash_data($browser->content, $url);
@@ -69,6 +63,12 @@ sub swfhash {
 
 sub swfhash_data {
   my ($data, $url) = @_;
+
+  die "Must have Compress::Zlib and Digest::SHA for this RTMP download\n"
+      unless eval {
+        require Compress::Zlib;
+        require Digest::SHA;
+      };
 
   $data = "F" . substr($data, 1, 7)
               . Compress::Zlib::uncompress(substr $data, 8);
