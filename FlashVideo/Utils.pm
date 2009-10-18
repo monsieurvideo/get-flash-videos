@@ -214,7 +214,11 @@ sub get_user_config_dir {
   # the directory has no . prefix as historically, Windows and Windows
   # applications tend to make dealing with such directories awkward.
 
-  return $^O =~ /MSWin/i ? "$ENV{APPDATA}/get_flash_videos"
+  # Note that older versions of Windows don't set an APPDATA environment
+  # variable.
+
+  return $^O =~ /MSWin/i ? ($ENV{APPDATA} || 'c:/windows/application data')
+                            . "/get_flash_videos"
                          : "$ENV{HOME}/.get_flash_videos";
 }
 

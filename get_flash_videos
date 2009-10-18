@@ -114,7 +114,14 @@ if($opt{version}) {
 if ($opt{debug}) {
   my $plugin_dir = get_plugin_dir();
 
-  if (my @plugins = glob "$plugin_dir/*.pm") {
+  my @plugins;
+  if (opendir my $plugin_dir_dh, $plugin_dir) {
+    @plugins = grep /\.pm$/i,
+               readdir $plugin_dir_dh;
+    closedir $plugin_dir_dh;
+  }
+
+  if (@plugins) {
     debug @plugins . " plugins installed:";
     debug "- $_" for @plugins;
   }
