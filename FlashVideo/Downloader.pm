@@ -76,7 +76,9 @@ sub play {
 sub download {
   my ($self, $url, $file, $browser) = @_;
 
-  $self->{filename} = $file;
+  $self->{printable_filename} = $file;
+
+  $file = $self->get_filename($file);
 
   # Support resuming
   my $mode = (-e $file) ? '>>' : '>';
@@ -89,12 +91,12 @@ sub download {
     # File might be fully downloaded, in which case there's nothing to
     # resume.
     if ($offset == $response->header('Content-Length')) {
-      error "File $file has been fully downloaded.";
+      error "File $self->{printable_filename} has been fully downloaded.";
       $self->{stream}->() if defined $self->{stream};
       return;
     }
     
-    info "File $file already exists, seeing if resuming is supported.";
+    info "File $self->{printable_filename} already exists, seeing if resuming is supported.";
     if (!$response->header('Accept-Ranges')) {
       if(!$::opt{yes}) {
         error "This server doesn't explicitly support resuming.\n" .
@@ -111,7 +113,6 @@ sub download {
     }
   }
 
-  $self->{file} = $file;
   open my $video_fh, $mode, $file or die $!;
   binmode $video_fh;
   $self->{fh} = $video_fh; 
@@ -155,7 +156,7 @@ sub download {
         }
 
         if ($offset and !$response->header('Content-Range')) {
-          error "Resuming failed - please delete $file and restart.";
+          error "Resuming failed - please delete $self->{printable_filename} and restart.";
           exit 1;
         }
         else {
@@ -169,7 +170,7 @@ sub download {
         }
 
         my $fh = $self->{fh};
-        print $fh $data || die "Unable to write to '$file': $!\n";
+        print $fh $data || die "Unable to write to '$self->{printable_filename}': $!\n";
 
         if(defined $self->{stream}) {
           if($self->{downloaded} > 300_000) {
@@ -192,7 +193,7 @@ sub download {
     error $browser->response->header("X-Died");
   }
 
-  close $self->{fh} || die "Unable to write to '$file': $!";
+  close $self->{fh} || die "Unable to write to '$self->{printable_filename}': $!";
 
   if ($browser->success) {
     return $self->{downloaded} - $offset;
@@ -233,7 +234,7 @@ sub progress {
   if($progress_text) {
     my $width = $self->terminal_width;
 
-    my $filename = $self->{filename};
+    my $filename = $self->{printable_filename};
     my $filename_len = $width - length($progress_text);
 
     if($filename_len < length $filename) {
@@ -317,6 +318,19 @@ sub check_magic {
   }
 
   return 0;
+}
+
+sub get_filename {
+  my($self, $file) = @_;
+
+  # On windows the filename needs to be in the codepage of the system..
+  if($^O =~ /MSWin/i) {
+    $file = Encode::encode(get_win_codepage(), $file);
+    # This may have added '?' as subsition characters, replace with '_'
+    $file =~ s/\?/_/g;
+  }
+
+  return $file;
 }
 
 1;

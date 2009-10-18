@@ -11,13 +11,15 @@ use FlashVideo::Utils;
 sub download {
   my ($self, $rtmp_data) = @_;
 
-  if (-e $rtmp_data->{flv} && !$rtmp_data->{live}) {
-    info "RTMP output filename '$rtmp_data->{flv}' already " .
+  $self->{printable_filename} = $rtmp_data->{flv};
+
+  my $file = $rtmp_data->{flv} = $self->get_filename($rtmp_data->{flv});
+
+  if (-e $file && !$rtmp_data->{live}) {
+    info "RTMP output filename '$self->{printable_filename}' already " .
                  "exists, asking rtmpdump to resume...";
     $rtmp_data->{resume} = '';
   }
-
-  $self->{filename} = $rtmp_data->{flv};
 
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
@@ -91,7 +93,7 @@ sub download {
     }
   }
 
-  if(-s $rtmp_data->{flv} < 100 || !$self->check_file($rtmp_data->{flv})) {
+  if(-s $file < 100 || !$self->check_file($file)) {
     error "Download failed, no valid file downloaded";
     unlink $rtmp_data->{flv};
     return 0;
@@ -101,7 +103,7 @@ sub download {
     info "\nrtmpdump exited early? Incomplete download possible -- try running again to resume.";
   }
 
-  return -s $self->{filename};
+  return -s $file;
 }
 
 1;

@@ -13,7 +13,7 @@ use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
-  swfhash swfhash_data EXTENSIONS get_user_config_dir);
+  swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage);
 
 sub debug(@) {
   print STDERR "@_\n" if $::opt{debug};
@@ -123,13 +123,6 @@ sub title_to_filename {
  
   # If we have nothing then return a filestamped filename.
   return get_video_filename($type) unless $title;
-
-  # On windows the filename needs to be in the codepage of the system..
-  if($^O =~ /MSWin/i) {
-    $title = Encode::encode(get_win_codepage(), $title);
-    # This may have added '?' as subsition characters, replace with '_'
-    $title =~ s/\?/_/g;
-  }
 
   return "$title.$type";
 }
