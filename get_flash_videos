@@ -276,7 +276,7 @@ sub download {
     my $size = $downloader->$action($data, $save_as, $browser) || exit 1;
 
     info "\n" . ($remaining == 1 ? "Done. " : "")
-      . "Saved $size bytes to $downloader->{filename}";
+      . "Saved $size bytes to $downloader->{printable_filename}";
   }
 
   return 1;
