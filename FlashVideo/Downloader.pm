@@ -21,7 +21,7 @@ sub play {
   $self->{stream} = sub {
     $self->{stream} = undef;
 
-    if ($^O =~ /win32/i and $::opt{player} =~ /mplayer/) {
+    if ($^O =~ /MSWin/i and $::opt{player} eq "VLC") {
       # mplayer is the default - but most Windows users won't have it. If no
       # other player is specified, check to see if VLC is installed, and if so,
       # use it. In future perhaps this should use Win32::FileOp's

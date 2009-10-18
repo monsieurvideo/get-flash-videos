@@ -124,6 +124,13 @@ sub title_to_filename {
   # If we have nothing then return a filestamped filename.
   return get_video_filename($type) unless $title;
 
+  # On windows the filename needs to be in the codepage of the system..
+  if($^O =~ /MSWin/i) {
+    $title = Encode::encode(get_win_codepage(), $title);
+    # This may have added '?' as subsition characters, replace with '_'
+    $title =~ s/\?/_/g;
+  }
+
   return "$title.$type";
 }
 
@@ -200,6 +207,12 @@ sub get_vlc_exe_from_registry {
   return $vlc_binary;
 }
 
+sub get_win_codepage {
+  require Win32::API;
+  Win32::API->Import("kernel32", "int GetACP()");
+  return "cp" . GetACP();
+}
+
 # Returns a path to the user's configuration data and/or plugins directory.
 sub get_user_config_dir {
   # On Windows, use "Application Data" and "get_flash_videos". On other
@@ -208,8 +221,8 @@ sub get_user_config_dir {
   # the directory has no . prefix as historically, Windows and Windows
   # applications tend to make dealing with such directories awkward.
 
-  return $^O eq 'win32' ? "$ENV{APPDATA}/get_flash_videos"
-                        : "$ENV{HOME}/.get_flash_videos";
+  return $^O =~ /MSWin/i ? "$ENV{APPDATA}/get_flash_videos"
+                         : "$ENV{HOME}/.get_flash_videos";
 }
 
 1;

@@ -39,7 +39,7 @@ BEGIN {
     version => 0,
     update => 0,
     play => 0,
-    player => "mplayer -really-quiet %s",
+    player => ($^O =~ /MSWin/i ? "VLC" : "mplayer -really-quiet %s"),
     debug => 0,
     quiet => 0,
   );
@@ -61,8 +61,7 @@ Options:
   -d --debug    Print extra debugging information.
   -f --filename Filename to save the video as.
   -p --play     Start playing the video once enough has been downloaded.
-     --player   Player to use for the video (*nix default: $opt{player},
-                                             Windows default: VLC)
+     --player   Player to use for the video (default: $opt{player})
   -q --quiet    Be quiet (only print errors).
   -u --update   Update to latest version.
   -v --version  Print version.
@@ -124,8 +123,11 @@ if ($opt{debug}) {
   }
 }
 
-binmode STDERR, ":utf8";
-binmode STDOUT, ":utf8";
+if($^O !~ /MSWin/i) {
+  # We'll assume windows is the only backwards OS that doesn't yet use UTF-8.
+  binmode STDERR, ":utf8";
+  binmode STDOUT, ":utf8";
+}
 
 my (@urls) = @ARGV;
 @urls > 0 or die USAGE;

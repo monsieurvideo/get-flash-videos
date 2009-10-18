@@ -26,7 +26,7 @@ sub find_video {
   $browser->get($base . "/$playkey");
   my $url = uri_unescape(($browser->content =~ /url=([^&]+)/)[0]);
 
-  return $url, title_to_filename($title);
+  return $url, title_to_filename($title, $id =~ /^nm/ ? "swf" : "flv");
 }
 
 1;
