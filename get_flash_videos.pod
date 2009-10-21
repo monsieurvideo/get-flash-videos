@@ -79,6 +79,10 @@ Print the version of B<get_flash_videos>.
 Do not prompt with any questions, just say 'yes'. This means either literally
 yes, or the default or first option if choosing from a list.
 
+=item I<--add-plugin=C<URL>>
+
+Add an external plugin from a specified URL or local file.
+
 =back
 
 =head1 CONFIGURATION

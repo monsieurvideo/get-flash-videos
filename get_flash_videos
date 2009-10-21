@@ -20,7 +20,10 @@
 # maintain the JustWorks(tm) nature of the program.
 
 use strict;
+use File::stat;
+use File::Basename;
 use Getopt::Long;
+
 use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
@@ -58,14 +61,15 @@ Downloads videos from the web pages given in URL or searches Google Video
 Search for 'search string'.
 
 Options:
-  -d --debug    Print extra debugging information.
-  -f --filename Filename to save the video as.
-  -p --play     Start playing the video once enough has been downloaded.
-     --player   Player to use for the video (default: $opt{player})
-  -q --quiet    Be quiet (only print errors).
-  -u --update   Update to latest version.
-  -v --version  Print version.
-  -y --yes      Say yes to any questions (don't prompt for any information).
+     --add-plugin Add a plugin from a URL.
+  -d --debug      Print extra debugging information.
+  -f --filename   Filename to save the video as.
+  -p --play       Start playing the video once enough has been downloaded.
+     --player     Player to use for the video (default: $opt{player})
+  -q --quiet      Be quiet (only print errors).
+  -u --update     Update to latest version.
+  -v --version    Print version.
+  -y --yes        Say yes to any questions (don't prompt for any information).
 
 EOF
 
@@ -101,6 +105,7 @@ GetOptions(
   "player=s"     => \$opt{player},
   "debug|d"      => \$opt{debug},
   "quiet|q"      => \$opt{quiet},
+  "add-plugin=s" => \$opt{add_plugin},
 );
 
 if($opt{version}) {
@@ -109,23 +114,15 @@ if($opt{version}) {
   exit update();
 } elsif($opt{help}) {
   die USAGE;
+} elsif($opt{add_plugin}) {
+  exit add_plugin($opt{add_plugin});
 }
 
 if ($opt{debug}) {
-  my $plugin_dir = get_plugin_dir();
-
-  my @plugins;
-  if (opendir my $plugin_dir_dh, $plugin_dir) {
-    @plugins = grep /\.pm$/i,
-               readdir $plugin_dir_dh;
-    closedir $plugin_dir_dh;
-  }
-
-  if (@plugins) {
+  if(my @plugins = get_installed_plugins()) {
     debug @plugins . " plugins installed:";
     debug "- $_" for @plugins;
-  }
-  else {
+  } else {
     debug "No plugins installed";
   }
 }
@@ -304,59 +301,184 @@ sub read_conf {
   }
 }
 
+sub add_plugin {
+  my($plugin_url) = @_;
+
+  my $uri = URI->new($plugin_url);
+
+  unless(-d get_plugin_dir()) {
+    require File::Path;
+    File::Path::mkpath(get_plugin_dir())
+      or die "Unable to create plugin dir: $!";
+  }
+
+  my $filename = get_plugin_dir() . "/" . basename($uri->path);
+
+  if($filename !~ /\.pm$/) {
+    die "Plugins must have a file extension of '.pm'\n";
+  }
+
+  if(!$uri->scheme) {
+    # Local path given
+    require File::Copy;
+    File::Copy::copy($plugin_url => $filename)
+      || die "Unable to copy plugin to '$filename': $!\n";
+
+    info "Plugin installed.";
+    return 0;
+  } else {
+    my $browser = FlashVideo::URLFinder::get_browser();
+    return !install_plugin($browser, $plugin_url, $filename);
+  }
+}
+
 sub update {
   # SCRIPT_NAME is some magic set by combine-perl
-  die "This is a development version" unless $::SCRIPT_NAME;
+  if($::SCRIPT_NAME) {
+    my $browser = FlashVideo::URLFinder::get_browser();
 
-  my $browser = FlashVideo::URLFinder::get_browser();
+    $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
 
-  $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
+    if(!$browser->response->is_success) {
+      die "Unable to retrieve version data: " . $browser->response->status_line;
+    }
 
-  if(!$browser->response->is_success) {
-    die "Unable to retrieve version data: " . $browser->response->status_line;
-  }
+    my $version = ($browser->content =~ /version: (\S+)/)[0];
+    my $base = ($browser->content =~ /from: (\S+)/)[0];
+    my $info = ($browser->content =~ /info: (\S+)/)[0];
+    my $url = $base . $::SCRIPT_NAME . "-" . $version;
 
-  my $version = ($browser->content =~ /version: (\S+)/)[0];
-  my $base = ($browser->content =~ /from: (\S+)/)[0];
-  my $info = ($browser->content =~ /info: (\S+)/)[0];
-  my $url = $base . $::SCRIPT_NAME . "-" . $version;
+    die "Unable to parse version data" unless $version and $base;
 
-  die "Unable to parse version data" unless $version and $base;
+    # Split version on . and compare..
+    my @v = split /\./, $version;
+    my @V = split /\./, VERSION;
 
-  # Split version on . and compare..
-  my @v = split /\./, $version;
-  my @V = split /\./, VERSION;
+    my $newer = 0;
+    my $i = 0;
+    for(@v) {
+      $newer = 1 if !defined $V[$i] || $_ > $V[$i];
+      last if $V[$i] > $v[$i];
+      $i++;
+    }
 
-  my $newer = 0;
-  my $i = 0;
-  for(@v) {
-    $newer = 1 if !defined $V[$i] || $_ > $V[$i];
-    last if $V[$i] > $v[$i];
-    $i++;
-  }
+    if($newer) {
+      info "Newer version ($version) available, downloading..";
+      die "Cannot update -- unable to write to $0\n" unless -w $0;
 
-  if($newer) {
-    info "Newer version ($version) available, downloading..";
-    die "Cannot update -- unable to write to $0\n" unless -w $0;
+      my $new_file = $0 . ".new";
+      $browser->mirror($url, $new_file);
 
-    my $new_file = $0 . ".new";
-    $browser->mirror($url, $new_file);
+      if($browser->response->is_success && -f $new_file) {
+        rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
+        rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
+        chmod 0755, $0;
 
-    if($browser->response->is_success && -f $new_file) {
-      rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
-      rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
-      chmod 0755, $0;
-
-      info "New version installed as $0";
-      info "(previous version backed up to $0.old).";
-      info $info;
-      exit 0;
+        info "New version installed as $0";
+        info "(previous version backed up to $0.old).";
+        info $info;
+        exit 0;
+      } else {
+        die "Download failed: " . $browser->response->status_line;
+      }
     } else {
-      die "Download failed: " . $browser->response->status_line;
+      print STDERR "You already have the latest version.\n";
     }
   } else {
-    die "You already have the latest version.\n";
+    info "Development version, not updated";
   }
+
+  update_plugins();
+}
+
+sub update_plugins {
+  my $browser = FlashVideo::URLFinder::get_browser();
+
+  foreach my $plugin(get_installed_plugins()) {
+    debug "Seeing if there is an update for $plugin..";
+
+    my $file = get_plugin_dir() . "/$plugin";
+    require $file;
+
+    my $package = "FlashVideo::Site::" . ($plugin =~ /(.*)\.pm$/)[0];
+
+    if($package->can("update")) {
+      # Allow plugin to override generic updater
+      $package->update();
+    } else {
+      no strict 'refs';
+
+      my $downloaded  = 0;
+      my $newer_found = 0;
+
+      foreach my $update_url (@{ "$package\::update_urls" }) {
+        $browser->head($update_url);
+
+        if (!$browser->response->is_success) {
+          # This shouldn't be fatal
+          debug "Couldn't retrieve $update_url for $plugin: " . $browser->response->status_line;
+          next;
+        }
+
+        # Compare the last modified time of the plugin to the time of the file on disk
+        my $file_mtime = stat($file)->mtime;
+
+        my $remote_plugin_mtime = $browser->response->last_modified;
+
+        if ($remote_plugin_mtime > $file_mtime) {
+          info "Newer version of plugin $plugin found at $update_url, trying to download and install";
+          $newer_found = 1;
+
+          if ($downloaded = install_plugin($browser, $update_url, $file)) {
+            last;
+          }
+        }
+        else {
+          debug "Plugin $plugin is already the lastest version.";
+          debug "(Remote: " . $browser->response->header("Last-Modified")
+            . "; Local: " . gmtime($file_mtime) . " GMT)";
+        }
+      }
+
+      if ($newer_found and !$downloaded) {
+        die "Couldn't install $plugin plugin";
+      }
+    }
+  }
+}
+
+# Upgrade a plugin or install a new one.
+sub install_plugin {
+  my ($browser, $url, $file) = @_;
+
+  # So we can track newly installed plugins as well as updated ones
+  my $plugin_exists = -f $file; 
+
+  my $new_file = $plugin_exists ? "$file.new" : $file;
+
+  $browser->mirror($url, $new_file);
+
+  if ($browser->response->is_success && -f $new_file) {
+    my $short_name = basename($file);
+
+    if ($plugin_exists) {
+      rename $file, "$file.old" or die "Unable to rename $file to $file.old: $!";
+      rename $new_file, $file   or die "Unable to rename $new_file to $file: $!";
+
+      info "New version of $short_name installed as $file";
+      info "(previous version backed up to $file.old).";
+    }
+    else {
+      info "New plugin $short_name installed as $file"; 
+    }
+
+    return 1;
+  }
+  else {
+    warn "Download failed: " . $browser->response->status_line;
+  }
+
+  return 0;
 }
 
 # Coderef to this in @INC means Perl will call it for every module that it
@@ -381,6 +503,19 @@ sub plugin_loader {
   }
   
   return;
+}
+
+sub get_installed_plugins {
+  my $plugin_dir = get_plugin_dir();
+
+  my @plugins;
+  if (opendir my $plugin_dir_dh, $plugin_dir) {
+    @plugins = grep /\.pm$/i,
+               readdir $plugin_dir_dh;
+    closedir $plugin_dir_dh;
+  }
+
+  return @plugins;
 }
 
 # This is called in debug mode to get a list of installed plugins, so have
