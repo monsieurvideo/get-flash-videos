@@ -1,3 +1,30 @@
+get-flash-videos (1.16-1) killer-kangaroo; urgency=low
+
+  * Fixes for:
+    - YouTube
+    - Fliqz
+    - Nicovideo
+    - Blip
+    - Metacafe
+
+  * Added support for:
+    - TED
+    - Videojug
+    - Freevideo.ru
+    - Amazon
+    - Onion
+
+  * Support for external plugins to make it easier for third parties to
+    add support for sites.
+
+  * Improvements to Windows support
+    - Filenames now saved in Windows codepage (still impossible to e.g. have
+      Japanese filenames on an English Windows, using a proper OS is
+      recommended).
+    - Use VLC for playing if available.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Thu, 22 Oct 2009 18:33:51 +0100
+
 get-flash-videos (1.15-1) jettisoned-jackdaw; urgency=low
 
   * Added support for:
