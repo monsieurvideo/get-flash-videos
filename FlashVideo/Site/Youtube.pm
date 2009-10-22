@@ -68,7 +68,7 @@ sub find_video {
   }
 
   my $video_id;
-  if ($browser->content =~ /var pageVideoId = '(.+?)'/) {
+  if ($browser->content =~ /(?:var pageVideoId =|CFG_VIDEO_ID:) '(.+?)'/) {
     $video_id = $1;
   } else {
     die "Couldn't extract video ID";
