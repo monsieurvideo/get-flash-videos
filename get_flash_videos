@@ -27,6 +27,7 @@ use Getopt::Long;
 use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
+use FlashVideo::Search;
 use FlashVideo::Utils;
 use FlashVideo::GoogleVideoSearch;
 
@@ -148,7 +149,7 @@ if ( ((@urls == 1) and $urls[0] !~ m'\.') or
 my @download_urls;
 
 if ($search) {
-  if (my @results = FlashVideo::GoogleVideoSearch::search($search)) {
+  if (my @results = FlashVideo::Search::search($search, 10, 20)) {
     if ($opt{yes} or @results == 1) {
       my $message = (@results == 1) ?
         "Downloading only match for '$search': '$results[0]->{name}'" :
