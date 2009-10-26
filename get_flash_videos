@@ -37,21 +37,27 @@ use constant VERSION => "1.17";
 
 our %opt;
 BEGIN {
+  my $player = "mplayer -really-quiet";
+  # We have special handling for "VLC" on Windows
+  $player = "VLC" if $^O =~ /MSWin/i;
+  # On OSX we default to open, if mplayer isn't available
+  $player = "open" if $^O =~ /darwin/ && !is_program_on_path("mplayer");
+
+  if(is_program_on_path("gnome-open") && !is_program_on_path("mplayer")) {
+    # If mplayer isn't available, but gnome-open is, use that.
+    $player = "gnome-open";
+  } elsif(is_program_on_path("kde-open") && !is_program_on_path("mplayer")) {
+    # Alternatively try kde-open..
+    $player = "kde-open";
+  }
+
   %opt = (
     yes => 0,
     filename => '',
     version => 0,
     update => 0,
     play => 0,
-    player => (
-      $^O =~ /MSWin/i
-        # We have special handling for "VLC" on Windows
-        ? "VLC"
-        # On OSX we default to open, if mplayer isn't available
-        : ($^O =~ /darwin/ && !is_program_on_path("mplayer")
-          ? "open"
-          # Otherwise the default is to use mplayer
-          : "mplayer -really-quiet")),
+    player => $player,
     debug => 0,
     quiet => 0,
   );
