@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # get_flash_videos -- download all the Flash videos off a web page
 #
