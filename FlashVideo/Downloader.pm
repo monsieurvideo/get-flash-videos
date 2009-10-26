@@ -269,6 +269,7 @@ sub _bytes_to_kib {
 
 sub replace_filename {
   my($self, $string, $filename) = @_;
+  $string .= " %s" unless $string =~ /%s/;
   my $esc = $self->shell_escape($filename);
   $string =~ s/['"]?%s['"]?/$esc/g;
   return $string;

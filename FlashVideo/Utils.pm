@@ -13,7 +13,8 @@ use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
-  swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage);
+  swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
+  is_program_on_path);
 
 sub debug(@) {
   print STDERR "@_\n" if $::opt{debug};
@@ -220,6 +221,16 @@ sub get_user_config_dir {
   return $^O =~ /MSWin/i ? ($ENV{APPDATA} || 'c:/windows/application data')
                             . "/get_flash_videos"
                          : "$ENV{HOME}/.get_flash_videos";
+}
+
+# Is the specified program on the system PATH?
+sub is_program_on_path {
+  my($program) = @_;
+
+  for my $dir(split($^O =~ /MSWin/i ? ";" : ":", $ENV{PATH})) {
+    return 1 if -f "$dir/$program";
+  }
+  return 0;
 }
 
 1;

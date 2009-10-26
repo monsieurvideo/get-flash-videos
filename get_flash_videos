@@ -43,7 +43,15 @@ BEGIN {
     version => 0,
     update => 0,
     play => 0,
-    player => ($^O =~ /MSWin/i ? "VLC" : "mplayer -really-quiet %s"),
+    player => (
+      $^O =~ /MSWin/i
+        # We have special handling for "VLC" on Windows
+        ? "VLC"
+        # On OSX we default to open, if mplayer isn't available
+        : ($^O =~ /darwin/ && !is_program_on_path("mplayer")
+          ? "open"
+          # Otherwise the default is to use mplayer
+          : "mplayer -really-quiet")),
     debug => 0,
     quiet => 0,
   );
