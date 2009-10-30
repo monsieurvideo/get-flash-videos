@@ -17,7 +17,7 @@ sub download {
 
   if (-e $file && !$rtmp_data->{live}) {
     info "RTMP output filename '$self->{printable_filename}' already " .
-                 "exists, asking rtmpdump to resume...";
+                 "exists, asking to resume...";
     $rtmp_data->{resume} = '';
   }
 
@@ -42,26 +42,35 @@ sub download {
     $self->{stream} = undef;
   }
 
-  debug "Running rtmpdump", 
+  my $prog = $self->get_rtmp_program;
+
+  if($prog eq 'flvstreamer' && $rtmp_data->{rtmp} =~ /^rtmpe:/) {
+    error "FLVStreamer does not support RTMPE streams, please install rtmpdump.";
+    exit 1;
+  }
+
+  $rtmp_data->{verbose} = undef;
+
+  debug "Running $prog", 
     join(" ", map { ("--$_" => $rtmp_data->{$_} ? $self->shell_escape($rtmp_data->{$_}) : ()) } keys
         %$rtmp_data);
 
   my($in, $out, $err);
   $err = gensym;
-  open3($in, $out, $err, "rtmpdump",
+  open3($in, $out, $err, $prog,
     map { ("--$_" => ($rtmp_data->{$_} || ())) } keys %$rtmp_data);
 
   my $buf = "";
-  while(sysread($err, $buf, 512, length $buf) > 0) {
+  while(sysread($err, $buf, 32, length $buf) > 0) {
     my @parts = split /\r/, $buf;
     $buf = "";
 
     for(@parts) {
       # Hide almost everything from rtmpdump, it's less confusing this way.
       if(/^((?:DEBUG:|WARNING:|Closing connection|ERROR: No playpath found).*)\n/) {
-        debug "rtmpdump: $1";
+        debug "$prog: $1";
       } elsif(/^(ERROR: .*)\n/) {
-        info "rtmpdump: $1";
+        info "$prog: $1";
       } elsif(/^([0-9.]+) KB(?: \(([0-9.]+)%\))?/) {
         $self->{downloaded} = $1 * 1024;
         my $percent = $2;
@@ -78,7 +87,7 @@ sub download {
         }
 
         if(/open3/) {
-          error "\nMake sure you have 'rtmpdump' installed and available on your PATH.";
+          error "\nMake sure you have 'rtmpdump' or 'flvstreamer' installed and available on your PATH.";
           return 0;
         }
       } else {
@@ -100,10 +109,18 @@ sub download {
   }
 
   if($self->{percent} < 95) {
-    info "\nrtmpdump exited early? Incomplete download possible -- try running again to resume.";
+    info "\n$prog exited early? Incomplete download possible -- try running again to resume.";
   }
 
   return -s $file;
+}
+
+sub get_rtmp_program {
+  if(is_program_on_path("rtmpdump")) {
+    return "rtmpdump";
+  } elsif(is_program_on_path("flvstreamer")) {
+    return "flvstreamer";
+  }
 }
 
 1;
