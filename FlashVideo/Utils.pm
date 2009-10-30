@@ -203,6 +203,18 @@ sub get_vlc_exe_from_registry {
 
 sub get_win_codepage {
   require Win32::API;
+
+  # Hack for older versions of Win32::API::Type (which Win32::API->import
+  # uses to parse prototypes) to avoid "unknown output parameter type"
+  # warning. Older versions of this module have an INIT block for reading
+  # type information from the DATA filehandle. This doesn't get called when
+  # we require the module rather than use-ing it. More recent versions of
+  # the module don't bother with an INIT block, and instead just have the
+  # initialisation code at package level.
+  if (! %Win32::API::Type::Known) {
+    %Win32::API::Type::Known = (int => 'i');
+  }
+
   Win32::API->Import("kernel32", "int GetACP()");
   return "cp" . GetACP();
 }
