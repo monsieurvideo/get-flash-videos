@@ -21,7 +21,7 @@ sub find_video {
 
   # flashVar params (e.g. <embed>)
   $player_id ||= ($browser->content =~ /flashVars.*playerID=(\d+)/i)[0];
-  $video_id ||= ($browser->content =~ /flashVars.*videoID=(\d+)/i)[0];
+  $video_id ||= ($browser->content =~ /flashVars.*video(?:Player|ID)=(\d+)/i)[0];
 
   # Brightcove JavaScript API
   if(!$player_id && $browser->content =~ /brightcove.player.create\(['"]?(\d+)['"]?,\s*['"]?(\d+)/) {
