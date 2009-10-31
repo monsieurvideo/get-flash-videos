@@ -79,7 +79,7 @@ sub download {
         debug "$prog: $1";
       } elsif(/^(ERROR: .*)\n/) {
         info "$prog: $1";
-      } elsif(/^([0-9.]+) kB(?: \(([0-9.]+)%\))?/i) {
+      } elsif(/^([0-9.]+) kB(?:\s+\/ \S+ sec)?(?: \(([0-9.]+)%\))?/i) {
         $self->{downloaded} = $1 * 1024;
         my $percent = $2;
 
@@ -98,6 +98,7 @@ sub download {
           } elsif($l =~ /\s+filesize\s+(\d+)/) {
             $self->{content_length} = $1;
           } elsif($l =~ /\w/) {
+            print STDERR "\r" if $self->{downloaded};
             info $l;
           }
         }
