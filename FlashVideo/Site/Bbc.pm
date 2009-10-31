@@ -33,6 +33,11 @@ sub find_video {
     $path =~ s/['"]//g;
     $playlist_xml = URI->new_abs($path, $browser->uri);
   }
+  elsif($browser->content =~ /EmpEmbed.embed\s*\((.*?)\);/) {
+    my $path = (split /,/, $1)[3];
+    $path =~ s/"//g;
+    $playlist_xml = URI->new_abs($path, $browser->uri);
+  }
   elsif($browser->uri =~ m!/(b[0-9a-z]{7})(?:/|$)!) {
     # Looks like a pid..
     my @gi_cmd = (qw(get_iplayer -g --pid), $1);
@@ -75,7 +80,10 @@ sub find_video {
 
   my $sound = ($playlist->{item}->{guidance} !~ /has no sound/);
 
-  my $info = $playlist->{item}->{media}->{connection};
+  my $info = ref $playlist->{item}->{media} eq 'ARRAY'
+    ? $playlist->{item}->{media}->[0]->{connection}
+    : $playlist->{item}->{media}->{connection};
+
   $info = $playlist->{item}->{programme}->{media}->{connection} unless $info;
 
   $info->{application} ||= "ondemand";
@@ -134,7 +142,7 @@ sub find_video {
     $data->{playpath} .= "?auth=$token&aifp=v0001";
 
     if($info->{application} eq 'live') {
-      $data->{fcsubscribe} = $data->{playpath};
+      $data->{subscribe} = $data->{playpath};
       $data->{live} = 1;
     }
   }
