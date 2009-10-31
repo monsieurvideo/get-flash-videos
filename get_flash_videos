@@ -58,6 +58,7 @@ BEGIN {
     update => 0,
     play => 0,
     player => $player,
+    proxy => '',
     debug => 0,
     quiet => 0,
   );
@@ -81,6 +82,7 @@ Options:
   -f --filename   Filename to save the video as.
   -p --play       Start playing the video once enough has been downloaded.
      --player     Player to use for the video (default: $opt{player})
+     --proxy      Proxy to use, use host:port for SOCKS, or URL for HTTP.
   -q --quiet      Be quiet (only print errors).
   -u --update     Update to latest version.
   -v --version    Print version.
@@ -118,6 +120,7 @@ GetOptions(
   "help|h"       => \$opt{help},
   "play|p"       => \$opt{play},
   "player=s"     => \$opt{player},
+  "proxy=s"      => \$opt{proxy},
   "debug|d"      => \$opt{debug},
   "quiet|q"      => \$opt{quiet},
   "add-plugin=s" => \$opt{add_plugin},

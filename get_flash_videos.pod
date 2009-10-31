@@ -58,6 +58,22 @@ VLC (if installed) will be used to play the video. There is no need to
 specify where you have installed VLC - this will be automatically retrieved
 from the registry.
 
+=item I<--proxy>
+
+Proxy to use, a SOCKS proxy or HTTP proxy can be specified.
+
+To specify a SOCKS proxy, simply provide the host and port in host:port format.
+If port is not specified, 1080 is assumed. C<LWP::Protocol::socks> is required for
+SOCKS support.
+
+To specify an HTTP proxy, provide the proxy URL, for example C<http://host:port>.
+
+For proxying RTMP downloads, SOCKS is required along with a version of
+C<rtmpdump> which supports SOCKS proxying.
+
+If no proxy is specified on the command line or the config file the
+C<$HTTP_PROXY> environment variable will be used.
+
 =item I<-q>, I<--quiet>
 
 Be quiet, only print errors.

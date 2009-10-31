@@ -17,7 +17,10 @@ our @EXPORT = qw(debug info error
   is_program_on_path);
 
 sub debug(@) {
-  print STDERR "@_\n" if $::opt{debug};
+  # Remove some sensitive data
+  my $string = "@_\n";
+  $string =~ s/\Q$ENV{HOME}\E/~/g;
+  print STDERR $string if $::opt{debug};
 }
 
 sub info(@) {

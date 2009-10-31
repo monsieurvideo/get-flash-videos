@@ -88,6 +88,16 @@ sub get_browser {
   my $browser = FlashVideo::Mechanize->new(autocheck => 0);
   $browser->agent_alias("Windows Mozilla");
 
+  my $proxy = $::opt{proxy};
+  if($proxy =~ /^([\w-]+)(?::(\d+))?/i) {
+    my $port = $2 || 1080;
+    $proxy = "socks://$1:$port";
+  }
+
+  if($proxy) {
+    $browser->proxy([qw[http https]] => $proxy);
+  }
+
   return $browser;
 }
 

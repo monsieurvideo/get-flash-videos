@@ -21,6 +21,10 @@ sub download {
     $rtmp_data->{resume} = '';
   }
 
+  if(my $socks = $self->get_socks_proxy) {
+    $rtmp_data->{socks} = $socks;
+  }
+
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
   if ($rtmp_data->{live} && $::opt{play}) {
@@ -141,6 +145,17 @@ sub get_rtmp_program {
 
   # Default to rtmpdump
   return "rtmpdump";
+}
+
+sub get_socks_proxy {
+  my $browser = FlashVideo::URLFinder::get_browser();
+  my $proxy = $browser->proxy("http");
+
+  if($proxy =~ m!^socks://(.*?):(\d+)!) {
+    return "$1:$2";
+  }
+
+  return "";
 }
 
 1;

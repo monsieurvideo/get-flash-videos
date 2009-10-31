@@ -9,8 +9,8 @@ Homepage: http://code.google.com/p/get-flash-videos
 Package: get-flash-videos
 Architecture: all
 Depends: ${perl:Depends}, libwww-mechanize-perl
-Recommends: libxml-simple-perl, libcompress-zlib-perl, rtmpdump,
-  libdigest-sha-perl
+Recommends: libxml-simple-perl, libcompress-zlib-perl,
+  rtmpdump | flvstreamer, libdigest-sha-perl, liblwp-protocol-socks-perl
 Description: Video downloader for various Flash-based video hosting sites
   Download videos from various Flash-based video hosting sites, without having
   to use the Flash player. Handy for saving viqeos for watching offline, and
