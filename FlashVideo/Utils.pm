@@ -238,9 +238,10 @@ sub get_user_config_dir {
 # Is the specified program on the system PATH?
 sub is_program_on_path {
   my($program) = @_;
+  my $win = $^O =~ /MSWin/i;
 
-  for my $dir(split($^O =~ /MSWin/i ? ";" : ":", $ENV{PATH})) {
-    return 1 if -f "$dir/$program";
+  for my $dir(split($win ? ";" : ":", $ENV{PATH})) {
+    return 1 if -f "$dir/$program" . ($win ? ".exe" : "");
   }
   return 0;
 }

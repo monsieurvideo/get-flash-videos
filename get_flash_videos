@@ -33,7 +33,7 @@ use FlashVideo::GoogleVideoSearch;
 
 unshift @INC, \&plugin_loader;
 
-use constant VERSION => "1.17";
+use constant VERSION => "1.18";
 
 our %opt;
 BEGIN {

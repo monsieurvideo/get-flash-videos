@@ -121,6 +121,9 @@ sub get_rtmp_program {
   } elsif(is_program_on_path("flvstreamer")) {
     return "flvstreamer";
   }
+
+  # Default to rtmpdump
+  return "rtmpdump";
 }
 
 1;
