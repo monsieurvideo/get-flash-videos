@@ -9,8 +9,9 @@ sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
   if ($browser->content =~ /content.is.not.available.for.your.country/i) {
-    die "Can't (yet) download this video because it's not available " .
-        "in your area";
+    error "Can't (yet) download this video because it's not available " .
+          "in your area";
+    exit 1;
   }
  
   $browser->allow_redirects;
