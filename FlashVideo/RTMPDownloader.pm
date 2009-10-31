@@ -26,6 +26,9 @@ sub download {
   if ($rtmp_data->{live} && $::opt{play}) {
     # Playing live stream, we pipe this straight to the player, rather than
     # saving on disk.
+    # XXX: The use of /dev/fd could go away now rtmpdump supports streaming to
+    # STDOUT.
+   
     pipe($r_fh, $w_fh);
 
     my $pid = fork;
@@ -49,7 +52,9 @@ sub download {
     exit 1;
   }
 
-  $rtmp_data->{verbose} = undef;
+  if($::opt{debug}) {
+    $rtmp_data->{verbose} = undef;
+  }
 
   debug "Running $prog", 
     join(" ", map { ("--$_" => $rtmp_data->{$_} ? $self->shell_escape($rtmp_data->{$_}) : ()) } keys
@@ -60,8 +65,9 @@ sub download {
   open3($in, $out, $err, $prog,
     map { ("--$_" => ($rtmp_data->{$_} || ())) } keys %$rtmp_data);
 
+  my $complete = 0;
   my $buf = "";
-  while(sysread($err, $buf, 32, length $buf) > 0) {
+  while(sysread($err, $buf, 128, length $buf) > 0) {
     my @parts = split /\r/, $buf;
     $buf = "";
 
@@ -71,7 +77,7 @@ sub download {
         debug "$prog: $1";
       } elsif(/^(ERROR: .*)\n/) {
         info "$prog: $1";
-      } elsif(/^([0-9.]+) KB(?: \(([0-9.]+)%\))?/) {
+      } elsif(/^([0-9.]+) kB(?: \(([0-9.]+)%\))?/i) {
         $self->{downloaded} = $1 * 1024;
         my $percent = $2;
 
@@ -83,7 +89,15 @@ sub download {
         $self->progress;
       } elsif(/\n$/) {
         for my $l(split /\n/) {
-          info $l if /\w/;
+          if($l =~ /^[A-F0-9]{,2}(?:\s+[A-F0-9]{2})*\s*$/) {
+            debug $l;
+          } elsif($l =~ /Download complete/) {
+            $complete = 1;
+          } elsif($l =~ /\s+filesize\s+(\d+)/) {
+            $self->{content_length} = $1;
+          } elsif($l =~ /\w/) {
+            info $l;
+          }
         }
 
         if(/open3/) {
