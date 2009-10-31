@@ -41,6 +41,12 @@ sub find_video {
   elsif($browser->uri =~ m!/(b[0-9a-z]{7})(?:/|$)!) {
     # Looks like a pid..
     my @gi_cmd = (qw(get_iplayer -g --pid), $1);
+
+    if($browser->content =~ /buildAudioPlayer/) {
+      # Radio programme
+      push @gi_cmd, "--type=radio";
+    }
+
     error "get_flash_videos does not support iplayer, but get_iplayer does..";
     info "Attempting to run '@gi_cmd'";
     exec @gi_cmd;
