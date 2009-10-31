@@ -102,6 +102,8 @@ sub url_exists {
     }
     $redirects++;
   }
+
+  return '';
 }
 
 sub title_to_filename {
