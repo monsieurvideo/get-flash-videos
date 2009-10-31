@@ -47,8 +47,10 @@ sub download {
 
   my $prog = $self->get_rtmp_program;
 
-  if($prog eq 'flvstreamer' && $rtmp_data->{rtmp} =~ /^rtmpe:/) {
-    error "FLVStreamer does not support RTMPE streams, please install rtmpdump.";
+  if($prog eq 'flvstreamer' && ($rtmp_data->{rtmp} =~ /^rtmpe:/ || $rtmp_data->{swfhash})) {
+    error "FLVStreamer does not support "
+      . ($rtmp_data->{swfhash} ? "SWF hashing" : "RTMPE streams")
+      . ", please install rtmpdump.";
     exit 1;
   }
 
