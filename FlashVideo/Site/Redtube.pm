@@ -55,8 +55,4 @@ sub decode_id {
   return($split, $file);
 }
 
-if(!caller) {
-  print join ", ", decode_id(15203);
-}
-
 1;
