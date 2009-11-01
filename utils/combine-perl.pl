@@ -87,10 +87,14 @@ sub process_file {
               $module->require;
               @items = @{$module . "::EXPORT"};
             }
-            for my $item(@items) {
-              next if $item =~ /^\d/;
-              next if $item =~ /^RC_/;
-              $output .= "BEGIN { no strict 'refs'; *$item = \\&${module}::${item}; }\n"
+            if(@items) {
+              $output .= "BEGIN { no strict 'refs'; ";
+              for my $item(@items) {
+                next if $item =~ /^\d/;
+                next if $item =~ /^RC_/;
+                $output .= "*$item = \\&${module}::${item}; ";
+              }
+              $output .= "}\n";
             }
           }
         } elsif(!/^\s*require /) {
@@ -119,7 +123,7 @@ sub process_file {
     } elsif($start && /^\s*(#|$)/) {
       $pre .= COMBINED_WARNING if $. == 2;
       $pre .= $_;
-    } else {
+    } elsif(!/^\s*#/) {
       $start = 0;
       $output .= $_;
     }
