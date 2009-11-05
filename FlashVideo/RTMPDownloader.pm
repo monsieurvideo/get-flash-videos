@@ -62,17 +62,66 @@ sub download {
     $rtmp_data->{verbose} = undef;
   }
 
+  my($return, @errors) = $self->run($prog, $rtmp_data);
+
+  if($return != 0 && "@errors" =~ /failed to connect/i) {
+    # Try port 443 as an alternative
+    $rtmp_data->{port} = 443;
+    $self->run($prog, $rtmp_data);
+  }
+
+  if(-s $file < 100 || !$self->check_file($file)) {
+    error "Download failed, no valid file downloaded";
+    unlink $rtmp_data->{flv};
+    return 0;
+  }
+
+  if($self->{percent} < 95) {
+    info "\n$prog exited early? Incomplete download possible -- try running again to resume.";
+  }
+
+  return -s $file;
+}
+
+sub get_rtmp_program {
+  if(is_program_on_path("rtmpdump")) {
+    return "rtmpdump";
+  } elsif(is_program_on_path("flvstreamer")) {
+    return "flvstreamer";
+  }
+
+  # Default to rtmpdump
+  return "rtmpdump";
+}
+
+sub get_socks_proxy {
+  my $browser = FlashVideo::URLFinder::get_browser();
+  my $proxy = $browser->proxy("http");
+
+  if($proxy =~ m!^socks://(.*?):(\d+)!) {
+    return "$1:$2";
+  }
+
+  return "";
+}
+
+sub run {
+  my($self, $prog, $rtmp_data) = @_;
+
   debug "Running $prog", 
     join(" ", map { ("--$_" => $rtmp_data->{$_} ? $self->shell_escape($rtmp_data->{$_}) : ()) } keys
         %$rtmp_data);
 
   my($in, $out, $err);
   $err = gensym;
-  open3($in, $out, $err, $prog,
+
+  my $pid = open3($in, $out, $err, $prog,
     map { ("--$_" => ($rtmp_data->{$_} || ())) } keys %$rtmp_data);
 
   my $complete = 0;
   my $buf = "";
+  my @error;
+
   while(sysread($err, $buf, 128, length $buf) > 0) {
     my @parts = split /\r/, $buf;
     $buf = "";
@@ -82,6 +131,7 @@ sub download {
       if(/^((?:DEBUG:|WARNING:|Closing connection|ERROR: No playpath found).*)\n/) {
         debug "$prog: $1";
       } elsif(/^(ERROR: .*)\n/) {
+        push @error, $1;
         info "$prog: $1";
       } elsif(/^([0-9.]+) kB(?:\s+\/ \S+ sec)?(?: \(([0-9.]+)%\))?/i) {
         $self->{downloaded} = $1 * 1024;
@@ -123,39 +173,8 @@ sub download {
     }
   }
 
-  if(-s $file < 100 || !$self->check_file($file)) {
-    error "Download failed, no valid file downloaded";
-    unlink $rtmp_data->{flv};
-    return 0;
-  }
-
-  if($self->{percent} < 95) {
-    info "\n$prog exited early? Incomplete download possible -- try running again to resume.";
-  }
-
-  return -s $file;
-}
-
-sub get_rtmp_program {
-  if(is_program_on_path("rtmpdump")) {
-    return "rtmpdump";
-  } elsif(is_program_on_path("flvstreamer")) {
-    return "flvstreamer";
-  }
-
-  # Default to rtmpdump
-  return "rtmpdump";
-}
-
-sub get_socks_proxy {
-  my $browser = FlashVideo::URLFinder::get_browser();
-  my $proxy = $browser->proxy("http");
-
-  if($proxy =~ m!^socks://(.*?):(\d+)!) {
-    return "$1:$2";
-  }
-
-  return "";
+  waitpid $pid, 0;
+  return $?, @error;
 }
 
 1;
