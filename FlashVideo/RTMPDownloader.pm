@@ -15,7 +15,7 @@ sub download {
 
   my $file = $rtmp_data->{flv} = $self->get_filename($rtmp_data->{flv});
 
-  if (-e $file && !$rtmp_data->{live}) {
+  if (-s $file && !$rtmp_data->{live}) {
     info "RTMP output filename '$self->{printable_filename}' already " .
                  "exists, asking to resume...";
     $rtmp_data->{resume} = '';
@@ -67,17 +67,22 @@ sub download {
   if($return != 0 && "@errors" =~ /failed to connect/i) {
     # Try port 443 as an alternative
     $rtmp_data->{port} = 443;
-    $self->run($prog, $rtmp_data);
+    ($return, @errors) = $self->run($prog, $rtmp_data);
   }
 
   if(-s $file < 100 || !$self->check_file($file)) {
+    # This avoids trying to resume an invalid file
     error "Download failed, no valid file downloaded";
     unlink $rtmp_data->{flv};
     return 0;
   }
 
-  if($self->{percent} < 95) {
-    info "\n$prog exited early? Incomplete download possible -- try running again to resume.";
+  if($return == 2) {
+    info "\nDownload incomplete -- try running again to resume.";
+    return 0;
+  } elsif($return) {
+    info "\nDownload failed.";
+    return 0;
   }
 
   return -s $file;
@@ -174,7 +179,7 @@ sub run {
   }
 
   waitpid $pid, 0;
-  return $?, @error;
+  return $? >> 8, @error;
 }
 
 1;
