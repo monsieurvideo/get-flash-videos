@@ -44,12 +44,12 @@ sub find_video {
     }
   }
 
-  debug "Extracted playerId: $player_id, video_id: $video_id"
+  debug "Extracted playerId: $player_id, videoId: $video_id, lineupID: $metadata->{lineupId}"
     if $player_id or $video_id;
 
   die "Unable to extract Brightcove IDs from page" unless $player_id;
 
-  $metadata->{videoId} = $video_id;
+  $metadata->{videoId} = $video_id unless $metadata->{lineupId};
   return $self->amfgateway($browser, $player_id, $metadata);
 }
 
@@ -60,6 +60,8 @@ sub amfgateway {
   if (!$has_amf_packet) {
     die "Must have Data::AMF::Packet installed to download Brightcove videos";
   }
+
+  my $page_url = $browser->uri;
 
   my $packet = Data::AMF::Packet->deserialize(decode_base64(<<EOF));
 AAAAAAABAEhjb20uYnJpZ2h0Y292ZS50ZW1wbGF0aW5nLlRlbXBsYXRpbmdGYWNhZGUuZ2V0Q29u
@@ -128,14 +130,17 @@ EOF
     my $app = ($d->{FLVFullLengthURL} =~ m!//.*?/(.*?)/&!)[0];
     my $filename = ($d->{FLVFullLengthURL} =~ m!&.*?/([^/&]+)(?:&|$)!)[0];
 
+    $app .= "?videoId=$d->{id}&lineUpId=$d->{lineupId}&pubId=$d->{publisherId}&playerId=$player_id&playerTag=&affiliateId=";
+
     my $args = {
-      swfUrl => "http://admin.brightcove.com/viewer/federated/f_012.swf?bn=590&pubId=$d->{publisherId}",
       app => $app,
-      tcUrl => "rtmp://$host/$app",
+      pageUrl => $page_url,
+      swfUrl => "http://admin.brightcove.com/viewer/federated/f_012.swf?bn=590&pubId=$d->{publisherId}",
+      tcUrl => "rtmp://$host:1935/$app",
       auth => ($d->{FLVFullLengthURL} =~ /^[^&]+&(.*)$/)[0],
       rtmp => "rtmp://$host/$app",
       playpath => $file,
-      flv => "$filename.flv"
+      flv => "$filename.flv",
     };
 
     # Use sane filename
