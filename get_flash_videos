@@ -145,6 +145,14 @@ if ($opt{debug}) {
   }
 }
 
+if (FlashVideo::URLFinder::get_browser()->get_socks_proxy()) {
+  my $HAS_LWP_PROTOCOL_SOCKS = eval { require LWP::Protocol::socks };
+
+  if (!$HAS_LWP_PROTOCOL_SOCKS) {
+    die "LWP::Protocol::socks is required for SOCKS support, please install it"
+  }
+}
+
 if($^O =~ /MSWin/i) {
   binmode STDERR, ":encoding(" . get_win_codepage() . ")";
   binmode STDOUT, ":encoding(" . get_win_codepage() . ")";

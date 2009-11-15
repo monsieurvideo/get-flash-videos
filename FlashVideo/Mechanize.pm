@@ -75,4 +75,15 @@ sub _parse_charset {
   return(($field =~ /;\s*charset=([-_.:a-z0-9]+)/i)[0]);
 }
 
+sub get_socks_proxy {
+  my $self = shift;
+  my $proxy = $self->proxy("http");
+
+  if($proxy =~ m!^socks://(.*?):(\d+)!) {
+    return "$1:$2";
+  }
+
+  return "";
+}
+
 1;
