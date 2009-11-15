@@ -30,7 +30,7 @@ sub handle_mov {
   # I'm an iPhone (not a PC)
   $browser->agent("Apple iPhone OS v2.0.1 CoreMedia v1.0.0.5B108");
 
-  if($browser->content =~ /url\s*\0+[\1-!]*(.*?)\0/) {
+  if($browser->content =~ /url\s*\0+[\1-,]*(.*?)\0/) {
     return URI->new_abs($1, $browser->uri)
   } else {
     die "Cannot find link in .mov";
