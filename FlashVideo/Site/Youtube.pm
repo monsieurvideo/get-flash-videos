@@ -144,18 +144,23 @@ sub find_video {
     return;
   };
 
+  # Try 1080p HD
+  my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=37&video_id=$video_id&t=$t",
+    title_to_filename($title, "mp4"));
+  return @ret if @ret;
+
   # Try HD
-  my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=22&video_id=$video_id&t=$t",
+  @ret = $fetcher->("http://www.youtube.com/get_video?fmt=22&video_id=$video_id&t=$t",
     title_to_filename($title, "mp4"));
   return @ret if @ret;
 
   # Try HQ
-  my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=18&video_id=$video_id&t=$t",
+  @ret = $fetcher->("http://www.youtube.com/get_video?fmt=18&video_id=$video_id&t=$t",
     title_to_filename($title, "mp4"));
   return @ret if @ret;
 
   # Otherwise get normal
-  my @ret = $fetcher->("http://www.youtube.com/get_video?video_id=$video_id&t=$t",
+  @ret = $fetcher->("http://www.youtube.com/get_video?video_id=$video_id&t=$t",
     title_to_filename($title));
 
   die "Unable to find video URL" unless @ret;
