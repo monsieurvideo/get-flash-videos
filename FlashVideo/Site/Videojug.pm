@@ -12,6 +12,20 @@ sub find_video {
   die "Must have XML::Simple installed to download from Videojug"
     unless eval { require XML::Simple };
 
+  # If this is an interview rather than a normal video, have to use a
+  # different playlist URL. Interviews are actually separate videos, one
+  # for each question.
+  my $interview_clip;
+
+  if ($browser->uri->as_string =~ m'/interview/'i) {
+    $playlist_url =
+      "http://www.videojug.com/views/interview/playlist.aspx?ar=16_9&id=";
+
+    # Use the browser fragment (like #interview-question-here) to find out
+    # which interview clip to download.
+    $interview_clip = $browser->uri->fragment; 
+  }
+
   # Get the video ID
   my $video_id;
   
@@ -56,16 +70,47 @@ sub find_video {
     my $location = (grep { $shape->{Locations} =~ /\Q$_->{Name}\E/ }
       @{$xml->{Locations}->{Location}})[0];
 
-    $video_url = sprintf "%s%s__%sENG.flv",
-      $location->{Url}, $xml->{Items}->{Media}->{Prefix}, $shape->{Code};
+    # Getting prefix and title is different based on whether it's an
+    # interview or not, as there are multiple media items defined for
+    # interviews.
+    my ($prefix, $title);
 
-    $filename = title_to_filename($xml->{Items}->{Media}->{Title});
+    if ($interview_clip) {
+      ($prefix, $title) = get_prefix_and_title($xml, $interview_clip); 
+    }
+    else {
+      $prefix = $xml->{Items}->{Media}->{Prefix};
+      $title = $xml->{Items}->{Media}->{Title};
+    }
+
+    $video_url = sprintf "%s%s__%sENG.flv",
+      $location->{Url}, $prefix, $shape->{Code};
+
+    $filename = title_to_filename($title);
   };
   die "Unable to retrieve/parse Videojug playlist. $@" if $@;
 
   die "Couldn't find video URL" unless $video_url;
 
   return $video_url, $filename;
+}
+
+sub get_prefix_and_title {
+  my ($xml, $video_name) = @_;
+
+  foreach my $media (@{ $xml->{Items}->{Media} }) {
+    # This is frail, but try to go from the formatted video title to the
+    # title in the same format as in the fragment.
+    my $title = lc $media->{Title};
+    $title =~ s/ /-/g;
+    $title =~ s/[^a-z0-9\-]//g;
+
+    if ($title eq $video_name) {
+      return $media->{Prefix}, $media->{Title};
+    }
+  }
+
+  die "Couldn't find prefix for video '$video_name'";
 }
 
 1;
