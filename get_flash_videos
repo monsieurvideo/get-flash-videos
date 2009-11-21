@@ -74,7 +74,8 @@ Usage: $0 [OPTION]... URL...
        $0 [OPTION]... search string
 
 Downloads videos from the web pages given in URL or searches Google Video
-Search for 'search string'.
+Search for 'search string'. If the URL contains characters such as '&' you
+will need to quote it.
 
 Options:
      --add-plugin Add a plugin from a URL.
