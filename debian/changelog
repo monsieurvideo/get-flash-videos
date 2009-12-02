@@ -1,3 +1,15 @@
+get-flash-videos (1.18-1) megalomanical-moose; urgency=low
+
+  * Add support for YouTube RTMP videos (e.g. Channel 4).
+
+  * Support rtmpdump 1.9 or flvstreamer.
+
+  * Support proxies (HTTP or SOCKS) via --proxy option.
+
+  * Fix redtube, brightcove.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Wed, 02 Dec 2009 22:51:46 +0000
+
 get-flash-videos (1.17-1) liberal-llama; urgency=low
 
   * Fix YouTube (again).
