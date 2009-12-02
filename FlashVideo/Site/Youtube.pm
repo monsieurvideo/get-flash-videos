@@ -5,6 +5,7 @@ use strict;
 use Encode;
 use HTML::Entities;
 use FlashVideo::Utils;
+use URI::Escape;
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
@@ -120,13 +121,6 @@ sub find_video {
     die "Couldn't extract video ID";
   }
 
-  my $t; # no idea what this parameter is but it seems to be needed
-  if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
-    $t = $1;
-  } else {
-    die "Couldn't extract mysterious t parameter";
-  }
-
   my $page_info = extract_info($browser);
 
   my $title;
@@ -135,6 +129,63 @@ sub find_video {
   } elsif ($browser->content =~ /<div id="vidTitle">\s+<span ?>(.+?)<\/span>/ or
       $browser->content =~ /<div id="watch-vid-title">\s*<div ?>(.+?)<\/div>/) {
     $title = $1;
+  }
+
+  # Try to get Youtube's info for this video - needed for some types of
+  # video.
+  my $video_page_url = $browser->uri()->as_string;
+  my $video_info_url_template =
+    "http://www.youtube.com/get_video_info?&video_id=%s&el=profilepage&ps=default&eurl=%s&hl=en_US";
+  my $video_info_url = sprintf $video_info_url_template,
+    uri_escape($video_id), uri_escape($video_page_url);
+  $browser->get($video_info_url);
+
+  if ($browser->success) {
+    my %info = parse_youtube_video_info($browser->content); 
+
+    # Check for rtmp downloads
+    if ($info{conn} =~ /^rtmp/) {
+      $browser->back();
+
+      # Get season and episode
+      my ($season, $episode);
+
+      if ($browser->content =~ m{<span(?: class=["']\w+["'])?>Season ?(\d+)</span>}) {
+        $season = $1;
+      }
+
+      if ($browser->content =~ m{<span(?: class=["']\w+["'])?>Episode ?(\d+)</span>}) {
+        $episode = $1;
+      }
+      
+      if ($season and $episode) {
+        $title .= sprintf " S%02dE%02d", $season, $episode;
+      }
+
+      # SWF verification, blah
+      my $swf_url;
+      if ($browser->content =~ /SWF_URL['"] ?: ?.{0,50}?(http:\/\/[^ ]+\.swf)/) {
+        $swf_url = $1;
+      }
+      else {
+        die "Couldn't extract SWF URL";
+      }
+
+      return {
+        flv => title_to_filename($title),
+        rtmp => $info{conn},
+        swfhash($browser, $swf_url)
+      };
+    }
+  }
+
+  $browser->back();
+
+  my $t; # no idea what this parameter is but it seems to be needed
+  if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
+    $t = $1;
+  } else {
+    die "Couldn't extract mysterious t parameter";
   }
 
   my $fetcher = sub {
@@ -168,6 +219,23 @@ sub find_video {
   $browser->allow_redirects;
 
   return @ret;
+}
+
+# Decode form-encoded key-value pairs into a hash for convenience.
+sub parse_youtube_video_info {
+  my $raw_info = shift;
+
+  my %video_info;
+
+  foreach my $raw_pair (split /&/, $raw_info) {
+    my ($key, $value) = split /=/, $raw_pair;
+    $value = uri_unescape($value);
+    $value =~ s/\+/ /g;
+
+    $video_info{$key} = $value;
+  }
+
+  return %video_info;
 }
 
 1;
