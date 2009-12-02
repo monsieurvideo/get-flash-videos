@@ -25,6 +25,9 @@ for my $url_info(@urls) {
 
   diag "Testing $note";
 
+  # Allow backticks for URLs that change
+  $url =~ s/\`(.*)\`/`$1`/e;
+
   my $pid = open my $out_fh, "-|", "../../$ENV{SCRIPT} --yes '$url' 2>&1";
 
   while(<$out_fh>) {

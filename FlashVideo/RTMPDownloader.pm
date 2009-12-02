@@ -21,7 +21,7 @@ sub download {
     $rtmp_data->{resume} = '';
   }
 
-  if(my $socks = FlashVideo::URLFinder::get_browser()->get_socks_proxy) {
+  if(my $socks = FlashVideo::Mechanize->new->get_socks_proxy) {
     $rtmp_data->{socks} = $socks;
   }
 

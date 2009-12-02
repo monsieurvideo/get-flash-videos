@@ -146,7 +146,7 @@ if ($opt{debug}) {
   }
 }
 
-if (FlashVideo::URLFinder::get_browser()->get_socks_proxy()) {
+if (FlashVideo::Mechanize->new->get_socks_proxy()) {
   my $HAS_LWP_PROTOCOL_SOCKS = eval { require LWP::Protocol::socks };
 
   if (!$HAS_LWP_PROTOCOL_SOCKS) {
@@ -244,7 +244,7 @@ sub download {
   # Flash RTMP streaming server. These are handled differently. Need to get
   # the page to determine this.
   info "Downloading $url";
-  my $browser = FlashVideo::URLFinder::get_browser();
+  my $browser = FlashVideo::Mechanize->new;
   $browser->get($url);
 
   # (Redirect check is for Youtube which sometimes redirects to login page
@@ -354,7 +354,7 @@ sub add_plugin {
     info "Plugin installed.";
     return 0;
   } else {
-    my $browser = FlashVideo::URLFinder::get_browser();
+    my $browser = FlashVideo::Mechanize->new;
     return !install_plugin($browser, $plugin_url, $filename);
   }
 }
@@ -362,7 +362,7 @@ sub add_plugin {
 sub update {
   # SCRIPT_NAME is some magic set by combine-perl
   if($::SCRIPT_NAME) {
-    my $browser = FlashVideo::URLFinder::get_browser();
+    my $browser = FlashVideo::Mechanize->new;
 
     $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
 
@@ -419,7 +419,7 @@ sub update {
 }
 
 sub update_plugins {
-  my $browser = FlashVideo::URLFinder::get_browser();
+  my $browser = FlashVideo::Mechanize->new;
 
   foreach my $plugin(get_installed_plugins()) {
     debug "Seeing if there is an update for $plugin..";

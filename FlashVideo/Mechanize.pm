@@ -7,6 +7,24 @@ use Encode;
 use strict;
 use base "WWW::Mechanize";
 
+sub new {
+  my $class = shift;
+  my $browser = $class->SUPER::new(autocheck => 0);
+  $browser->agent_alias("Windows Mozilla");
+
+  my $proxy = $::opt{proxy};
+  if($proxy && $proxy !~ /^\w+:/) {
+    my $port = ($proxy =~ /:(\d+)/)[0] || 1080;
+    $proxy = "socks://$1:$port";
+  }
+
+  if($proxy) {
+    $browser->proxy([qw[http https]] => $proxy);
+  }
+
+  return $browser;
+}
+
 sub redirect_ok {
   my($self) = @_;
 

@@ -2,15 +2,12 @@
 package FlashVideo::GoogleVideoSearch;
 
 use strict;
-
 use FlashVideo::Mechanize;
-use FlashVideo::URLFinder;
-use FlashVideo::Utils;
 
 sub search {
   my $search = shift;
 
-  my $browser = FlashVideo::URLFinder::get_browser();
+  my $browser = FlashVideo::Mechanize->new;
   
   $browser->get('http://video.google.com/');
 
