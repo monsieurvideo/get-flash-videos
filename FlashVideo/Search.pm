@@ -8,7 +8,7 @@ use FlashVideo::GoogleVideoSearch;
 use FlashVideo::Utils;
 
 # Sites which support searching
-my @sites_with_search = ();
+my @sites_with_search = ('4oD');
 
 sub search {
   my ($search, $max_per_site, $max_results) = @_;
