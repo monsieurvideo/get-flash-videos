@@ -15,7 +15,13 @@ sub search {
 
   my @search_sites = map { /^FlashVideo::Site::/ ? $_ 
                                                  : "FlashVideo::Site::$_"; }
-                     @sites_with_search;
+                     map { ucfirst lc } @sites_with_search;
+ 
+  # If this is the dev version, preload search sites - not necessary for
+  # combined because modules are already loaded.
+  unless ($::SCRIPT_NAME) {
+    eval "require $_" for @search_sites;
+  }
 
   # If a user searches for "foo something", check to see if "foo" is a site
   # we support. If it is, only search that site.
