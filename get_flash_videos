@@ -23,6 +23,7 @@ use strict;
 use File::stat;
 use File::Basename;
 use Getopt::Long;
+use Text::Wrap;
 
 use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
@@ -187,9 +188,22 @@ if ($search) {
     else {
       print "Search for '$search' found these results:\n";
 
+      # Need 5 chars for "[nn] ".
+      my $columns = get_terminal_width() - 5;
+      local $Text::Wrap::columns = $columns;
+    
       my $count = 1;
       for my $result(@results) {
         printf "[%2d] %s\n", $count, $result->{name};
+
+        if ($result->{description}) {
+          # Show as much of the description as will fit on at least 2
+          # lines in the current terminal width. (Not exact because
+          # Text::Wrap wraps only after whole words.)
+          print wrap("     ", "     ",
+                     substr($result->{description}, 0, $columns * 2)), "\n";
+        }
+
         $count++;
       }
 
