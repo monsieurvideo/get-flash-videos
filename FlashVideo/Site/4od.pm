@@ -55,9 +55,9 @@ sub _process_4od_result {
   $published_date =~ s/T.*$//; # only care about date, not time
 
   my $title = $feed_entry->{'media:group'}->{'media:title'}->{content};
-  my $description = substr $feed_entry->{'media:group'}->{'media:description'}->{content}, 0, 40;
+  my $description = $feed_entry->{'media:group'}->{'media:description'}->{content};
 
-  my $result_name = "$title ($published_date): $description...";
+  my $result_name = "$title ($published_date)";
 
   return { name => $result_name, url => $url, description => $description };
 }
