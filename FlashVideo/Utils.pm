@@ -14,7 +14,9 @@ use constant MAX_REDIRECTS => 5;
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
-  is_program_on_path);
+  is_program_on_path get_terminal_width);
+
+my $HAS_READKEY = eval { require Term::ReadKey };
 
 sub debug(@) {
   # Remove some sensitive data
@@ -249,6 +251,16 @@ sub is_program_on_path {
     return 1 if -f "$dir/$program" . ($win ? ".exe" : "");
   }
   return 0;
+}
+
+sub get_terminal_width {
+  if($HAS_READKEY && (my($width) = Term::ReadKey::GetTerminalSize())) {
+    return $width;
+  } elsif($ENV{COLUMNS}) {
+    return $ENV{COLUMNS};
+  } else {
+    return 80;
+  }
 }
 
 1;

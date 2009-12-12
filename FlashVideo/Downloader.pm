@@ -232,7 +232,7 @@ sub progress {
   }
 
   if($progress_text) {
-    my $width = $self->terminal_width;
+    my $width = get_terminal_width();
 
     my $filename = $self->{printable_filename};
     my $filename_len = $width - length($progress_text);
@@ -247,19 +247,6 @@ sub progress {
     }
 
     print STDERR "\r$filename$progress_text";
-  }
-}
-
-sub terminal_width {
-  my($self) = @_;
-
-  if($self->{has_readkey}
-      && (my($width) = Term::ReadKey::GetTerminalSize())) {
-    return $width;
-  } elsif($ENV{COLUMNS}) {
-    return $ENV{COLUMNS};
-  } else {
-    return 80;
   }
 }
 
