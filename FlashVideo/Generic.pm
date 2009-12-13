@@ -36,6 +36,8 @@ sub find_video {
     $actual_url = url_exists($browser->clone, $flv_urls[-1]);
   }
 
+  my $filename_is_reliable;
+
   if(!$actual_url) {
     RE: for my $regex(
         qr{(?si)<embed.*?flashvars=["']?([^"'>]+)},
@@ -47,7 +49,7 @@ sub find_video {
         qr{(?si)<script[^>]*>(.*?)</script>}) {
 
       for my $param($browser->content =~ /$regex/gi) {
-        (my $url, $possible_filename) = find_file_param($browser->clone, $param);
+        (my $url, $possible_filename, $filename_is_reliable) = find_file_param($browser->clone, $param);
 
         if($url) {
           my $resolved_url = url_exists($browser->clone, $url);
@@ -71,6 +73,8 @@ sub find_video {
   }
 
   my @filenames;
+  
+  return $actual_url, $possible_filename if $filename_is_reliable;
 
   $possible_filename =~ s/\?.*//;
   # The actual filename, provided it looks like it might be reasonable
@@ -100,11 +104,11 @@ sub find_file_param {
       $param =~ /([^ ]+@{[EXTENSIONS]})/gi,
       $param =~ /SWFObject\(["']([^"']+)/) {
 
-    my $actual_url = guess_file($browser, $file);
+    my ($actual_url, $filename, $filename_is_reliable) = guess_file($browser, $file);
     if($actual_url) {
-      my $possible_filename = (split /\//, $actual_url)[-1];
+      my $possible_filename = $filename || (split /\//, $actual_url)[-1];
 
-      return $actual_url, $possible_filename;
+      return $actual_url, $possible_filename, $filename_is_reliable;
     }
   }
 
@@ -129,6 +133,13 @@ sub guess_file {
     my $uri = url_exists($browser->clone, $orig_uri);
 
     if($uri) {
+      # Check to see if this URL is for a supported site.
+      if (my ($package, $url) = FlashVideo::URLFinder::find_package($uri, $browser->clone)) {
+        debug "$uri is supported by $package.";
+        (my $browser_on_supported_site = $browser->clone())->get($uri);
+        return $package->find_video($browser_on_supported_site, $uri), 1;
+      }
+
       my $content_type = $browser->response->header("Content-type");
 
       if($content_type =~ m!^(text|application/xml)!) {
