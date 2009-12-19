@@ -140,7 +140,7 @@ sub find_video {
       $title = $info{title};
     }
     
-    my $url = $fmt_url_map->{ (reverse sort keys %$fmt_url_map)[0] };
+    my $url = $fmt_url_map->{ (sort { $b <=> $a } keys %$fmt_url_map)[0] };
     return $url, title_to_filename($title, "mp4");
   }
 
