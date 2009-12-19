@@ -255,6 +255,7 @@ sub is_program_on_path {
 
 sub get_terminal_width {
   if($HAS_READKEY && (my($width) = Term::ReadKey::GetTerminalSize())) {
+    return $width - 1 if $^O =~ /MSWin/i; # seems to be off by 1 on Windows
     return $width;
   } elsif($ENV{COLUMNS}) {
     return $ENV{COLUMNS};
