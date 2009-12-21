@@ -67,6 +67,8 @@ sub find_video {
         ? { resolution => $_->{resolution}, url => $fmt_url_map->{$_->{id}} }
         : () } @formats);
     
+    $browser->allow_redirects;
+
     return $preferred_quality->{url}, title_to_filename($title, "mp4");
   }
 
