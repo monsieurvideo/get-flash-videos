@@ -30,7 +30,7 @@ sub search {
 
   # XML::Simple keys on 'id' and some other things by default which is
   # annoying.
-  my $xml = eval { XML::Simple::XMLin($browser->content, KeyAttr => []) };
+  my $xml = eval { XML::Simple::XMLin($browser->content, KeyAttr => [], ForceArray => ['entry']) };
   
   die "Couldn't parse YouTube search Atom XML: $@" if $@;
 
