@@ -6,6 +6,8 @@ use Test::More;
 use File::Path;
 use FlashVideo::Downloader;
 
+chdir "t";
+
 # We don't want to do this unless they really meant it, as it downloads a lot.
 unless($ENV{SITE} || $ENV{SURE}) {
   plan skip_all => "RTFS";

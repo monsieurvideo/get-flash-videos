@@ -31,6 +31,7 @@ use FlashVideo::RTMPDownloader;
 use FlashVideo::Search;
 use FlashVideo::Utils;
 use FlashVideo::GoogleVideoSearch;
+use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
@@ -62,6 +63,7 @@ BEGIN {
     proxy => '',
     debug => 0,
     quiet => 0,
+    quality => "high",
   );
 }
 
@@ -83,9 +85,10 @@ Options:
   -d --debug      Print extra debugging information.
   -f --filename   Filename to save the video as.
   -p --play       Start playing the video once enough has been downloaded.
-     --player     Player to use for the video (default: $opt{player})
+     --player     Player to use for the video (default: $opt{player}).
      --proxy      Proxy to use, use host:port for SOCKS, or URL for HTTP.
   -q --quiet      Be quiet (only print errors).
+  -r --quality    Quality to download at (high|medium|low, or site specific).
   -u --update     Update to latest version.
   -v --version    Print version.
   -y --yes        Say yes to any questions (don't prompt for any information).
@@ -126,6 +129,7 @@ GetOptions(
   "debug|d"      => \$opt{debug},
   "quiet|q"      => \$opt{quiet},
   "add-plugin=s" => \$opt{add_plugin},
+  "quality|r=s"  => \$opt{quality},
 );
 
 if($opt{version}) {
@@ -236,8 +240,12 @@ else {
 
 my $download_count = 0;
 
+# Construct a preferences object for these downloads, currently just based on
+# the command line options.
+my $prefs = FlashVideo::VideoPreferences->new(%opt);
+
 foreach my $url (@download_urls) {
-  if (download($url, @download_urls - $download_count)) {
+  if (download($url, $prefs, @download_urls - $download_count)) {
     $download_count++;
   }
 }
@@ -250,7 +258,7 @@ if($download_count == 0) {
 exit 0;
 
 sub download {
-  my($url, $remaining) = @_;
+  my($url, $prefs, $remaining) = @_;
 
   $url = "http://$url" if $url !~ m!^\w+:!;
 
@@ -272,7 +280,7 @@ sub download {
   my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
 
   my($actual_url, @suggested_fnames) = eval {
-    $package->find_video($browser, $possible_url);
+    $package->find_video($browser, $possible_url, $prefs);
   };
 
   if(!$actual_url) {

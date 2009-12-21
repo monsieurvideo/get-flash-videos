@@ -1,19 +1,26 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Site::Apple;
 use strict;
+use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   if(!FlashVideo::Downloader->check_file($browser->content)) {
     # We weren't given a quicktime link, so find one..
-    my @urls = sort
-      { ($b =~ /(\d+)p\.mov/)[0] <=> ($a =~ /(\d+)p\.mov/)[0] }
-        $browser->content =~ /['"]([^'"]+\.mov)['"]/g;
-
+    my @urls = $browser->content =~ /['"]([^'"]+\.mov)(?:\?[^'"]+)?['"]/g;
     die "No .mov URLs found on page" unless @urls;
+    debug "Found URLs: @urls";
 
-    $browser->get($urls[0]);
+    my $redirect_url = $prefs->quality->choose(map {
+        /(\d+p?)\.mov/ && {
+          url => $_,
+          resolution => $prefs->quality->format_to_resolution($1)
+        }
+      } @urls
+    )->{url};
+
+    $browser->get($redirect_url);
   }
 
   my $url = $self->handle_mov($browser);
