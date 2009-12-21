@@ -7,8 +7,19 @@ use HTML::Entities;
 use FlashVideo::Utils;
 use URI::Escape;
 
+my @formats = (
+  { id => 37, resolution => [1920, 1080] },
+  { id => 22, resolution => [1280, 720] },
+  { id => 35, resolution => [854, 480] },
+  { id => 34, resolution => [640, 360] },
+  { id => 18, resolution => [480, 270] },
+  { id => 5,  resolution => [400, 224] },
+  { id => 17, resolution => [176, 144] },
+  { id => 13, resolution => [176, 144] },
+);
+
 sub find_video {
-  my ($self, $browser, $embed_url) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   if($embed_url !~ m!youtube\.com/watch!) {
     $browser->get($embed_url);
@@ -22,103 +33,12 @@ sub find_video {
   }
 
   if (!$browser->success) {
-    if ($browser->response->code == 303 
-        && $browser->response->header('Location') =~ m!/verify_age|/accounts/!) {
-      # Lame age verification page - yes, we are grown up, please just give
-      # us the video!
-      my $confirmation_url = $browser->response->header('Location');
-      print "Unfortunately, due to Youtube being lame, you have to have\n" .
-            "an account to download this video.\n" .
-            "Username (Google Account Email): ";
-      chomp(my $username = <STDIN>);
-      print "Ok, need your password (will be displayed): ";
-      chomp(my $password = <STDIN>);
-      unless ($username and $password) {
-        error "You must supply Youtube account details.";
-        exit 1;
-      }
-
-      $browser->get("http://www.youtube.com/login");
-      if ($browser->response->code != 303) {
-        die "Unexpected response from Youtube login.\n";
-      }
-
-      my $real_login_url = $browser->response->header('Location');
-      $browser->get($real_login_url);
-
-      $browser->form_with_fields('Email', 'Passwd');
-      $browser->set_fields(Email  => $username,
-                           Passwd => $password);
-      $browser->submit();
-
-      if ($browser->content =~ /your login was incorrect/) {
-        error "Couldn't log you in, check your username and password.";
-        exit 1;
-      } elsif ($browser->response->code == 302) {
-        # expected, next step in login process
-        my $check_cookie_url = $browser->response->header('Location');
-        $browser->get($check_cookie_url);
-
-        # and then another, html-only, non-http, redirection...
-        if ($browser->content =~ /<meta.*"refresh".*?url=&#39;(.*?)&#39;"/i) {
-          my $redirected = decode_entities($1);
-          $browser->get($redirected);
-
-          # If we weren't redirected to YouTube we might have a regional Google
-          # site.
-          if(URI->new($redirected)->host !~ /youtube/i) {
-            if($browser->response->code == 302) {
-              $browser->get($browser->response->header("Location"));
-            } else {
-              die "Did not find expected redirection";
-            }
-          }
-        } else {
-          die "Did not find expected redirection";
-        }
-      }
-      else {
-        die "Unexpected response during login";
-      }
-
-      # Now we go back to the video page, hopefully logged in...
-      $browser->get($embed_url);
-
-      # the confirmation url will always fail to show the video these days
-      # AND it'll fail to show the button apparently.
-      if ($browser->response->code == 303) {
-        # this account hasn't been enabled for grownup videos yet
-        my $real_confirmation_url = $browser->response->header('Location');
-        $browser->get($real_confirmation_url);
-        if ($browser->form_with_fields('next_url', 'action_confirm')) {
-          $browser->field('action_confirm' => 'Confirm Birth Date');
-          $browser->click_button(name => "action_confirm");
-
-          if ($browser->response->code != 303) {
-            die "Unexpected response from Youtube";
-          }
-          $browser->get($browser->response->header('Location'));
-        }
-      }
-    }
-    else {
-      # Lame Youtube redirection to uk.youtube.com and so on.
-      if ($browser->response->code == 302) {
-        $browser->get($browser->response->header('Location'));
-      }
-
-      if (!$browser->success) {
-        die "Couldn't download URL: " . $browser->response->status_line;
-      }
-    }
+    login($browser);
   }
 
-  my $page_info = extract_info($browser);
-
-  my $title;
-  if ($page_info->{meta_title}) {
-    $title = $page_info->{meta_title};
-  } elsif ($browser->content =~ /<div id="vidTitle">\s+<span ?>(.+?)<\/span>/ or
+  my $title = extract_info($browser)->{meta_title};
+  if (!$title and
+    $browser->content =~ /<div id="vidTitle">\s+<span ?>(.+?)<\/span>/ or
       $browser->content =~ /<div id="watch-vid-title">\s*<div ?>(.+?)<\/div>/) {
     $title = $1;
   }
@@ -126,6 +46,8 @@ sub find_video {
   # If the page contains fmt_url_map, then process this. With this, we
   # don't require the 't' parameter.
   if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}["']([^"']+)["']/) {
+    debug "Using fmt_url_map method";
+
     my $fmt_url_map = parse_youtube_format_url_map($1);
 
     if (!$title and $browser->uri->as_string =~ m'/user/.*?#') {
@@ -135,13 +57,17 @@ sub find_video {
       # URL.
       my $video_id = (split /\//, $browser->uri->fragment)[-1];
 
-      my %info = get_youtube_video_info($browser, $video_id);
+      my %info = get_youtube_video_info($browser->clone, $video_id);
 
       $title = $info{title};
     }
+
+    # Sort by quality...
+    my $preferred_quality = $prefs->quality->choose(map { $fmt_url_map->{$_->{id}}
+        ? { resolution => $_->{resolution}, url => $fmt_url_map->{$_->{id}} }
+        : () } @formats);
     
-    my $url = $fmt_url_map->{ (sort { $b <=> $a } keys %$fmt_url_map)[0] };
-    return $url, title_to_filename($title, "mp4");
+    return $preferred_quality->{url}, title_to_filename($title, "mp4");
   }
 
   my $video_id;
@@ -152,15 +78,25 @@ sub find_video {
     die "Couldn't extract video ID";
   }
 
+  my $t; # no idea what this parameter is but it seems to be needed
+  if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
+    $t = $1;
+  } else {
+    die "Couldn't extract mysterious t parameter";
+  }
+
   # Try to get Youtube's info for this video - needed for some types of
   # video.
-  my $video_page_url = $browser->uri()->as_string;
+  my $video_page_url = $browser->uri->as_string;
 
-  if (my %info = get_youtube_video_info($browser, $video_id, $video_page_url)) {
+  if (my %info = get_youtube_video_info($browser->clone, $video_id, $video_page_url, $t)) {
+    if($::opt{debug}) {
+      require Data::Dumper;
+      debug Data::Dumper::Dumper(\%info);
+    }
+
     # Check for rtmp downloads
     if ($info{conn} =~ /^rtmp/) {
-      $browser->back();
-
       # Get season and episode
       my ($season, $episode);
 
@@ -193,14 +129,11 @@ sub find_video {
     }
   }
 
-  $browser->back();
+  return download($browser, $prefs, $video_id, $title, $t);
+}
 
-  my $t; # no idea what this parameter is but it seems to be needed
-  if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
-    $t = $1;
-  } else {
-    die "Couldn't extract mysterious t parameter";
-  }
+sub download {
+  my($browser, $prefs, $video_id, $title, $t) = @_;
 
   my $fetcher = sub {
     my($url, $filename) = @_;
@@ -209,23 +142,20 @@ sub find_video {
     return;
   };
 
-  # Try 1080p HD
-  my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=37&video_id=$video_id&t=$t",
-    title_to_filename($title, "mp4"));
-  return @ret if @ret;
+  my @formats_to_try = @formats;
 
-  # Try HD
-  @ret = $fetcher->("http://www.youtube.com/get_video?fmt=22&video_id=$video_id&t=$t",
-    title_to_filename($title, "mp4"));
-  return @ret if @ret;
+  while(my $fmt = $prefs->quality->choose(@formats_to_try)) {
+    # Remove from the list
+    @formats_to_try = grep { $_ != $fmt } @formats_to_try;
 
-  # Try HQ
-  @ret = $fetcher->("http://www.youtube.com/get_video?fmt=18&video_id=$video_id&t=$t",
-    title_to_filename($title, "mp4"));
-  return @ret if @ret;
+    # Try it..
+    my @ret = $fetcher->("http://www.youtube.com/get_video?fmt=$fmt->{id}&video_id=$video_id&t=$t",
+      title_to_filename($title, "mp4"));
+    return @ret if @ret;
+  }
 
-  # Otherwise get normal
-  @ret = $fetcher->("http://www.youtube.com/get_video?video_id=$video_id&t=$t",
+  # Otherwise try without an ID
+  my @ret = $fetcher->("http://www.youtube.com/get_video?video_id=$video_id&t=$t",
     title_to_filename($title));
 
   die "Unable to find video URL" unless @ret;
@@ -235,19 +165,116 @@ sub find_video {
   return @ret;
 }
 
+sub login {
+  my($browser) = @_;
+  my $orig_uri = $browser->uri;
+
+  if ($browser->response->code == 303 
+    && $browser->response->header('Location') =~ m!/verify_age|/accounts/!) {
+    # Lame age verification page - yes, we are grown up, please just give
+    # us the video!
+    my $confirmation_url = $browser->response->header('Location');
+    print "Unfortunately, due to Youtube being lame, you have to have\n" .
+    "an account to download this video.\n" .
+    "Username (Google Account Email): ";
+    chomp(my $username = <STDIN>);
+    print "Ok, need your password (will be displayed): ";
+    chomp(my $password = <STDIN>);
+    unless ($username and $password) {
+      error "You must supply Youtube account details.";
+      exit 1;
+    }
+
+    $browser->get("http://www.youtube.com/login");
+    if ($browser->response->code != 303) {
+      die "Unexpected response from Youtube login.\n";
+    }
+
+    my $real_login_url = $browser->response->header('Location');
+    $browser->get($real_login_url);
+
+    $browser->form_with_fields('Email', 'Passwd');
+    $browser->set_fields(Email  => $username,
+      Passwd => $password);
+    $browser->submit();
+
+    if ($browser->content =~ /your login was incorrect/) {
+      error "Couldn't log you in, check your username and password.";
+      exit 1;
+    } elsif ($browser->response->code == 302) {
+      # expected, next step in login process
+      my $check_cookie_url = $browser->response->header('Location');
+      $browser->get($check_cookie_url);
+
+      # and then another, html-only, non-http, redirection...
+      if ($browser->content =~ /<meta.*"refresh".*?url=&#39;(.*?)&#39;"/i) {
+        my $redirected = decode_entities($1);
+        $browser->get($redirected);
+
+        # If we weren't redirected to YouTube we might have a regional Google
+        # site.
+        if(URI->new($redirected)->host !~ /youtube/i) {
+          if($browser->response->code == 302) {
+            $browser->get($browser->response->header("Location"));
+          } else {
+            die "Did not find expected redirection";
+          }
+        }
+      } else {
+        die "Did not find expected redirection";
+      }
+    }
+    else {
+      die "Unexpected response during login";
+    }
+
+    # Now we go back to the video page, hopefully logged in...
+    $browser->get($orig_uri);
+
+    # the confirmation url will always fail to show the video these days
+    # AND it'll fail to show the button apparently.
+    if ($browser->response->code == 303) {
+      # this account hasn't been enabled for grownup videos yet
+      my $real_confirmation_url = $browser->response->header('Location');
+      $browser->get($real_confirmation_url);
+      if ($browser->form_with_fields('next_url', 'action_confirm')) {
+        $browser->field('action_confirm' => 'Confirm Birth Date');
+        $browser->click_button(name => "action_confirm");
+
+        if ($browser->response->code != 303) {
+          die "Unexpected response from Youtube";
+        }
+        $browser->get($browser->response->header('Location'));
+      }
+    }
+  }
+  else {
+    # Lame Youtube redirection to uk.youtube.com and so on.
+    if ($browser->response->code == 302) {
+      $browser->get($browser->response->header('Location'));
+    }
+
+    if (!$browser->success) {
+      die "Couldn't download URL: " . $browser->response->status_line;
+    }
+  }
+}
+
 # Returns YouTube video information as key/value pairs for the specified
 # video ID. The page that the video appears on can also be supplied. If not
 # supplied, the function will create a suitable one.
 sub get_youtube_video_info {
-  my ($browser, $video_id, $url) = @_;
+  my ($browser, $video_id, $url, $t) = @_;
 
   $url ||= "http://www.youtube.com/watch?v=$video_id";
 
   my $video_info_url_template =
-    "http://www.youtube.com/get_video_info?&video_id=%s&el=profilepage&ps=default&eurl=%s&hl=en_US";
+    "http://www.youtube.com/get_video_info?&video_id=%s&el=profilepage&ps=default&eurl=%s&hl=en_US&t=%s";
 
   my $video_info_url = sprintf $video_info_url_template,
-    uri_escape($video_id), uri_escape($url);
+    uri_escape($video_id), uri_escape($url), uri_escape($t);
+
+  debug "get_youtube_video_info: $video_info_url";
 
   $browser->get($video_info_url);
 
