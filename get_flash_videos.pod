@@ -35,6 +35,70 @@ Save downloaded file to the specified filename. Usually this shouldn't be
 necessary, as C<get_flash_videos> tries to use a meaningful name for the
 video.
 
+=item I<-r>, I<--quality>
+
+The quality of the video to attempt to download. Some sites offer videos in
+multiple qualities; this will let you specify which quality to prefer.
+C<get_flash_videos> will aim to download a video at the specified quality or
+lower, if no video is available at that quality it will download the next
+highest quality video available.
+
+You can specify a quality as either:
+
+=over 4
+
+=item *
+
+high
+
+=item *
+
+medium
+
+=item *
+
+low
+
+=back
+
+or a target resolution:
+
+=over 4
+
+=item *
+
+1080p (1920x1080)
+
+=item *
+
+720p (1280x720)
+
+=item *
+
+576p (720x576)
+
+=item *
+
+480w (854x480)
+
+=item *
+
+480p (640x480)
+
+=item *
+
+240w (427x240)
+
+=item *
+
+240p (320x240)
+
+=back
+
+High corresponds to 1080p or 720p, medium to 576p, 480w and 480p and low to 240w and 240p.
+
+The default is B<high>.
+
 =item I<-p>, I<--play>
 
 Begin playing the video once enough of the file has been downloaded.
