@@ -6,7 +6,7 @@ use FlashVideo::Utils;
 use URI::Escape;
 
 sub find_video {
-  my ($self, $browser, $embed_url) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   if ($browser->content =~ /content.is.not.available.for.your.country/i) {
     error "Can't (yet) download this video because it's not available " .
@@ -40,6 +40,15 @@ sub find_video {
 
     if($data =~ /videotitle=([^&]+)/) {
       $filename = title_to_filename(uri_unescape($1));
+    }
+  }
+
+  if(!$video) {
+    # Sometimes dailymotion actually embeds another site, so check that..
+    my($package, $possible_url) = FlashVideo::URLFinder::find_package($browser->uri, $browser);
+
+    if($package ne __PACKAGE__) {
+      return $package->find_video($browser, $possible_url, $prefs);
     }
   }
 

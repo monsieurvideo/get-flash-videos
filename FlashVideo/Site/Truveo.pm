@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my($self, $browser, $embed_url) = @_;
+  my($self, $browser, $embed_url, $prefs) = @_;
 
   my($videourl) = $browser->content =~ /var videourl = "(.*?)"/;
 
@@ -26,7 +26,7 @@ sub find_video {
 
     die "Recursion detected" if $package eq __PACKAGE__;
 
-    return $package->find_video($browser, $possible_url);
+    return $package->find_video($browser, $possible_url, $prefs);
   } else {
     die "Redirect URL not found";
   }
