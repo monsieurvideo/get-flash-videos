@@ -1,11 +1,11 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
-package FlashVideo::GoogleVideoSearch;
+package FlashVideo::Site::Googlevideosearch;
 
 use strict;
 use FlashVideo::Mechanize;
 
 sub search {
-  my $search = shift;
+  my($self, $search, $type) = @_;
 
   my $browser = FlashVideo::Mechanize->new;
   

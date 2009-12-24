@@ -4,11 +4,10 @@ package FlashVideo::Search;
 use strict;
 use Carp;
 
-use FlashVideo::GoogleVideoSearch;
 use FlashVideo::Utils;
 
 # Sites which support searching
-my @sites_with_search = ('4oD');
+my @sites_with_search = ('4oD', 'GoogleVideoSearch');
 
 sub search {
   my ($search, $max_per_site, $max_results) = @_;
@@ -41,7 +40,7 @@ sub search {
       # Remove the site name from the search string
       $search =~ s/^\w+ //;
 
-      my @results = $possible_package->search($search);
+      my @results = $possible_package->search($search, "site");
 
       trim_resultset(\@results, $max_results);
 
@@ -76,7 +75,7 @@ sub search {
   foreach my $search_site (@search_sites) {
     debug "Searching '$search_site' for '$search'.";
 
-    if (my @site_results = $search_site->search($search)) {
+    if (my @site_results = $search_site->search($search, "all")) {
       debug "Found " . @site_results . " results for $search.";
 
       trim_resultset(\@site_results, $max_per_site);
@@ -87,13 +86,6 @@ sub search {
       debug "No results found for '$search'.";
     }
   }
-
-  # Search Google as well - handle that separately for now.
-  my @google_results = FlashVideo::GoogleVideoSearch::search($search);
-
-  trim_resultset(\@google_results, $max_per_site);
-  
-  push @results, @google_results;
 
   # Return all results, trimming if necessary.
   trim_resultset(\@results, $max_results);

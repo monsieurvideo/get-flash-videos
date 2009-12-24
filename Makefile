@@ -43,7 +43,7 @@ combined-$(MAIN): $(COMBINE) $(COMBINED_SOURCES)
 
 # Run our Perl tests.
 check: $(MAIN)-$(VERSION)
-	SCRIPT=$^ prove
+	SCRIPT=$^ prove t
 
 # Manpage
 $(MAIN).1: $(MAIN).pod

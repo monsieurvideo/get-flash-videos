@@ -9,10 +9,16 @@ use FlashVideo::Utils;
 use URI::Escape;
 
 sub search {
-  my ($self, $search) = @_;
+  my ($self, $search, $type) = @_;
 
-  die "Must have XML::Simple installed to search YouTube"
-    unless eval { require XML::Simple };
+  unless(eval { require XML::Simple }) {
+    if($type eq 'site') {
+      die "Must have XML::Simple installed to search YouTube for 4oD videos";
+    } else {
+      debug "Must have XML::Simple installed to search YouTube for 4oD videos";
+      return;
+    }
+  }
 
   # Use GData API to search
   # Note that 50 is the maximum value for max-results.
