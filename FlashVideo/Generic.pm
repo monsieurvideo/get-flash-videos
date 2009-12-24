@@ -12,7 +12,7 @@ my $video_re = qr!http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
                   (?:\?[-:/a-z0-9%_.?=&]+)?!xi;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   # First strategy - identify all the Flash video files, and download the
   # biggest one. Yes, this is hacky.
@@ -49,7 +49,7 @@ sub find_video {
         qr{(?si)<script[^>]*>(.*?)</script>}) {
 
       for my $param($browser->content =~ /$regex/gi) {
-        (my $url, $possible_filename, $filename_is_reliable) = find_file_param($browser->clone, $param);
+        (my $url, $possible_filename, $filename_is_reliable) = find_file_param($browser->clone, $param, $prefs);
 
         if($url) {
           my $resolved_url = url_exists($browser->clone, $url);
@@ -67,7 +67,7 @@ sub find_video {
         debug "Found iframe: $iframe";
         my $sub_browser = $browser->clone;
         $sub_browser->get($iframe);
-        ($actual_url) = eval { $self->find_video($sub_browser) };
+        ($actual_url) = eval { $self->find_video($sub_browser, undef, $prefs) };
       }
     }
   }
@@ -96,7 +96,7 @@ sub find_video {
 }
 
 sub find_file_param {
-  my($browser, $param) = @_;
+  my($browser, $param, $prefs) = @_;
 
   for my $file($param =~ /(?:video|movie|file)_?(?:href|src|url)?['"]?\s*[=:,]\s*['"]?([^&'" ]+)/gi,
       $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/gi,
@@ -104,7 +104,7 @@ sub find_file_param {
       $param =~ /([^ ]+@{[EXTENSIONS]})/gi,
       $param =~ /SWFObject\(["']([^"']+)/) {
 
-    my ($actual_url, $filename, $filename_is_reliable) = guess_file($browser, $file);
+    my ($actual_url, $filename, $filename_is_reliable) = guess_file($browser, $file, '', $prefs);
     if($actual_url) {
       my $possible_filename = $filename || (split /\//, $actual_url)[-1];
 
@@ -120,7 +120,7 @@ sub find_file_param {
 }
 
 sub guess_file {
-  my($browser, $file, $once) = @_;
+  my($browser, $file, $once, $prefs) = @_;
 
   # Contains lots of URI encoding, so try escaping..
   $file = uri_unescape($file) if scalar(() = $file =~ /%[A-F0-9]{2}/gi) > 3;
@@ -137,7 +137,7 @@ sub guess_file {
       if (my ($package, $url) = FlashVideo::URLFinder::find_package($uri, $browser->clone)) {
         debug "$uri is supported by $package.";
         (my $browser_on_supported_site = $browser->clone())->get($uri);
-        return $package->find_video($browser_on_supported_site, $uri), 1;
+        return $package->find_video($browser_on_supported_site, $uri, $prefs), 1;
       }
 
       my $content_type = $browser->response->header("Content-type");
@@ -165,7 +165,7 @@ sub guess_file {
         } elsif(!defined $once
             && $browser->content =~ m!(http[-:/a-zA-Z0-9%_.?=&]+)!i) {
           # Try once more, one level deeper..
-          return guess_file($browser, $1, 1);
+          return guess_file($browser, $1, 1, $prefs);
         } else {
           info "Tried $uri, but no video URL found";
         }
@@ -183,7 +183,7 @@ sub guess_file {
           my $new_uri = URI->new_abs($file, $swf_uri);
           debug "Found SWF: $swf_uri -> $new_uri";
           if($new_uri ne $uri) {
-            return guess_file($browser, $new_uri, 1);
+            return guess_file($browser, $new_uri, 1, $prefs);
           }
         }
       }
