@@ -61,7 +61,7 @@ sub search {
     if (UNIVERSAL::can($plugin_package, "search")) {
       debug "Plugin '$plugin' has a search method.";
 
-      push @search_sites, $plugin_package;
+      unshift @search_sites, $plugin_package;
     }
     else {
       debug "Plugin '$plugin' doesn't have a search method.";
