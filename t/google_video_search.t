@@ -2,9 +2,9 @@
 use strict;
 use lib qw(..);
 use Test::More tests => 2;
-use FlashVideo::GoogleVideoSearch;
+use FlashVideo::Site::Googlevideosearch;
 
-my @results = FlashVideo::GoogleVideoSearch::search('Iron Man trailer');
+my @results = FlashVideo::Site::Googlevideosearch->search('Iron Man trailer');
 
 ok(@results > 1, "Results returned");
 
