@@ -123,9 +123,22 @@ sub find_video {
         die "Couldn't extract SWF URL";
       }
 
+      my $rtmp_url = $info{conn};
+
+      if($info{fmt_stream_map}) {
+        my $fmt_stream_map = parse_youtube_format_url_map($info{fmt_stream_map}, 1);
+
+        # Sort by quality...
+        my $preferred_quality = $prefs->quality->choose(map { $fmt_stream_map->{$_->{id}}
+            ? { resolution => $_->{resolution}, url => $fmt_stream_map->{$_->{id}} }
+            : () } @formats);
+
+        $rtmp_url = $preferred_quality->{url};
+      }
+
       return {
         flv => title_to_filename($title),
-        rtmp => $info{conn},
+        rtmp => $rtmp_url,
         swfhash($browser, $swf_url)
       };
     }
@@ -304,11 +317,11 @@ sub parse_youtube_video_info {
 
 # Some YouTube pages contain a "fmt_url_map", a mapping of quality codes
 # (or "formats") to URLs from where the video can be downloaded. This
-# function returns a hash reference keyed on the format number. (Not ideal
-# but this will allow people to easily select a specific quality in
-# future.)
+# function returns a hash reference keyed on the format number.
 sub parse_youtube_format_url_map {
-  my $raw_map = shift;
+  my($raw_map, $param_idx) = @_;
+
+  $param_idx = 0 unless defined $param_idx;
 
   my $map = {};
 
@@ -318,7 +331,9 @@ sub parse_youtube_format_url_map {
   # Now split on comma as the record is structured like
   # $quality|$url,$quality|$url
   foreach my $pair (split /,/, $raw_map) {
-    my ($format, $url) = split /\|/, $pair;
+    my ($format, @params) = split /\|/, $pair;
+
+    my $url = $params[$param_idx];
 
     # $url is double escaped so unescape again.
     $url = uri_unescape($url);
