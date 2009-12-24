@@ -77,14 +77,14 @@ sub find_video {
       || $embed_url =~ /v=([^&]+)/) {
     $video_id = $1;
   } else {
-    die "Couldn't extract video ID";
+    check_die($browser, "Couldn't extract video ID");
   }
 
   my $t; # no idea what this parameter is but it seems to be needed
   if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
     $t = $1;
   } else {
-    die "Couldn't extract mysterious t parameter";
+    check_die($browser, "Couldn't extract mysterious t parameter");
   }
 
   # Try to get Youtube's info for this video - needed for some types of
@@ -152,7 +152,7 @@ sub download {
 
   my $fetcher = sub {
     my($url, $filename) = @_;
-    $url = url_exists($browser, $url, 1);
+    $url = url_exists($browser->clone, $url, 1);
     return $url, $filename if $url;
     return;
   };
@@ -173,11 +173,24 @@ sub download {
   my @ret = $fetcher->("http://www.youtube.com/get_video?video_id=$video_id&t=$t",
     title_to_filename($title));
 
-  die "Unable to find video URL" unless @ret;
+  check_die($browser, "Unable to find video URL") unless @ret;
 
   $browser->allow_redirects;
 
   return @ret;
+}
+
+sub check_die {
+  my($browser, $message) = @_;
+
+  if($browser->content =~ m{class="yt-alert-content">([^<]+)}) {
+    $message = $1;
+    $message =~ s/(?:^\s+|\s+$)//g;
+    error $message;
+    exit 1;
+  } else {
+    die "$message\n";
+  }
 }
 
 sub login {
@@ -266,6 +279,11 @@ sub login {
   else {
     # Lame Youtube redirection to uk.youtube.com and so on.
     if ($browser->response->code == 302) {
+      $browser->get($browser->response->header('Location'));
+    }
+
+    if ($browser->response->code == 303) {
+      debug "Video not available (303), trying " . $browser->response->header('Location');
       $browser->get($browser->response->header('Location'));
     }
 
