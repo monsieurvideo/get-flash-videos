@@ -20,6 +20,7 @@
 # maintain the JustWorks(tm) nature of the program.
 
 use strict;
+use Encode ();
 use File::stat;
 use File::Basename;
 use Getopt::Long;
@@ -30,12 +31,11 @@ use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 use FlashVideo::Search;
 use FlashVideo::Utils;
-use FlashVideo::GoogleVideoSearch;
 use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-use constant VERSION => "1.18";
+use constant VERSION => "1.19";
 
 our %opt;
 BEGIN {
@@ -130,7 +130,7 @@ GetOptions(
   "quiet|q"      => \$opt{quiet},
   "add-plugin=s" => \$opt{add_plugin},
   "quality|r=s"  => \$opt{quality},
-);
+) or die "Try $0 --help for more information.\n";
 
 if($opt{version}) {
   die VER_INFO;
@@ -160,9 +160,11 @@ if (FlashVideo::Mechanize->new->get_socks_proxy()) {
 }
 
 if($^O =~ /MSWin/i) {
+  $opt{filename} = Encode::decode(get_win_codepage(), $opt{filename});
   binmode STDERR, ":encoding(" . get_win_codepage() . ")";
   binmode STDOUT, ":encoding(" . get_win_codepage() . ")";
 } else {
+  $opt{filename} = Encode::decode("utf-8", $opt{filename});
   binmode STDERR, ":utf8";
   binmode STDOUT, ":utf8";
 }
