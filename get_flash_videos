@@ -213,12 +213,24 @@ if ($search) {
         $count++;
       }
 
-      print "Enter the number(s) of the videos to download " .
+      print "Enter the number(s) or range (e.g. 1-3) of the videos to download " .
             "(separate multiple with comma or space): ";
       chomp(my $choice = <STDIN>);
       $choice ||= 1;
       
       for(split /[ ,]+/, $choice) {
+        if (/-/) {
+          my ($lower, $upper) = split /-/, $choice;
+          if ($upper > $lower and $upper > 0) {
+            push @download_urls, map { $results[$_]->{url} } $lower - 1 .. $upper - 1;
+            next;
+          }
+          else {
+            print STDERR "Search range '$_' is invalid.\n";
+            exit 1;
+          }
+        }
+
         $_--;
 
         if (!$results[$_]) {
