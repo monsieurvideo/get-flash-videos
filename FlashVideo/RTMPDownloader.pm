@@ -117,14 +117,16 @@ sub run {
   my @error;
 
   while(sysread($err, $buf, 128, length $buf) > 0) {
-    my @parts = split /\r/, $buf;
+    $buf =~ s/\015\012/\012/g;
+
+    my @parts = split /\015/, $buf;
     $buf = "";
 
     for(@parts) {
       # Hide almost everything from rtmpdump, it's less confusing this way.
       if(/^((?:DEBUG:|WARNING:|Closing connection|ERROR: No playpath found).*)\n/) {
         debug "$prog: $1";
-      } elsif(/^(ERROR: .*)\n/) {
+      } elsif(/^(ERROR: .*)\012/) {
         push @error, $1;
         info "$prog: $1";
       } elsif(/^([0-9.]+) kB(?:\s+\/ \S+ sec)?(?: \(([0-9.]+)%\))?/i) {
@@ -137,8 +139,8 @@ sub run {
         }
 
         $self->progress;
-      } elsif(/\n$/) {
-        for my $l(split /\n/) {
+      } elsif(/\012$/) {
+        for my $l(split /\012/) {
           if($l =~ /^[A-F0-9]{,2}(?:\s+[A-F0-9]{2})*\s*$/) {
             debug $l;
           } elsif($l =~ /Download complete/) {
