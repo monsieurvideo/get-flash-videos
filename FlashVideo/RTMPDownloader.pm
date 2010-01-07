@@ -66,6 +66,7 @@ sub download {
 
   if($return != 0 && "@errors" =~ /failed to connect/i) {
     # Try port 443 as an alternative
+    info "Couldn't connect on RTMP port, trying port 443 instead";
     $rtmp_data->{port} = 443;
     ($return, @errors) = $self->run($prog, $rtmp_data);
   }
@@ -111,6 +112,16 @@ sub run {
 
   my $pid = open3($in, $out, $err, $prog,
     map { ("--$_" => ($rtmp_data->{$_} || ())) } keys %$rtmp_data);
+
+  # Windows doesn't send signals to child processes, so we need to do it
+  # manually to ensure that we don't have stray rtmpdump processes.
+  local $SIG{INT};
+  if ($^O =~ /mswin/i) {
+    $SIG{INT} = sub {
+      kill 'TERM', $pid;
+      exit;
+    };
+  } 
 
   my $complete = 0;
   my $buf = "";

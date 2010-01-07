@@ -246,7 +246,7 @@ sub progress {
       substr($filename, $pos, $rem) = "...";
     }
 
-    print STDERR "\r$filename$progress_text";
+    syswrite STDERR, "\r$filename$progress_text";
   }
 }
 
