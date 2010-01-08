@@ -98,13 +98,31 @@ sub find_video {
 sub find_file_param {
   my($browser, $param, $prefs) = @_;
 
-  for my $file($param =~ /(?:video|movie|file)_?(?:href|src|url)?['"]?\s*[=:,]\s*['"]?([^&'" ]+)/gi,
+  for my $file($param =~ /(?:video|movie|file|path)_?(?:href|src|url)?['"]?\s*[=:,]\s*['"]?([^&'" ]+)/gi,
       $param =~ /(?:config|playlist|options)['"]?\s*[,:=]\s*['"]?(http[^'"&]+)/gi,
       $param =~ /['"=](.*?@{[EXTENSIONS]})/gi,
       $param =~ /([^ ]+@{[EXTENSIONS]})/gi,
       $param =~ /SWFObject\(["']([^"']+)/) {
 
+    debug "Found $file";
+
     my ($actual_url, $filename, $filename_is_reliable) = guess_file($browser, $file, '', $prefs);
+
+    if(!$actual_url && $file =~ /\?(.*)/) {
+      # Maybe we have query params?
+      debug "Trying query param on $1";
+
+      for my $query_param(split /[;&]/, $1) {
+        my($query_key, $query_value) = split /=/, $query_param;
+        debug "Found $query_value from $query_key";
+
+        ($actual_url, $filename, $filename_is_reliable)
+          = guess_file($browser, $query_value, '', $prefs);
+
+        last if $actual_url;
+      }
+    }
+
     if($actual_url) {
       my $possible_filename = $filename || (split /\//, $actual_url)[-1];
 
@@ -134,7 +152,10 @@ sub guess_file {
 
     if($uri) {
       # Check to see if this URL is for a supported site.
-      if (my ($package, $url) = FlashVideo::URLFinder::find_package($uri, $browser->clone)) {
+      my ($package, $url) = FlashVideo::URLFinder::find_package($uri,
+        $browser->clone);
+
+      if($package && $package ne __PACKAGE__) {
         debug "$uri is supported by $package.";
         (my $browser_on_supported_site = $browser->clone())->get($uri);
         return $package->find_video($browser_on_supported_site, $uri, $prefs), 1;
