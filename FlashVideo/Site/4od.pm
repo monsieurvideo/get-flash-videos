@@ -11,7 +11,7 @@ use URI::Escape;
 sub search {
   my ($self, $search, $type) = @_;
 
-  unless(eval { require XML::Simple }) {
+  unless(eval { require XML::Simple } && eval { XML::Simple::XMLin("<foo/>") }) {
     if($type eq 'site') {
       die "Must have XML::Simple installed to search YouTube for 4oD videos";
     } else {
