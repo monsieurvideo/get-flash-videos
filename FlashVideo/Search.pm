@@ -40,11 +40,7 @@ sub search {
       # Remove the site name from the search string
       $search =~ s/^\w+ //;
 
-      my @results = $possible_package->search($search, "site");
-
-      trim_resultset(\@results, $max_results);
-
-      return @results;
+      return search_site($possible_package, $search, "site", $max_results);
     }
   }
 
@@ -70,27 +66,33 @@ sub search {
 
   # Call each site's search method - this includes plugins and sites
   # defined in @sites_with_search.
-  my @results;
-
-  foreach my $search_site (@search_sites) {
-    debug "Searching '$search_site' for '$search'.";
-
-    if (my @site_results = $search_site->search($search, "all")) {
-      debug "Found " . @site_results . " results for $search.";
-
-      trim_resultset(\@site_results, $max_per_site);
-
-      push @results, @site_results;
-    }
-    else {
-      debug "No results found for '$search'.";
-    }
-  }
+  my @results = map { search_site($_, $search, "all", $max_per_site) } @search_sites;
 
   # Return all results, trimming if necessary.
   trim_resultset(\@results, $max_results);
 
   return @results;
+}
+
+sub search_site {
+  my($search_site, $search, $type, $max) = @_;
+
+  debug "Searching '$search_site' for '$search'.";
+
+  if (my @site_results = eval { $search_site->search($search, $type) }) {
+    debug "Found " . @site_results . " results for $search.";
+
+    trim_resultset(\@site_results, $max);
+    return @site_results;
+  }
+  elsif($@) {
+    info "Searching '$search_site' failed with: $@";
+  }
+  else {
+    debug "No results found for '$search'.";
+  }
+
+  return ();
 }
 
 sub trim_resultset {
