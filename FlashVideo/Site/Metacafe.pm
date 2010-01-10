@@ -8,6 +8,15 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser) = @_;
 
+  if ($browser->response->header("Location") =~ /Openx/) {
+    # Family filter, turn it off
+    my $filter = "http://www.metacafe.com/f/index.php?inputType=filter&controllerGroup=user&filters=0&prevURL=" . $browser->uri->path;
+    debug "Disabling family filter by getting $filter";
+
+    $browser->allow_redirects;
+    $browser->get($filter);
+  }
+
   my $url;
   if ($browser->content =~ m'mediaURL=(http.+?)&') {
     $url = uri_unescape($1);
