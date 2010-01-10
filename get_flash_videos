@@ -267,6 +267,9 @@ foreach my $url (@download_urls) {
 if($download_count == 0) {
   info "Couldn't download any videos.";
   exit 1;
+} elsif($download_count != @download_urls) {
+  info "Problems downloading some videos.";
+  exit 2;
 }
 
 exit 0;
@@ -301,9 +304,11 @@ sub download {
     if($@ =~ /^Must have | requires /) {
       my $error = "$@";
       $error =~ s/at $0.*//;
-      die "$error" . REQ_INFO;
+      print STDERR "$error" . REQ_INFO;
+      return 0;
     } else {
-      die "Error: $@" . FRIENDLY_FAILURE;
+      print STDERR "Error: $@" . FRIENDLY_FAILURE;
+      return 0;
     }
   }
 
@@ -340,7 +345,7 @@ sub download {
       $downloader = FlashVideo::Downloader->new;
     }
 
-    my $size = $downloader->$action($data, $save_as, $browser) || exit 1;
+    my $size = $downloader->$action($data, $save_as, $browser) || return 0;
 
     info "\n" . ($remaining == 1 ? "Done. " : "")
       . "Saved $size bytes to $downloader->{printable_filename}";
