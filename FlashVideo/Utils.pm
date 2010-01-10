@@ -8,7 +8,7 @@ use HTML::TokeParser;
 use Encode;
 
 use constant FP_KEY => "Genuine Adobe Flash Player 001";
-use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv)/i;
+use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv|avi)/i;
 use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error

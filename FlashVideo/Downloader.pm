@@ -303,6 +303,9 @@ sub check_magic {
   # Other QuickTime
   } elsif(substr($data, 4, 4) eq 'moov' || substr($data, 4, 4) eq 'mdat') {
     return 1;
+  # AVI / WAV
+  } elsif(substr($data, 0, 4) eq 'RIFF') {
+    return 1;
   }
 
   return 0;
