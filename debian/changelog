@@ -1,3 +1,23 @@
+get-flash-videos (1.19-1) needy-newt; urgency=low
+
+  * Add support for Stagevu, Ustream and Techcast.
+
+  * Ability to select quality of video to download via the --quality option.
+
+    The default is to download the highest quality, but this can now be
+    overridden on the command line or via the configuration file. See the man
+    page for full details.
+
+  * Improved support for search plugins. 4od (via YouTube) is included in the
+    distribution, starting a query with "4od" will search only 4od.
+
+  * Improvements to generic downloading support, including support for .avi
+    files and searching flash parameters.
+
+  * Some issues fixed on Windows.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Sun, 10 Jan 2010 14:56:34 +0000
+
 get-flash-videos (1.18-1) megalomanical-moose; urgency=low
 
   * Add support for YouTube RTMP videos (e.g. Channel 4).
