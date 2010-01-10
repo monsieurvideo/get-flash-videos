@@ -1,3 +1,14 @@
+get-flash-videos (1.20-1) obvious-orangatang; urgency=low
+
+  * Fix issues with 4oD search which prevented normal searches working when
+    XML modules were not installed.
+
+  * Don't abort if downloads fail when downloading multiple videos.
+
+  * Fix metacafe.
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Sun, 10 Jan 2010 16:35:43 +0000
+
 get-flash-videos (1.19-1) needy-newt; urgency=low
 
   * Add support for Stagevu, Ustream and Techcast.
