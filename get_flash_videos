@@ -35,7 +35,7 @@ use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-use constant VERSION => "1.20";
+use constant VERSION => "1.21";
 
 our %opt;
 BEGIN {
