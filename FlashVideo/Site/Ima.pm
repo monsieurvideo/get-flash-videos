@@ -16,7 +16,6 @@ sub find_video {
   my($title) = $browser->content =~ m{<video_title>(.*)</video_title>};
   my($instance) = $browser->content =~ m{<video_instance>(.*)</video_instance>};
   my($file) = $browser->content =~ m{<video_file>(.*)</video_file>};
-#  $file =~ s/\.flv$//;
 
   return {
     rtmp => "rtmp://reel.ima.umn.edu/ima/$instance/$file",
