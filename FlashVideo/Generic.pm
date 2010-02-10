@@ -3,8 +3,10 @@ package FlashVideo::Generic;
 
 use strict;
 use FlashVideo::Utils;
+use File::Basename;
 use Memoize;
 use LWP::Simple;
+use URI;
 use URI::Escape;
 
 my $video_re = qr!http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
@@ -92,7 +94,70 @@ sub find_video {
   
   return $actual_url, @filenames if $actual_url;
 
+  # As a last ditch attempt, download the SWF file as in some cases, sites
+  # use an SWF movie file for each FLV.
+
+  # Get SWF URL(s)
+  my %swf_urls;
+
+  if (eval { require URI::Find }) {
+    my $finder = URI::Find->new(
+      sub { $swf_urls{$_[1]}++ if $_[1] =~ /\.swf$/i }
+    );
+    $finder->find(\$browser->content);
+  }
+  else {
+    # Extract URLs in a frail way.
+    while ($browser->content =~ m{(http://[^ "']+?\.swf)}ig) {
+      $swf_urls{$_[1]}++;
+    }
+  }
+
+  if (%swf_urls) {
+    foreach my $swf_url (keys %swf_urls) {
+      if (my ($flv_url, $title) = search_for_flv_in_swf($browser, $swf_url)) {
+        return $flv_url, title_to_filename($title);
+      }
+    }
+  }
+
   die "No URLs found";
+}
+
+sub search_for_flv_in_swf {
+  my ($browser, $swf_url) = @_;
+
+  $browser = $browser->clone();
+
+  $browser->get($swf_url);
+
+  if (!$browser->success) {
+    die "Couldn't download SWF URL $swf_url: " .
+      $browser->response->status_line();
+  }
+
+  # SWF data might be compressed.
+  my $swf_data = $browser->content;
+
+  if ('C' eq substr $swf_data, 0, 1) {
+    if (eval { require Compress::Zlib }) {
+      $swf_data = Compress::Zlib::uncompress(substr $swf_data, 8);
+    }
+    else {
+      die "Compress::Zlib is required to uncompress compressed SWF files.\n";
+    }
+  }
+
+  if ($swf_data =~ m{(http://.{10,300}?\.flv)}i) {
+    my $flv_url = $1;
+
+    my $filename = uri_unescape(basename(URI->new($flv_url)->path()));
+    $filename =~ s/\.flv$//i;
+
+    return ($flv_url, $filename);
+  }
+
+  return;
 }
 
 sub find_file_param {

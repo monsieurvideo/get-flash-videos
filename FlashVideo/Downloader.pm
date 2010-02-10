@@ -169,6 +169,8 @@ sub download {
           $data = $self->{filter}->($data);
         }
 
+        return unless $data;
+
         my $fh = $self->{fh};
         print $fh $data || die "Unable to write to '$self->{printable_filename}': $!\n";
 
