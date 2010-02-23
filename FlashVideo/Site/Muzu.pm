@@ -8,15 +8,28 @@ use HTML::Entities;
 sub find_video {
   my ($self, $browser) = @_;
 
-  $browser->content =~ /id="trackHeading">(.*?)</;
-  my $filename = title_to_filename(decode_entities($1));
+  # Sometimes redirects to country-specific sites, sigh...
+  if ($browser->response->code == 302) {
+    $browser->get($browser->response->header('Location'))
+  }
 
-  my $flashvars = ($browser->content =~ m'flashvars:"([^"]+)')[0];
+  $browser->content =~ /id="trackHeading">(.*?)</;
+  my $title = $1;
+
+  if (!$title) {
+    $browser->content =~ /id="videosPageMainTitleH1">(.*?)</s;
+    $title = $1;
+  }
+  
+  my $filename = title_to_filename(decode_entities($title));
+
+  my $flashvars = ($browser->content =~ m'flashvars:(?:\s+getPlayerData\(\)\s+\+\s+)?"([^"]+)')[0];
   die "Unable to extract flashvars" unless $flashvars;
 
   my %map = (
     networkId    => "id",
     assetId      => "assetId",
+    vidId        => "assetId",
     startChannel => "playlistId",
   );
 
