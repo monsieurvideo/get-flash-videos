@@ -35,6 +35,11 @@ sub find_video {
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
     $possible_filename = (split /\//, $flv_urls[-1])[-1];
 
+    # Un-escape URLs if necessary
+    if ($flv_urls[-1] =~ /^http%3a%2f%2f/) {
+      $flv_urls[-1] = uri_unescape($flv_urls[-1])
+    }
+    
     $actual_url = url_exists($browser->clone, $flv_urls[-1]);
   }
 
