@@ -116,7 +116,7 @@ sub find_video {
 
       # SWF verification, blah
       my $swf_url;
-      if ($browser->content =~ /SWF_URL['"] ?: ?.{0,50}?(http:\/\/[^ ]+\.swf)/) {
+      if ($browser->content =~ /SWF_URL['"] ?: ?.{0,90}?(http:\/\/[^ ]+\.swf)/) {
         $swf_url = $1;
       }
       else {
