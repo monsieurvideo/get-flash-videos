@@ -144,7 +144,7 @@ if($opt{version}) {
 
 if ($opt{debug}) {
   if(my @plugins = get_installed_plugins()) {
-    debug @plugins . " plugins installed:";
+    debug @plugins . " plugin" . (@plugins != 1 && "s") . " installed:";
     debug "- $_" for @plugins;
   } else {
     debug "No plugins installed";
