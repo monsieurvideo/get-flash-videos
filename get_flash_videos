@@ -35,7 +35,7 @@ use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-use constant VERSION => "1.21";
+use constant VERSION => "1.22";
 
 our %opt;
 BEGIN {
@@ -337,15 +337,18 @@ sub download {
 
   for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
     my $downloader;
+    my $file = $save_as;
+
     if(ref $data eq 'HASH') {
       # RTMP data
       $downloader = FlashVideo::RTMPDownloader->new;
+      $file ||= $data->{flv};
     } else {
       # HTTP
       $downloader = FlashVideo::Downloader->new;
     }
 
-    my $size = $downloader->$action($data, $save_as, $browser) || return 0;
+    my $size = $downloader->$action($data, $file, $browser) || return 0;
 
     info "\n" . ($remaining == 1 ? "Done. " : "")
       . "Saved $size bytes to $downloader->{printable_filename}";
