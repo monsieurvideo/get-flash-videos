@@ -1,0 +1,18 @@
+get-flash-videos
+================
+
+For details on the project as a whole please see the Google Code Site, which
+also has downloads, which are the recommended way to install.
+
+http://code.google.com/p/get-flash-videos/
+
+Development 
+-----------
+
+This is the development version, rather than the released version which is
+released as one single script for ease of use this contains modules per site
+under FlashVideo/Site.
+
+For more details see the wiki:
+http://code.google.com/p/get-flash-videos/wiki/Developing
+

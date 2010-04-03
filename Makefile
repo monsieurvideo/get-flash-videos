@@ -70,8 +70,8 @@ release: release-main deb
 
 release-main: $(MAIN)-$(VERSION) changelog-update wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
-	svn commit -m "Version $(VERSION)" debian/changelog
-	svn cp -m "Version $(VERSION)" https://get-flash-videos.googlecode.com/svn/trunk https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION)
+	git commit -m "Version $(VERSION)" debian/changelog
+	git tag -a -m "Version $(VERSION)" v$(VERSION)
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
@@ -91,9 +91,9 @@ wiki-update: wiki
 
 deb: release-main
 	mkdir -p /tmp/deb
-	svn co https://get-flash-videos.googlecode.com/svn/tags/v$(VERSION) /tmp/deb/$(VERSION)
-	cd /tmp/deb/$(VERSION) && (dpkg-buildpackage || echo "Ignoring return value..")
+	git archive --prefix=v$(VERSION)/ v$(VERSION) | tar -xvf - -C /tmp/deb
+	cd /tmp/deb/v$(VERSION) && (dpkg-buildpackage || echo "Ignoring return value..")
 	googlecode_upload.py -l "Type-Package,OpSys-Linux" -s "Version $(VERSION) -- Debian package, for Debian and Ubuntu" -p get-flash-videos /tmp/deb/get-flash-videos_$(VERSION)-1_all.deb
-	rm -rf /tmp/deb/$(VERSION)
+	rm -rf /tmp/deb/v$(VERSION)
 
 .PHONY: all clean release release-main release-combined check wiki-update install deb
