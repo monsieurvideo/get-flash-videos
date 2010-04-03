@@ -192,7 +192,7 @@ sub check_die {
 
   if($browser->content =~ m{class="yt-alert-content">([^<]+)}) {
     $message .= "\n$1";
-    $message =~ s/(?:^\s+|\s+$)//g;
+    $message =~ s/\s+/ /g;
     error $message;
     exit 1;
   } else {
