@@ -23,7 +23,11 @@ sub search {
                      chomp(my $name = $_->text);
                      { name => $name, url => $_->url_abs->as_string }
               }
-              grep { $_->attrs()->{onclick} =~ /return resultClick/ }
+              grep { 
+                $_->attrs->{onclick} =~ /return resultClick/
+                || $_->attrs->{onmousedown} =~ /video_result/
+                || $_->attrs->{class} eq 'l'
+              }
               $browser->find_all_links(text_regex => qr/.+/);
 
   return @links;

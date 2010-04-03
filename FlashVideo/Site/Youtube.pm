@@ -46,30 +46,8 @@ sub find_video {
   # If the page contains fmt_url_map, then process this. With this, we
   # don't require the 't' parameter.
   if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}["']([^"']+)["']/) {
-    debug "Using fmt_url_map method";
-
-    my $fmt_url_map = parse_youtube_format_url_map($1);
-
-    if (!$title and $browser->uri->as_string =~ m'/user/.*?#') {
-      # This is a playlist and getting the video title without the ID is
-      # practically impossible because multiple videos are referenced in the
-      # page. However, the encrypted (apparently) video ID is included in the
-      # URL.
-      my $video_id = (split /\//, $browser->uri->fragment)[-1];
-
-      my %info = get_youtube_video_info($browser->clone, $video_id);
-
-      $title = $info{title};
-    }
-
-    # Sort by quality...
-    my $preferred_quality = $prefs->quality->choose(map { $fmt_url_map->{$_->{id}}
-        ? { resolution => $_->{resolution}, url => $fmt_url_map->{$_->{id}} }
-        : () } @formats);
-    
-    $browser->allow_redirects;
-
-    return $preferred_quality->{url}, title_to_filename($title, "mp4");
+    debug "Using fmt_url_map method from page";
+    return $self->download_fmt_map($prefs, $browser, $title, {}, $1);
   }
 
   my $video_id;
@@ -80,11 +58,9 @@ sub find_video {
     check_die($browser, "Couldn't extract video ID");
   }
 
-  my $t; # no idea what this parameter is but it seems to be needed
+  my $t;
   if ($browser->content =~ /\W['"]?t['"]?: ?['"](.+?)['"]/) {
     $t = $1;
-  } else {
-    check_die($browser, "Couldn't extract mysterious t parameter");
   }
 
   # Try to get Youtube's info for this video - needed for some types of
@@ -141,13 +117,44 @@ sub find_video {
         rtmp => $rtmp_url,
         swfhash($browser, $swf_url)
       };
+    } elsif($info{fmt_url_map}) {
+      debug "Using fmt_url_map method from info";
+      return $self->download_fmt_map($prefs, $browser, $title, \%info, $info{fmt_url_map});
     }
   }
 
-  return download($browser, $prefs, $video_id, $title, $t);
+  # Try old get_video method, just incase.
+  return download_get_video($browser, $prefs, $video_id, $title, $t);
 }
 
-sub download {
+sub download_fmt_map {
+  my($self, $prefs, $browser, $title, $info, $fmt_map) = @_;
+
+  my $fmt_url_map = parse_youtube_format_url_map($fmt_map);
+
+  if (!$title and $browser->uri->as_string =~ m'/user/.*?#') {
+    # This is a playlist and getting the video title without the ID is
+    # practically impossible because multiple videos are referenced in the
+    # page. However, the encrypted (apparently) video ID is included in the
+    # URL.
+    my $video_id = (split /\//, $browser->uri->fragment)[-1];
+
+    my %info = get_youtube_video_info($browser->clone, $video_id);
+
+    $title = $info->{title};
+  }
+
+  # Sort by quality...
+  my $preferred_quality = $prefs->quality->choose(map { $fmt_url_map->{$_->{id}}
+      ? { resolution => $_->{resolution}, url => $fmt_url_map->{$_->{id}} }
+      : () } @formats);
+
+  $browser->allow_redirects;
+
+  return $preferred_quality->{url}, title_to_filename($title, "mp4");
+}
+
+sub download_get_video {
   my($browser, $prefs, $video_id, $title, $t) = @_;
 
   my $fetcher = sub {
@@ -184,7 +191,7 @@ sub check_die {
   my($browser, $message) = @_;
 
   if($browser->content =~ m{class="yt-alert-content">([^<]+)}) {
-    $message = $1;
+    $message .= "\n$1";
     $message =~ s/(?:^\s+|\s+$)//g;
     error $message;
     exit 1;
@@ -342,9 +349,6 @@ sub parse_youtube_format_url_map {
   $param_idx = 0 unless defined $param_idx;
 
   my $map = {};
-
-  # Simple format. Needs to be URI unescaped first.
-  $raw_map = uri_unescape($raw_map);
 
   # Now split on comma as the record is structured like
   # $quality|$url,$quality|$url
