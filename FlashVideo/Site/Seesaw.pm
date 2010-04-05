@@ -4,6 +4,7 @@ package FlashVideo::Site::Seesaw;
 use strict;
 use FlashVideo::Utils;
 use HTML::Entities qw(decode_entities);
+use URI::Escape qw(uri_escape);
 
 my @res = (
   { name => "lowResUrl",  resolution => [ 512, 288 ] },
@@ -52,6 +53,110 @@ sub find_video {
     app      => $app,
     playpath => "$prefix:$playpath$query"
   }
+}
+
+sub search {
+  my($self, $search, $type) = @_;
+
+  my $episode = $search =~ s/episode (\d+)// ? $1 : "";
+  my $series  = $search =~ s/series (\d+)// ? $1 : "";
+
+  my $browser = FlashVideo::Mechanize->new;
+
+  _update_with_content($browser,
+    "http://www.seesaw.com/start.layout.searchsuggest:inputtextevent?search="
+    . uri_escape($search));
+
+  # Find links to programmes
+  my @urls = map  {
+    chomp(my $name = $_->text);
+    { name => $name, url => $_->url_abs->as_string }
+  } $browser->find_all_links(text_regex => qr/.+/);
+
+  if(@urls == 1) {
+    $browser->get($urls[0]->{url});
+    # We are now at the episode page.
+    my $main_title = ($browser->content =~ /<h1>\s*(?:<!--.*?-->\s*)?(.*?)\n/)[0];
+
+    # Parse the list of series
+    my $cur_series = ($browser->content =~ /<li class="current">.*?>\w+ (\d+)/i)[0];
+
+    my %series = reverse(
+      ($browser->content =~ m{<ul class="seriesList">(.*?)</ul>}i)[0]
+      =~ /<li.*?href="\?([^"]+)".*?>\s*(?:series\s*)?([^<]+)/gi);
+
+    # Go to the correct series
+    my $episode_list;
+    if($series && $cur_series ne $series) {
+      if(!$series{$series}) {
+        error "No such series number ($series).";
+        return;
+      }
+      _update_with_content($browser, $series{$series});
+      $episode_list = $browser->content;
+      $cur_series = $series;
+
+    } elsif(!$series) {
+      my @series = map { s/series\s+//i; $_ } keys %series;
+      info "Viewing series $cur_series; series " . join(", ", @series) . " also available.";
+      info "Search for 'seesaw $main_title series $series[0]' to view a specific series.";
+    }
+
+    if(!$episode_list) {
+      # Grab the episodes for the current series from the page
+      $episode_list = ($browser->content
+        =~ m{<table id="episodeListTble">(.*?)</table>}is)[0];
+    }
+
+    # Parse list of episodes
+    @urls = ();
+    for my $episode_html($episode_list =~ m{<tr.*?</tr>}gis) {
+      # Each table row here
+      my %info;
+      for(qw(number date title action)) {
+        my $class = "episode" . ucfirst;
+        $episode_html =~ m{<td class=['"]$class['"]>(.*?)</td>}gis
+          && ($info{$_} = $1);
+      }
+
+      $info{number} = ($info{number} =~ /ep\.?\w*\s*(\d+)/i)[0];
+      $info{date}   = ($info{date}   =~ />(\w+[^<]+)/)[0];
+      $info{title}  = ($info{title}  =~ />\s*([^<].*?)\s*</s)[0];
+      $info{url}    = ($info{action} =~ /href=['"]([^'"]+)/)[0];
+
+      my $title = join " - ", $main_title,
+        sprintf("S%02dE%02d", $cur_series, $info{number}), $info{title};
+
+      my $result = {
+        name => $title,
+        url  => URI->new_abs($info{url}, $browser->uri)
+      };
+
+      if($episode && $info{number} == $episode) {
+        # Exact match
+        return $result;
+      }
+
+      push @urls, $result;
+    }
+  } else {
+    info "Please specify a more specific title to download a particular programme." if @urls > 1;
+  }
+
+  return @urls;
+}
+
+sub _update_with_content {
+  my($browser, $url) = @_;
+
+  $browser->get($url,
+    X_Requested_With => 'XMLHttpRequest',
+    X_Prototype_Version => '1.6.0.3');
+
+  my($content) = $browser->content =~ /content":\s*"(.*?)"\s*}/;
+  $content = json_unescape($content);
+  debug "Content is '$content'";
+  $browser->update_html($content);
 }
 
 1;

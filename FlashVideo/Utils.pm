@@ -14,7 +14,7 @@ use constant MAX_REDIRECTS => 5;
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
-  is_program_on_path get_terminal_width);
+  is_program_on_path get_terminal_width json_unescape);
 
 my $HAS_READKEY = eval { require Term::ReadKey };
 
@@ -262,6 +262,15 @@ sub get_terminal_width {
   } else {
     return 80;
   }
+}
+
+# Maybe should use a proper JSON parser, but want to avoid the dependency for now..
+sub json_unescape {
+  my($s) = @_;
+
+  $s =~ s/\\u([0-9a-f]{1,4})/chr hex $1/ge;
+  $s =~ s{(\\[\\/rnt"])}{"\"$1\""}gee;
+  return $s;
 }
 
 1;

@@ -15,24 +15,14 @@ sub find_video {
 
   $browser->get("http://www.wat.tv/interface/contentv2/$video_id");
 
-  my $title = json_escape(($browser->content =~ /title":"(.*?)",/)[0]);
-  my $url   = json_escape(($browser->content =~ /files.*?url":"(.*?)",/)[0]);
+  my $title = json_unescape(($browser->content =~ /title":"(.*?)",/)[0]);
+  my $url   = json_unescape(($browser->content =~ /files.*?url":"(.*?)",/)[0]);
 
   my $filename = title_to_filename($title);
 
   $browser->allow_redirects;
 
   return $url, $filename;
-}
-
-# Maybe should use a proper JSON parser, but want to avoid the dependency for now..
-sub json_escape {
-  my($s) = @_;
-
-  $s =~ s/\\u([0-9a-f]{1,4})/chr hex $1/eg;
-  $s =~ s/\\//g;
-
-  return $s;
 }
 
 1;
