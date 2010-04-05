@@ -58,8 +58,8 @@ sub find_video {
 sub search {
   my($self, $search, $type) = @_;
 
-  my $episode = $search =~ s/episode (\d+)// ? $1 : "";
-  my $series  = $search =~ s/series (\d+)// ? $1 : "";
+  my $series  = $search =~ s/(?:series |\bs)(\d+)//i ? int $1 : "";
+  my $episode = $search =~ s/(?:episode |\be)(\d+)//i ? int $1 : "";
 
   my $browser = FlashVideo::Mechanize->new;
 
@@ -72,6 +72,11 @@ sub search {
     chomp(my $name = $_->text);
     { name => $name, url => $_->url_abs->as_string }
   } $browser->find_all_links(text_regex => qr/.+/);
+
+  # Only use result which matched every word.
+  # (Seesaw's search is useless, so this seems to be the best we can do).
+  my @words = split " ", $search;
+  @urls = grep { my $a = $_; @words == grep { $a->{name} =~ /\Q$_\E/i } @words } @urls;
 
   if(@urls == 1) {
     $browser->get($urls[0]->{url});
@@ -97,7 +102,7 @@ sub search {
       $cur_series = $series;
 
     } elsif(!$series) {
-      my @series = map { s/series\s+//i; $_ } keys %series;
+      my @series = sort { $a <=> $b } map { s/series\s+//i; $_ } keys %series;
       info "Viewing series $cur_series; series " . join(", ", @series) . " also available.";
       info "Search for 'seesaw $main_title series $series[0]' to view a specific series.";
     }
