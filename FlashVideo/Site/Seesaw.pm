@@ -87,7 +87,7 @@ sub search {
 
     # Parse the list of series
     my $cur_series = ($browser->content =~ /<li class="current">.*?>\w+ (\d+)/i)[0];
-    if(!$cur_series && $main_title =~ s/\s*series (\d+)\s*//i) {
+    if($main_title =~ s/\s*series (\d+)\s*//i && !$cur_series) {
       $cur_series = $1;
     }
 
@@ -136,7 +136,10 @@ sub search {
       $info{url}      = ($info{action} =~ /href=['"]([^'"]+)/)[0];
 
       my $title = join " - ", $main_title,
-        sprintf("S%02dE%02d", $cur_series, $info{number}), $info{title};
+        ($cur_series
+          ? sprintf("S%02dE%02d", $cur_series, $info{number})
+          : $info{number} ? sprintf("E%02d", $info{number})
+        : ()), $info{title};
 
       my $result = {
         name => $title,
