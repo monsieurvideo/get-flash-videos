@@ -4,7 +4,7 @@
 #	Reverse-engineering details at http://store-it.appspot.com/tou/tou.html
 #	by Sylvain Fourmanoit
 #
-#	un grand merci a Sylvain qui a tout debrousaille! 
+#	un grand merci a Sylvain qui a tout debrousaille!
 #
 #	Stavr0
 #
@@ -24,16 +24,16 @@ sub find_video {
     $video_id = $1;
   }
   debug "Video ID = " . $video_id;
-  	
+
   die "Couldn't find TOU.TV video ID" unless $video_id;
 
   # on cherche:		,"titleId":"2010-03-29_CA_0052"
-  my $filename;  
+  my $filename;
   if ($browser->content =~ /,"titleId":"([^"]+)"/) {
     $filename =  $1 ;
-  }	  
+  }
   debug "Filename = " . $filename;
-  
+
   # On va chercher le XML qui contient le lien RTMP
   #
   $browser->get("http://release.theplatform.com/content.select?pid=$video_id");
@@ -42,45 +42,47 @@ sub find_video {
     if !$browser->success;
 
   # on cherche:  	rtmp://medias-flash.tou.tv/ondemand/?auth=daEdwc5 etc...52_hr.mov
-  my $url;    
+  my $url;
   if ($browser->content =~ /(rtmp:[^\<]+)/) {
     $url = uri_unescape($1);
   }
   debug "URL = " . $url;
-  
+
   # on cherche:		auth=daEdrbRdbbtcYbUb3bQbzacdOaIbNczbva9-blS.uA-cOW-9rqBvkLqxBB
   my $auth;
   if ($url =~ /auth=([^&]+)/ ) {
     $auth = uri_unescape($1);
   }
-  debug "AUTH = " . $auth;  
+  debug "AUTH = " . $auth;
 
   #	on decoupe a partir de 'ondemand/'
   my $app;
   if ($url =~ /(ondemand\/.+)/ ) {
     $app = uri_unescape($1);
   }
-  debug "APP = " . $app;  
+  debug "APP = " . $app;
 
   #  on decoupe apres <break>
   my $playpath;
   if ($url =~ /&lt;break&gt;(.+)/ ) {
     $playpath = uri_unescape($1);
   }
-  debug "PLAYPATH = " . $playpath;  
+  debug "PLAYPATH = " . $playpath;
 
+=pod
 #	et ca donne....
-#    
-#  rtmpdump.exe 
-#  	--app ondemand/?auth=daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA&aifp=v0001&slist=002/MOV/HR/2010-03-29_CA_0052_hr;002/MOV/MR/2010-03-29_CA_0052_mr;002/MOV/BR/2010-03-29_CA_0052_br 
-#  	--flashVer WIN 10,0,22,87 
-#  	--swfVfy http://static.tou.tv/lib/ThePlatform/4.1.2/swf/flvPlayer.swf 
-#  	--auth daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA 
-#  	--tcUrl rtmp://medias-flash.tou.tv/ondemand/?auth=daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA&aifp=v0001&slist=002/MOV/HR/2010-03-29_CA_0052_hr;002/MOV/MR/2010-03-29_CA_0052_mr;002/MOV/BR/2010-03-29_CA_0052_br 
-#  	--rtmp rtmp://medias-flash.tou.tv/ondemand/?auth=daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA&aifp=v0001&slist=002/MOV/HR/2010-03-29_CA_0052_hr;002/MOV/MR/2010-03-29_CA_0052_mr;002/MOV/BR/2010-03-29_CA_0052_br 
-#  	--playpath mp4:002/MOV/HR/2010-03-29_CA_0052_hr.mov 
+#
+#  rtmpdump.exe
+#  	--app ondemand/?auth=daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA&aifp=v0001&slist=002/MOV/HR/2010-03-29_CA_0052_hr;002/MOV/MR/2010-03-29_CA_0052_mr;002/MOV/BR/2010-03-29_CA_0052_br
+#  	--flashVer WIN 10,0,22,87
+#  	--swfVfy http://static.tou.tv/lib/ThePlatform/4.1.2/swf/flvPlayer.swf
+#  	--auth daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA
+#  	--tcUrl rtmp://medias-flash.tou.tv/ondemand/?auth=daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA&aifp=v0001&slist=002/MOV/HR/2010-03-29_CA_0052_hr;002/MOV/MR/2010-03-29_CA_0052_mr;002/MOV/BR/2010-03-29_CA_0052_br
+#  	--rtmp rtmp://medias-flash.tou.tv/ondemand/?auth=daEcCamaRcPbCczdabkaRdkbSa8b8aec7bl-blS.4u-cOW-aqpyxlDpFCA&aifp=v0001&slist=002/MOV/HR/2010-03-29_CA_0052_hr;002/MOV/MR/2010-03-29_CA_0052_mr;002/MOV/BR/2010-03-29_CA_0052_br
+#  	--playpath mp4:002/MOV/HR/2010-03-29_CA_0052_hr.mov
 #	-o 2010-03-29_CA_0052_hr.flv
-  
+=cut
+
   return {
       app => $app,
       pageUrl => $url,
