@@ -20,9 +20,9 @@ sub find_video {
   # Grab title and normalise
   my @titles = map { decode_entities($_) } $browser->content =~ m{<h3\s+id="title(?:Ext)?"[^>]*>(.*?)</h3>}ig;
 
-  if($titles[1] =~ /Series (\d+)/) {
+  if($titles[1] =~ /Series (\d+)/i || $titles[0] =~ s/\s*Series (\d+)\s*//i) {
     $titles[1] = sprintf "S%02d", $1;
-    if($titles[2] =~ s/Episode (\d+):?//) {
+    if($titles[2] =~ s/Episode (\d+):?// || $titles[1] =~ s/Episode (\d+):?//) {
       $titles[1] .= sprintf "E%02d", $1;
     }
   }
@@ -81,10 +81,15 @@ sub search {
   if(@urls == 1) {
     $browser->get($urls[0]->{url});
     # We are now at the episode page.
-    my $main_title = ($browser->content =~ /<h1>\s*(?:<!--.*?-->\s*)?(.*?)\n/)[0];
+    my $main_title = ($browser->content =~ m{<h1>(.*?)</h1>}s)[0];
+    $main_title =~ s/<[^>]+>//g;
+    $main_title =~ s/\s+/ /g;
 
     # Parse the list of series
     my $cur_series = ($browser->content =~ /<li class="current">.*?>\w+ (\d+)/i)[0];
+    if(!$cur_series && $main_title =~ s/\s*series (\d+)\s*//i) {
+      $cur_series = $1;
+    }
 
     my %series = reverse(
       ($browser->content =~ m{<ul class="seriesList">(.*?)</ul>}i)[0]
@@ -101,7 +106,7 @@ sub search {
       $episode_list = $browser->content;
       $cur_series = $series;
 
-    } elsif(!$series) {
+    } elsif(!$series && keys %series > 1) {
       my @series = sort { $a <=> $b } map { s/series\s+//i; $_ } keys %series;
       info "Viewing series $cur_series; series " . join(", ", @series) . " also available.";
       info "Search for 'seesaw $main_title series $series[0]' to view a specific series.";
@@ -124,10 +129,11 @@ sub search {
           && ($info{$_} = $1);
       }
 
-      $info{number} = ($info{number} =~ /ep\.?\w*\s*(\d+)/i)[0];
-      $info{date}   = ($info{date}   =~ />(\w+[^<]+)/)[0];
-      $info{title}  = ($info{title}  =~ />\s*([^<].*?)\s*</s)[0];
-      $info{url}    = ($info{action} =~ /href=['"]([^'"]+)/)[0];
+      $info{number}   = ($info{number} =~ /ep\.?\w*\s*(\d+)/i)[0];
+      $info{date}     = ($info{date}   =~ />(\w+[^<]+)/)[0];
+      $info{number} ||= ($info{title}  =~ /ep\.?\w*\s*(\d+)/i)[0];
+      $info{title}    = ($info{title}  =~ />\s*([^<].*?)\s*</s)[0];
+      $info{url}      = ($info{action} =~ /href=['"]([^'"]+)/)[0];
 
       my $title = join " - ", $main_title,
         sprintf("S%02dE%02d", $cur_series, $info{number}), $info{title};
