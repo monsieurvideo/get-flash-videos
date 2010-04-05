@@ -95,4 +95,40 @@ sub find_video {
   };
 }
 
+sub search {
+  my($self, $search, $type) = @_;
+
+  my $browser = FlashVideo::Mechanize->new;
+  $browser->get("http://www.tou.tv/recherche?q=" . uri_escape($search));
+  return unless $browser->success;
+
+  my $results = $browser->content;
+
+=pod
+  <a href="/les-invincibles" id="MainContent_ctl00_ResultsEmissionsRepeater_TousLesEpisodesLink_0" class="tousEpisodes"></a>
+  <a href="/c-est-ca-la-vie" id="MainContent_ctl00_ResultsEmissionsRepeater_TousLesEpisodesLink_1" class="tousEpisodes"></a>
+=cut
+  my @emissions;
+  my @links;
+
+  while($results =~ /<a\s+href="([^"]+)"\s+id="[^"]+"\s+class="([^"]+)/g) {
+    debug $1;
+    if($2 eq "tousEpisodes") {
+      push @emissions, $1;
+    }
+  }
+
+  for my $emission (@emissions) {
+    $browser->get($emission);
+    my $liste = $browser->content;
+
+    # <a id="MainContent__ffd5dd30f7cc3406_ctl00_ctl90_DetailsViewTitreEpisodeHyperLink" class="episode" onclick="CTItem(&#39;Episode_titre&#39;,this)" href="/c-est-ca-la-vie/S2009E04"><b>+pisode 4 : Club de boxe pour Úviter le dÚcrochage scolaire&nbsp;</b></a>
+    while($liste =~ /<a.+class="episode".+href="([^"]+)".+>(.+)<\/a>/g) {
+      push @links, { name => $1, url => "http://www.tou.tv$1", description => $2 };
+    }
+  }
+
+  return @links;
+}
+
 1;
