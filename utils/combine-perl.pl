@@ -19,7 +19,7 @@ use constant COMBINED_WARNING => <<EOF;
 # combined version.
 #
 # The original files are available at:
-# http://code.google.com/p/get-flash-videos/source/checkout
+# http://github.com/monsieurvideo/get-flash-videos
 #
 #################################################
 EOF
