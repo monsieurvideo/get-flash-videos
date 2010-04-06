@@ -47,7 +47,7 @@ sub find_video {
   # don't require the 't' parameter.
   if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}["']([^"']+)["']/) {
     debug "Using fmt_url_map method from page";
-    return $self->download_fmt_map($prefs, $browser, $title, {}, $1);
+    return $self->download_fmt_map($prefs, $browser, $title, {}, uri_unescape($1));
   }
 
   my $video_id;
@@ -78,14 +78,14 @@ sub find_video {
       # Get season and episode
       my ($season, $episode);
 
-      if ($browser->content =~ m{<span(?: class=["']\w+["'])?>Season ?(\d+)</span>}) {
+      if ($browser->content =~ m{<span[^>]*>Season ?(\d+)}i) {
         $season = $1;
       }
 
-      if ($browser->content =~ m{<span(?: class=["']\w+["'])?>Episode ?(\d+)</span>}) {
+      if ($browser->content =~ m{<span[^>]*>[^<]+Ep\.?\w* ?(\d+)\W*\s*</span>}i) {
         $episode = $1;
       }
-      
+
       if ($season and $episode) {
         $title .= sprintf " S%02dE%02d", $season, $episode;
       }
@@ -94,8 +94,9 @@ sub find_video {
       my $swf_url;
       if ($browser->content =~ /SWF_URL['"] ?: ?.{0,90}?(http:\/\/[^ ]+\.swf)/) {
         $swf_url = $1;
-      }
-      else {
+      } elsif($browser->content =~ /src=\\['"](.*?\.swf)/) {
+        $swf_url = json_unescape($1);
+      } else {
         die "Couldn't extract SWF URL";
       }
 
@@ -191,8 +192,9 @@ sub check_die {
   my($browser, $message) = @_;
 
   if($browser->content =~ m{class="yt-alert-content">([^<]+)}) {
-    $message .= "\n$1";
-    $message =~ s/\s+/ /g;
+    my $alert = $1;
+    $alert =~ s/(^\s+|\s+$)//g;
+    $message .= "\nYouTube: $alert";
     error $message;
     exit 1;
   } else {
@@ -308,19 +310,23 @@ sub get_youtube_video_info {
 
   $url ||= "http://www.youtube.com/watch?v=$video_id";
 
-  my $video_info_url_template =
-    "http://www.youtube.com/get_video_info?&video_id=%s&el=profilepage&ps=default&eurl=%s&hl=en_US&t=%s";
+  for my $el(qw(profilepage detailpage)) {
+    my $video_info_url_template =
+      "http://www.youtube.com/get_video_info?&video_id=%s&el=$el&ps=default&eurl=%s&hl=en_US&t=%s";
 
-  my $video_info_url = sprintf $video_info_url_template,
-    uri_escape($video_id), uri_escape($url), uri_escape($t);
+    my $video_info_url = sprintf $video_info_url_template,
+      uri_escape($video_id), uri_escape($url), uri_escape($t);
 
-  debug "get_youtube_video_info: $video_info_url";
+    debug "get_youtube_video_info: $video_info_url";
 
-  $browser->get($video_info_url);
+    $browser->get($video_info_url);
 
-  return unless $browser->success;
+    next unless $browser->success;
 
-  return parse_youtube_video_info($browser->content);
+    return parse_youtube_video_info($browser->content);
+  }
+
+  error "Unable to get YouTube video information.";
 }
 
 # Decode form-encoded key-value pairs into a hash for convenience.
