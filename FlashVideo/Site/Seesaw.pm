@@ -18,7 +18,9 @@ sub find_video {
   my $player_info = ($browser->content =~ m{player\.init\(.*"(/\w+/\d+)})[0];
 
   # Grab title and normalise
-  my @titles = map { decode_entities($_) } $browser->content =~ m{<h3\s+id="title(?:Ext)?"[^>]*>(.*?)</h3>}ig;
+  my %seen; # avoid duplication in filenames
+  my @titles = grep { !$seen{$_}++ } 
+               map { decode_entities($_) } $browser->content =~ m{<h3\s+id="title(?:Ext)?"[^>]*>(.*?)</h3>}ig;
 
   if($titles[1] =~ /Series (\d+)/i || $titles[0] =~ s/\s*Series (\d+)\s*//i) {
     $titles[1] = sprintf "S%02d", $1;
@@ -46,6 +48,32 @@ sub find_video {
   my($app, $playpath, $query) = $rtmp->{url} =~ m{^\w+://[^/]+/(\w+/\w+)(/[^?]+)(\?.*)};
   my $prefix = "mp4";
   $prefix = "flv" if $playpath =~ /\.flv$/;
+
+  if ($prefs->subtitles) {
+    $browser->back;
+
+    if ($browser->content =~ m{setConfig\('', '(/\w/\w+/\d{6,10}/\d+\.smi)'}) {
+      my $subtitles_url = "http://www.seesaw.com$1";
+
+      debug "Got Seesaw subtitles URL: $subtitles_url";
+
+      $browser->get($subtitles_url);
+
+      if ($browser->success) {
+        my $srt_filename = title_to_filename($title, "srt"); 
+
+        convert_sami_subtitles_to_srt($browser->content, $srt_filename);
+
+        info "Wrote subtitles to $srt_filename";
+      }
+      else {
+        info "Couldn't download subtitles: " . $browser->response->status_line;
+      }
+    }
+    else {
+      debug "No Seesaw subtitles available (or couldn't extract URL)";
+    }
+  }
 
   return {
     flv      => title_to_filename($title),
