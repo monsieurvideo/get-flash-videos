@@ -138,6 +138,12 @@ C<rtmpdump> which supports SOCKS proxying.
 If no proxy is specified on the command line or the config file the
 C<$HTTP_PROXY> environment variable will be used.
 
+=item I<--subtitles>
+
+Download subtitles for the video, if available. Subtitles are converted to
+SubRip format and saved to a file of the same name as the video file, but
+with an extension of 'srt'.
+
 =item I<-q>, I<--quiet>
 
 Be quiet, only print errors.

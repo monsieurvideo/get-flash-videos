@@ -14,7 +14,8 @@ use constant MAX_REDIRECTS => 5;
 our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
-  is_program_on_path get_terminal_width json_unescape);
+  is_program_on_path get_terminal_width json_unescape
+  convert_sami_subtitles_to_srt);
 
 my $HAS_READKEY = eval { require Term::ReadKey };
 
@@ -271,6 +272,73 @@ sub json_unescape {
   $s =~ s/\\u([0-9a-f]{1,4})/chr hex $1/ge;
   $s =~ s{(\\[\\/rnt"])}{"\"$1\""}gee;
   return $s;
+}
+
+sub convert_sami_subtitles_to_srt {
+  my ($sami_subtitles, $filename) = @_;
+
+  die "SAMI subtitles must be provided"      unless $sami_subtitles;
+  die "Output SRT filename must be provided" unless $filename;
+
+  my $parser = HTML::TokeParser->new(\$sami_subtitles);
+
+  my @subtitles;
+  my $count = 0;
+
+  while (my $token = $parser->get_token()) {
+    my ($start_or_end, $tag, $attributes) = @$token;
+
+    if ($start_or_end eq 'S' and $tag eq 'sync') {
+      my $begin = $attributes->{start};
+
+      my $subtitle_text = $parser->get_trimmed_text('sync');
+      $subtitle_text =~ s/\xA0/ /g; # convert non-breaking space to normal
+
+      # Convert milliseconds into HH:MM:ss,mmm format
+      my $seconds = int($begin / 1000);
+      my $milliseconds = $begin - ($seconds * 1000);
+      $begin = sprintf("%02d:%02d:%02d,%03d", (gmtime($seconds))[2,1,0],
+          $milliseconds);
+
+      if ($count and !$subtitles[$count - 1]->{end}) {
+        $subtitles[$count - 1]->{end} = $begin;      
+      }
+
+      # SAMI subtitles are a bit crap. Only a start time is specified for
+      # each subtitle. No end time is specified, so the subtitle is displayed
+      # until the next subtitle is ready to be shown. This means that if
+      # subtitles aren't meant to be shown for part of the video, a dummy
+      # subtitle (usually just a space) has to be inserted.
+      if (!$subtitle_text or $subtitle_text eq ' ') {
+        # Gap in subtitles.
+        next; # this is not a meaningful subtitle
+      }
+
+      push @subtitles, {
+        start => $begin,
+        text  => $subtitle_text,
+      };
+
+      $count++;
+    }
+  }
+
+  $subtitles[$count - 1]->{end} = $subtitles[$count - 1]{start};
+
+  # Write subtitles
+  open my $subtitle_fh, '>', $filename
+    or die "Can't open subtitles file $filename: $!";
+
+  $count = 1;
+  foreach my $subtitle (@subtitles) {
+    print $subtitle_fh "$count\n$subtitle->{start} --> $subtitle->{end}\n" .
+                       "$subtitle->{text}\n\n";
+    $count++;
+  }
+
+  close $subtitle_fh;
+
+  return 1;
 }
 
 1;

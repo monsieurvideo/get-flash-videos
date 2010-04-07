@@ -9,6 +9,7 @@ sub new {
 
   return bless {
     quality => $opt{quality} || "high",
+    subtitles => $opt{subtitles} || 0,
   }, $class;
 }
 
@@ -18,4 +19,9 @@ sub quality {
   return FlashVideo::VideoPreferences::Quality->new($self->{quality});
 }
 
+sub subtitles {
+  my($self) = @_;
+
+  return $self->{subtitles};
+}
 1;
