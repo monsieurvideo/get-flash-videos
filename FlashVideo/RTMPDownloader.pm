@@ -8,6 +8,8 @@ use IPC::Open3;
 use Symbol qw(gensym);
 use FlashVideo::Utils;
 
+use constant LATEST_RTMPDUMP => 2.2;
+
 sub download {
   my ($self, $rtmp_data) = @_;
 
@@ -161,6 +163,11 @@ sub run {
           } elsif($l =~ /\w/) {
             print STDERR "\r" if $self->{downloaded};
             info $l;
+
+            if($l =~ /^RTMPDump v([0-9.]+)/ && $1 < LATEST_RTMPDUMP) {
+              error "==== Using the latest version of RTMPDump (version "
+                . LATEST_RTMPDUMP . ") is recommended. ====";
+            }
           }
         }
 
