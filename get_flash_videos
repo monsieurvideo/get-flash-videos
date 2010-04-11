@@ -21,8 +21,8 @@
 
 use strict;
 use Encode ();
+use File::Basename qw(basename);
 use File::stat;
-use File::Basename;
 use Getopt::Long;
 use Text::Wrap;
 

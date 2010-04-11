@@ -89,6 +89,7 @@ sub process_file {
             }
             if(@items) {
               $output .= "BEGIN { no strict 'refs'; ";
+              @items = filter_imports($file, @items);
               for my $item(@items) {
                 next if $item =~ /^\d/;
                 next if $item =~ /^RC_/;
@@ -157,3 +158,13 @@ sub module_to_path {
   $file .= ".pm";
   return $file;
 }
+
+sub filter_imports {
+  my($file, @imports) = @_;
+
+  open my $fh, "<", $file or die $!;
+  my $text = join "", <$fh>;
+
+  return grep { $text =~ /\Q$_\E/ } @imports;
+}
+

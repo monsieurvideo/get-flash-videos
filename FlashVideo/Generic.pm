@@ -3,11 +3,8 @@ package FlashVideo::Generic;
 
 use strict;
 use FlashVideo::Utils;
-use File::Basename;
-use Memoize;
-use LWP::Simple;
 use URI;
-use URI::Escape;
+use URI::Escape qw(uri_unescape);
 
 my $video_re = qr!http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
                   # Grab any params that might be used for auth..
@@ -31,7 +28,9 @@ sub find_video {
     (m{http://.+?(http://.+?@{[EXTENSIONS]})}i) ? $1 : $_
   } ($browser->content =~ m{($video_re)}gi);
   if (@flv_urls) {
-    memoize("LWP::Simple::head");
+    require LWP::Simple;
+    require Memoize;
+    Memoize::memoize("LWP::Simple::head");
     @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
     $possible_filename = (split /\//, $flv_urls[-1])[-1];
 
@@ -156,7 +155,7 @@ sub search_for_flv_in_swf {
   if ($swf_data =~ m{(http://.{10,300}?\.flv)}i) {
     my $flv_url = $1;
 
-    my $filename = uri_unescape(basename(URI->new($flv_url)->path()));
+    my $filename = uri_unescape(File::Basename::basename(URI->new($flv_url)->path()));
     $filename =~ s/\.flv$//i;
 
     return ($flv_url, $filename);

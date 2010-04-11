@@ -3,7 +3,6 @@ package FlashVideo::RTMPDownloader;
 
 use strict;
 use base 'FlashVideo::Downloader';
-use Fcntl;
 use IPC::Open3;
 use Symbol qw(gensym);
 use FlashVideo::Utils;
@@ -30,6 +29,7 @@ sub download {
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
   if ($rtmp_data->{live} && $::opt{play}) {
+    require Fcntl;
     # Playing live stream, we pipe this straight to the player, rather than
     # saving on disk.
     # XXX: The use of /dev/fd could go away now rtmpdump supports streaming to
@@ -40,12 +40,12 @@ sub download {
     my $pid = fork;
     die "Fork failed" unless defined $pid;
     if(!$pid) {
-      fcntl $r_fh, F_SETFD, ~FD_CLOEXEC;
+      fcntl $r_fh, Fcntl::F_SETFD, ~Fcntl::FD_CLOEXEC;
       exec $self->replace_filename($::opt{player}, "/dev/fd/" . fileno $r_fh);
       die "Exec failed\n";
     }
 
-    fcntl $w_fh, F_SETFD, ~FD_CLOEXEC;
+    fcntl $w_fh, Fcntl::F_SETFD, ~Fcntl::FD_CLOEXEC;
     $rtmp_data->{flv} = "/dev/fd/" . fileno $w_fh;
 
     $self->{stream} = undef;

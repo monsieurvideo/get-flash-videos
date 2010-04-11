@@ -2,7 +2,7 @@
 package FlashVideo::Mechanize;
 use WWW::Mechanize;
 use FlashVideo::Downloader;
-use Encode;
+use Encode ();
 
 use strict;
 use base "WWW::Mechanize";
@@ -79,7 +79,7 @@ sub update_html {
       }
 
       if($charset) {
-        eval { $html = decode($charset, $html) };
+        eval { $html = Encode::decode($charset, $html) };
         FlashVideo::Utils::error("Failed decoding as $charset: $@") if $@;
       }
     }
