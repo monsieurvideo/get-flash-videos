@@ -31,7 +31,7 @@ sub find_video {
     require LWP::Simple;
     require Memoize;
     Memoize::memoize("LWP::Simple::head");
-    @flv_urls = sort { (head($a))[1] <=> (head($b))[1] } @flv_urls;
+    @flv_urls = sort { (LWP::Simple::head($a))[1] <=> (LWP::Simple::head($b))[1] } @flv_urls;
     $possible_filename = (split /\//, $flv_urls[-1])[-1];
 
     # Un-escape URLs if necessary
