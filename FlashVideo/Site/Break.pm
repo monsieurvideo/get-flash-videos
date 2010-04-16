@@ -31,12 +31,22 @@ sub find_video {
 
   die "Unable to extract path and filename" unless $path and $filename;
 
+  # Need to get additional ID, otherwise video download returns 403
+  my $video_id;
+
+  if ($browser->content =~ /flashVars\.icon = ["'](\w+)["']/) {
+    $video_id = $1;
+  }
+  else {
+    die "Couldn't get Break video ID";
+  }
+
   my $video_path = ($browser->content =~ /videoPath\s*(?:',|=)\s*['"]([^'"]+)/)[0];
 
   # I want to follow redirects now.
   $browser->allow_redirects;
 
-  return $video_path . $path . "/" . $filename . ".flv",
+  return $video_path . $path . "/" . $filename . ".flv" . "?" . $video_id,
     title_to_filename($filename);
 }
 
