@@ -18,7 +18,41 @@ sub find_video {
   my $title = json_unescape(($browser->content =~ /title":"(.*?)",/)[0]);
   my $url   = json_unescape(($browser->content =~ /files.*?url":"(.*?)",/)[0]);
 
-  my $filename = title_to_filename($title);
+  # Need to supply some other parameters
+  $url .= "?context=swf2&getURL=1&version=WIN%2010,0,45,2";
+
+  my $file_type = 'flv';
+
+  # This *looks* like a video URL, but it actually isn't - URL is supplied
+  # in the content of the response.
+  $browser->head($url);
+  
+  if (!$browser->success) {
+    die "Couldn't do HEAD request $url: " . $browser->response->status_line;
+  }
+
+  my $content_type = $browser->response->header('Content-Type');
+  if ($content_type =~ /text/) {
+    $browser->get($url);
+
+    if (!$browser->success) {
+      die "Couldn't get $url: " . $browser->response->status_line;
+    }
+
+    if ($browser->content =~ m'^(http://\S+)') {
+      $url = $1;
+
+      # Some videos are H264
+      if ($url =~ /\.h264/) {
+        $file_type = 'mp4';
+      }
+    }
+  }
+  else {
+    die "Unexpected Content-Type ($content_type) from Wat server."; 
+  }
+
+  my $filename = title_to_filename($title, $file_type);
 
   $browser->allow_redirects;
 
