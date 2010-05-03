@@ -27,29 +27,17 @@ sub find_video {
     (grep { $_->{link}->{content} eq "/video/view/" . $video_id . ".html" } @$items)[0] :
     $items;
 
-<<<<<<< HEAD
-  print $item->{enclosure}->{url};
-
-  my $rtmpurl = $item->{enclosure}->{url};
-  $rtmpurl =~ s/^rtmp/rtmpe/; # for some reason it only works with rtmpe
-  $rtmpurl = $rtmpurl . $item->{content}->{url};
-=======
   debug $item->{enclosure}->{url};
 
   my $rtmpurl = $item->{enclosure}->{url};
   $rtmpurl =~ s/^rtmp:/rtmpe:/; # for some reason it only works with rtmpe
->>>>>>> 3813dba23d9a32de1c2d201823ac36efbb299acb
 
   my $title = $item->{title} . ".flv"; # is there a way to unencrypt <CDATA> tags? or does the xml handler do this for us?
 
   return {
     flv => $title,
-<<<<<<< HEAD
-    rtmp => $rtmpurl
-=======
     rtmp => $rtmpurl,
     playpath => $item->{content}->{url}
->>>>>>> 3813dba23d9a32de1c2d201823ac36efbb299acb
   };
 }
 
