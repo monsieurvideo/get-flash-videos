@@ -11,11 +11,11 @@ sub find_video {
 
   my $has_xml_simple = eval { require XML::Simple };
   if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Starwars videos";
+    die "Must have XML::Simple installed to download Cartoonnetwork videos";
   }
 
   my $video_id;
-  if ($browser->uri->as_string =~ /\?episodeID=([a-z0-9]*)/) {
+  if ($browser->uri->as_string =~ /episodeID=([a-z0-9]*)/) {
     $video_id = $1;
   }
 
