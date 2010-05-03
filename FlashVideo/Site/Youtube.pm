@@ -47,7 +47,7 @@ sub find_video {
   # don't require the 't' parameter.
   if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}["']([^"']+)["']/) {
     debug "Using fmt_url_map method from page";
-    return $self->download_fmt_map($prefs, $browser, $title, {}, uri_unescape($1));
+    return $self->download_fmt_map($prefs, $browser, $title, {}, $1);
   }
 
   my $video_id;
@@ -323,7 +323,10 @@ sub get_youtube_video_info {
 
     next unless $browser->success;
 
-    return parse_youtube_video_info($browser->content);
+    my %info = parse_youtube_video_info($browser->content);
+    next if $info{status} eq 'fail';
+
+    return %info;
   }
 
   error "Unable to get YouTube video information.";
