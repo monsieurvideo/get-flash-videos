@@ -55,6 +55,7 @@ EOF
     rtmp => $rtmp,
     playpath => $playpath,
     flv => $flv,
+    swfhash($browser, "http://www.itv.com/mercury/Mercury_VideoPlayer.swf")
   };
 }
 
