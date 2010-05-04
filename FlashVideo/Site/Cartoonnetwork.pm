@@ -15,13 +15,14 @@ sub find_video {
   }
 
   my $video_id;
+
   if ($browser->uri->as_string =~ /episodeID=([a-z0-9]*)/) {
     $video_id = $1;
   }
 
   my $xml;
 
-  $browser->get("http://www.cartoonnetwork.com/cnvideosvc2/svc/episodeSearch/getEpisodesByIDs?networkName=CN2&ids=$video_id");
+  $browser->get("http://www.cartoonnetwork.com/cnvideosvc2/svc/episodeSearch/getEpisodesByIDs?ids=$video_id");
   $xml = XML::Simple::XMLin($browser->content);
   my $episodes = $xml->{episode};
   my $episode = ref $episodes eq 'ARRAY' ?
@@ -54,10 +55,13 @@ sub find_video {
   my $content_id;
   my $url;
 
-  foreach ($episode->{segments}->{segment}) {
-    $content_id = $_->{id};
+  use Data::Dumper;
+
+  foreach my $key (keys (%{$episode->{segments}->{segment}})){
+#  foreach ($episode->{segments}->{segment}){
+    $content_id = $key;
     $browser->post("http://www.cartoonnetwork.com/cnvideosvc2/svc/episodeservices/getVideoPlaylist",
-      Content  => "networkName=CN2&id=$content_id&r=$date"
+      Content  => "id=$content_id&r=$date"
     );
 
     # the output has some errors in it, let's just use regular expressions
@@ -66,9 +70,7 @@ sub find_video {
 
     if ($browser->content =~ /<ref href="([^"]*)" \/>/){
       $url = $1;
-      print $url;
     }
-
   }
 
   return $url, $filename;
