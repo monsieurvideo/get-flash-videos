@@ -19,8 +19,6 @@ sub find_video {
 
   $browser->get("http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&MBR=true&pid=$pid");
 
-  debug $browser->content;
-
   my $xml = XML::Simple::XMLin($browser->content);
 
   my $items = $xml->{body}->{switch};
