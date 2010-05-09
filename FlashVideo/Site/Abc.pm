@@ -12,7 +12,7 @@ sub find_video {
     die "Must have XML::Simple installed to download Abc videos";
   }
 
-  #http://abc.go.com/watch/lost/93372/260004/the-candidate
+  # http://abc.go.com/watch/lost/93372/260004/the-candidate
   my $video_id;
   if ($browser->uri->as_string =~ /\/watch\/[^\/]*\/[0-9]*\/([0-9]*)/) {
     $video_id = $1;
@@ -36,7 +36,6 @@ sub find_video {
 
   my $videos = $xml->{videos}->{video};
   my $video = ref $videos eq 'ARRAY' ?
-    #(grep { $_->{bitrate} == $bitrate } @$videos)[0] :
     (grep { $_->{src} =~ /^mp4:\// } @$videos)[0] :
     $videos;
 
@@ -51,6 +50,13 @@ sub find_video {
     playpath => $playpath,
     flv => $filename
   };
+}
+
+sub can_handle {
+  my($self, $browser, $url) = @_;
+
+  # This is only ABC as in the US broadcaster, not abc.net.au
+  return $url && URI->new($url)->host =~ /\babc\.(?:go\.)?com$/;
 }
 
 1;

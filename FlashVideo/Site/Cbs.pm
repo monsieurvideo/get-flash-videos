@@ -27,8 +27,8 @@ sub find_video {
     $items;
 
   my $rtmpurl = $item->{video}->{src};
-  $rtmpurl =~ s/<break>/&lt;break&gt;/; # some reason this break thing is improperly decoded
-  my $title = $item->{ref}->{title} . ".flv"; # is there a way to unencrypt <CDATA> tags? or does the xml handler do this for us?
+  $rtmpurl =~ s/<break>.*//;
+  my $title = $item->{ref}->{title} . ".flv";
 
   return {
     rtmp => $rtmpurl,
