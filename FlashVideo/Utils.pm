@@ -17,8 +17,6 @@ our @EXPORT = qw(debug info error
   is_program_on_path get_terminal_width json_unescape
   convert_sami_subtitles_to_srt);
 
-my $HAS_READKEY = eval { require Term::ReadKey };
-
 sub debug(@) {
   # Remove some sensitive data
   my $string = "@_\n";
@@ -255,7 +253,7 @@ sub is_program_on_path {
 }
 
 sub get_terminal_width {
-  if($HAS_READKEY && (my($width) = Term::ReadKey::GetTerminalSize())) {
+  if(eval { require Term::ReadKey } && (my($width) = Term::ReadKey::GetTerminalSize())) {
     return $width - 1 if $^O =~ /MSWin/i; # seems to be off by 1 on Windows
     return $width;
   } elsif($ENV{COLUMNS}) {
