@@ -20,7 +20,6 @@ sub find_video {
 
   # h is probably quality
   my $quality="432";
-  #my $bitrate="1000";
 
   $browser->get("http://ll.static.abc.com/s/videoplatform/services/1001/getflashvideo?video=$video_id&h=$quality");
 
