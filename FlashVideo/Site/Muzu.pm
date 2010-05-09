@@ -10,6 +10,7 @@ sub find_video {
 
   # Sometimes redirects to country-specific sites, sigh...
   if ($browser->response->code == 302) {
+    $browser->allow_redirects;
     $browser->get($browser->response->header('Location'))
   }
 
