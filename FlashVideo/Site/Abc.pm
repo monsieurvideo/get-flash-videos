@@ -51,12 +51,12 @@ sub find_video {
 
   $browser->get("http://ll.static.abc.com/s/videoplatform/services/1000/getVideoDetails?video=$video_id");
   my $xml = XML::Simple::XMLin($browser->content);
-  my $filename = $xml->{metadata}->{title} . ".flv";
+  my $title = $xml->{metadata}->{title};
 
   return {
     rtmp => $rtmpurl,
     playpath => $playpath,
-    flv => $filename
+    flv => title_to_filename($title)
   };
 }
 

@@ -24,7 +24,7 @@ sub find_video {
     (grep { $_->{id} eq $video_id } @$episodes)[0] :
     $episodes;
 
-  my $filename = $episode->{title} . '.flv';
+  my $title = $episode->{title};
 
   # as seen in http://www.cartoonnetwork.com/video/tools/js/videoConfig_videoPage.js
   my @gmtime = gmtime;
@@ -43,7 +43,7 @@ sub find_video {
     }
   }
 
-  return $url, $filename;
+  return $url, title_to_filename($filename);
 }
 
 1;

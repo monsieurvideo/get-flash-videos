@@ -28,11 +28,11 @@ sub find_video {
 
   my $rtmpurl = $item->{video}->{src};
   $rtmpurl =~ s/<break>.*//;
-  my $title = $item->{ref}->{title} . ".flv";
+  my $title = $item->{ref}->{title}->{content};
 
   return {
     rtmp => $rtmpurl,
-    flv => $title
+    flv => title_to_filename($title)
   };
 }
 

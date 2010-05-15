@@ -32,11 +32,11 @@ sub find_video {
   my $rtmpurl = $item->{enclosure}->{url};
   $rtmpurl =~ s/^rtmp:/rtmpe:/; # for some reason it only works with rtmpe
 
-  my $title = $item->{title} . ".flv"; # is there a way to unencrypt <CDATA> tags? or does the xml handler do this for us?
+  my $title = $item->{title}; # is there a way to unencrypt <CDATA> tags? or does the xml handler do this for us?
 
   return {
     flv => $title,
-    rtmp => $rtmpurl,
+    rtmp => title_to_filename($rtmpurl),
     playpath => $item->{content}->{url}
   };
 }
