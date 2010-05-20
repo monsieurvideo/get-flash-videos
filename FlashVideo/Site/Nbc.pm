@@ -50,16 +50,31 @@ sub find_video {
   die "Failed to post to Nbc AMF gateway"
     unless $browser->response->is_success;
 
-  debug $browser->content;
-
-  $packet = Data::AMF::Packet->deserialize($browser->content);
-
   if($::opt{debug}) {
-    require Data::Dumper;
-    debug Data::Dumper::Dumper($packet);
+    debug $browser->content;
   }
 
-  my $clipurl = $packet->messages->[0]->{value}->{clipurl};
+  # AMF fails so just regex for now
+
+  my($clipurl) = $browser->content =~ /clipurl.{3,5}(nbcrewind[^\0]+)/;
+
+  my($title) = $browser->content =~ /headline.{1,3}([^\0]+)/;
+
+  if($::opt{debug}) {
+    debug "$clipurl\n";
+    debug "$title\n";
+  }
+
+  #$browser->content =~ s/............//;
+
+  #$packet = Data::AMF::Packet->deserialize($browser->content);
+
+  #if($::opt{debug}) {
+  #  require Data::Dumper;
+  #  debug Data::Dumper::Dumper($packet);
+  #}
+
+  #my $clipurl = $packet->messages->[0]->{value}->{clipurl};
 
   $browser->get("http://video.nbcuni.com/$clipurl");
   my $xml = XML::Simple::XMLin($browser->content);
@@ -76,8 +91,6 @@ sub find_video {
   my $port = "1935";
 
   my $rtmpurl = "rtmp://$ip:$port/$app/$video_path";
-
-  my $title = "test";
 
   return {
     rtmp => $rtmpurl,
