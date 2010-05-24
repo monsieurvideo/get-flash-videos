@@ -21,6 +21,8 @@ sub find_video {
 
   my $xml = XML::Simple::XMLin($browser->content);
 
+  my $headline = $xml->{headline};
+
   my $akamai;
   if ($xml->{akamai}->{src} =~ /[^,]*,([^,]*)/){
     $akamai = $1;
@@ -28,17 +30,21 @@ sub find_video {
 
   my $files = $xml->{files}->{file};
   my $file = ref $files eq 'ARRAY' ?
-    (grep { $_->{type} == "standard" } @$files)[0] :
+    (grep { $_->{type} eq "standard" } @$files)[0] :
     $files;
 
-  my $rtmpurl = $akamai . $file->{content};
+  if($akamai) {
+    my $rtmpurl = $akamai . $file->{content};
+    die "Unable to find RTMP URL\n" unless $rtmpurl;
 
-  my $headline = $xml->{headline};
-
-  return {
-    flv => title_to_filename($headline),
-    rtmp => $rtmpurl
-  };
+    return {
+      flv => title_to_filename($headline),
+      rtmp => $rtmpurl
+    };
+  } else {
+    # HTTP download
+    return $file->{content}, title_to_filename($headline);
+  }
 }
 
 1;
