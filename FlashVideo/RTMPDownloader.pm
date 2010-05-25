@@ -4,6 +4,7 @@ package FlashVideo::RTMPDownloader;
 use strict;
 use base 'FlashVideo::Downloader';
 use IPC::Open3;
+use Fcntl ();
 use Symbol qw(gensym);
 use FlashVideo::Utils;
 
@@ -29,7 +30,6 @@ sub download {
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
   if ($rtmp_data->{live} && $::opt{play}) {
-    require Fcntl;
     # Playing live stream, we pipe this straight to the player, rather than
     # saving on disk.
     # XXX: The use of /dev/fd could go away now rtmpdump supports streaming to
@@ -110,14 +110,14 @@ sub get_command {
 
     (ref $rtmp_data->{$arg} eq 'ARRAY'
       # Arrayref means multiple options of the same type
-      ? map {
+      ? (map {
         ("--$arg" => $debug
           ? $self->shell_escape($_)
-          : $_) } @{$rtmp_data->{$arg}}
+          : $_) } @{$rtmp_data->{$arg}})
       # Single argument
-      : "--$arg" => (($debug && $rtmp_data->{$arg})
+      : ("--$arg" => (($debug && $rtmp_data->{$arg})
         ? $self->shell_escape($rtmp_data->{$arg})
-        : $rtmp_data->{$arg}) || ())
+        : $rtmp_data->{$arg}) || ()))
   } keys %$rtmp_data;
 }
 
