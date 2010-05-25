@@ -26,6 +26,16 @@ sub find_video {
       $id = ($browser->content =~ m!/rss/flash/(\d+)!)[0];
     }
   }
+
+  # Sometimes the ID is supplied in an odd way.
+  if (!$id) {
+    # Video ID is somehow related to the ID of a comment posted on the
+    # site, slightly odd.
+    if ($browser->content =~ /post_masthed_(\d+)/) {
+      $id = $1;
+    }
+  }
+
   die "No ID found\n" unless $id;
 
   $browser->get("$base/rss/flash/$id");
