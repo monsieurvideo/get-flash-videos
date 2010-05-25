@@ -303,7 +303,7 @@ sub check_magic {
   } elsif(substr($data, 4, 4) eq 'ftyp') {
     return 1;
   # Other QuickTime
-  } elsif(substr($data, 4, 4) eq 'moov' || substr($data, 4, 4) eq 'mdat') {
+  } elsif(substr($data, 4, 4) =~ /moov|mdat|wide|free|pnot|skip/) {
     return 1;
   # AVI / WAV
   } elsif(substr($data, 0, 4) eq 'RIFF') {
