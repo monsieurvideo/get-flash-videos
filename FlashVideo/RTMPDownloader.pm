@@ -102,18 +102,33 @@ sub get_rtmp_program {
   return "rtmpdump";
 }
 
+sub get_command {
+  my($self, $rtmp_data, $debug) = @_;
+
+  return map {
+    my $arg = $_;
+
+    (ref $rtmp_data->{$arg} eq 'ARRAY'
+      # Arrayref means multiple options of the same type
+      ? map {
+        ("--$arg" => $debug
+          ? $self->shell_escape($_)
+          : $_) } @{$rtmp_data->{$arg}}
+      # Single argument
+      : "--$arg" => (($debug && $rtmp_data->{$arg})
+        ? $self->shell_escape($rtmp_data->{$arg})
+        : $rtmp_data->{$arg}) || ())
+  } keys %$rtmp_data;
+}
+
 sub run {
   my($self, $prog, $rtmp_data) = @_;
 
-  debug "Running $prog", 
-    join(" ", map { ("--$_" => $rtmp_data->{$_} ? $self->shell_escape($rtmp_data->{$_}) : ()) } keys
-        %$rtmp_data);
+  debug "Running $prog", join(" ", $self->get_command($rtmp_data, 1));
 
   my($in, $out, $err);
   $err = gensym;
-
-  my $pid = open3($in, $out, $err, $prog,
-    map { ("--$_" => ($rtmp_data->{$_} || ())) } keys %$rtmp_data);
+  my $pid = open3($in, $out, $err, $prog, $self->get_command($rtmp_data));
 
   # Windows doesn't send signals to child processes, so we need to do it
   # manually to ensure that we don't have stray rtmpdump processes.
