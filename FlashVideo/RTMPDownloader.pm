@@ -106,18 +106,15 @@ sub get_command {
   my($self, $rtmp_data, $debug) = @_;
 
   return map {
-    my $arg = $_;
-
-    (ref $rtmp_data->{$arg} eq 'ARRAY'
-      # Arrayref means multiple options of the same type
-      ? map {
-        ("--$arg" => $debug
-          ? $self->shell_escape($_)
-          : $_) } @{$rtmp_data->{$arg}}
-      # Single argument
-      : "--$arg" => (($debug && $rtmp_data->{$arg})
-        ? $self->shell_escape($rtmp_data->{$arg})
-        : $rtmp_data->{$arg}) || ())
+    my @args = ref $rtmp_data->{$_} eq 'ARRAY'
+      # Arrayref means multivalued
+      ? @{$rtmp_data->{$_}}
+      : $rtmp_data->{$_}
+        # Single value
+        ? $rtmp_data->{$_}
+        # No value at all
+        : ();
+    "--$_" => map { $debug ? $self->shell_escape($_) : $_ } @args
   } keys %$rtmp_data;
 }
 
