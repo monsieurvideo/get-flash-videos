@@ -43,7 +43,7 @@ sub find_video {
     }
   }
 
-  return $url, title_to_filename($filename);
+  return $url, title_to_filename($title);
 }
 
 1;
