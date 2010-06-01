@@ -13,7 +13,7 @@ sub find_video {
   }
 
   # Clips are handled differently to full episodes
-  if ($browser->uri->as_string =~ m'/watch/clip/[\w\-]+/(\w+)/(\d+)/(\d+)') {
+  if ($browser->uri->as_string =~ m'/watch/clip/[\w\-]+/(\w+)/(\w+)/(\w+)') {
     my $show_id     = $1;
     my $playlist_id = $2;
     my $video_id    = $3;
@@ -66,11 +66,13 @@ sub handle_abc_clip {
   # Note 'limit' has been changed to 1 instead of the default of 12. This
   # ensures that only the desired video is returned. Otherwise unrelated
   # videos are returned too.
+
   my $abc_clip_rss_url_template =
-    "http://a.abc.com/rss/videoMrss?&width=644&height=362&" .
-    "showKey=%s&clipId=%d&start=0&limit=1&fk=CATEGORIES&fv=%d";
+    "http://ll.static.abc.com/vp2/ws/s/contents/1000/videomrss?" .
+    "brand=001&device=001&width=644&height=362&clipId=%s" .
+    "&start=0&limit=1&fk=CATEGORIES&fv=%s";
   
-  my $abc_clip_rss_url = sprintf $abc_clip_rss_url_template, $show_id,
+  my $abc_clip_rss_url = sprintf $abc_clip_rss_url_template,
                                  $video_id, $playlist_id;
 
   $browser->get($abc_clip_rss_url);
@@ -101,6 +103,10 @@ sub handle_abc_clip {
   my $category    = $xml->{channel}->{item}->{category};
   my $title       = $xml->{channel}->{item}->{'media:title'}->{content};
 
+  if (ref($category) eq 'HASH' and ! keys %$category) {
+    $category = '';
+  }
+
   # Description isn't actually very long - see media:text for that for when
   # gfv has support for writing Dublin Core-compliant metadata.
   my $description = $xml->{channel}->{item}->{'media:description'}->{content};
@@ -110,11 +116,14 @@ sub handle_abc_clip {
     s/<\/?\w+>//g;
   }
 
-  my $video_title = $episode_name ?
-    "$category - $episode_name - $title - $description" :
-    "$category - $title - $description";
+  my $video_title = make_title($category, $episode_name, $title, $description);
 
   return $video_url, title_to_filename($video_title, $type);
+}
+
+# Produces the title, taking into account items that don't exist
+sub make_title {
+  return join " - ", grep /./, @_;
 }
 
 sub can_handle {
