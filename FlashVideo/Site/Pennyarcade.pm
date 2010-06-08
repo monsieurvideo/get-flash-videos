@@ -6,15 +6,14 @@ use FlashVideo::Utils;
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
-  my $tempUrl = $browser->content =~ /"http:\/\/api.indieclicktv.com\/player\/show\/([a-f0-9\/]*)\/default\/mplayer.js/;
-  die "No Video Urls Found" unless $tempUrl;
-  my $url = "http://ictv-pa-ec.indieclicktv.com/media/videos/$1/video.mp4";
-  $browser->content =~ /<div class="title"><h1>([^<]*)<\/h1>/;
-  my $title = $1;
 
-  my $filename = "$title.mp4";
+  my($id) = $browser->content =~ m{"http://api.indieclicktv.com/player/show/([a-f0-9/]*)/default/mplayer.js};
+  die "No Video Urls Found" unless $id;
 
-  return $url, $filename;
+  my $url = "http://ictv-pa-ec.indieclicktv.com/media/videos/$id/video.mp4";
+  my($title) = $browser->content =~ /<div class="title"><h1>([^<]*)<\/h1>/;
+
+  return $url, title_to_filename($title, "mp4");
 }
 
 1;
