@@ -7,37 +7,24 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
+  if(!eval { require XML::Simple }) {
     die "Must have XML::Simple installed to download Gamespot videos";
   }
 
-  my $id;
-  if($browser->content =~ /id=(\w+)/) {
-    $id = $1;
-  } elsif($embed_url =~ m!xml.php%3Fid%3D([^%]*)!) {
-    $id = $1;
-  }
-  die "No ID found\n" unless $id;
+  my($params) = $browser->content =~ /xml.php\?(id=[0-9]+.*?)&quot/;
+  ($params) = $embed_url =~ /xml.php%3F(id%3D[^"&]+)/ unless $params;
+  die "No params found\n" unless $params;
 
-  $browser->get("http://www.gamespot.com/pages/video_player/xml.php?id=" . $id . "&mode=user_video");
+  $browser->get("http://www.gamespot.com/pages/video_player/xml.php?" . $params);
 
-  my $xml = eval {
-    XML::Simple::XMLin($browser->content)
-  };
-
-  if ($@) {
-    die "Couldn't parse Gamespot XML: $@";
-  }
+  my $xml = eval { XML::Simple::XMLin($browser->content) };
+  die "Couldn't parse Gamespot XML: $@" if $@;
 
   my $title = $xml->{playList}->{clip}->{title};
-	print "$title\n";
-  my $filename = title_to_filename($title);
-
   my $url = $xml->{playList}->{clip}->{URI};
-  $browser->allow_redirects;
 
-  return $url, $filename;
+  $browser->allow_redirects;
+  return $url, title_to_filename($title);
 }
 
 1;
