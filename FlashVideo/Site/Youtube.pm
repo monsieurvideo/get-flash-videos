@@ -33,7 +33,7 @@ sub find_video {
   }
 
   if (!$browser->success) {
-    login($browser);
+    verify_age($browser);
   }
 
   my $title = extract_info($browser)->{meta_title};
@@ -202,15 +202,26 @@ sub check_die {
   }
 }
 
-sub login {
+sub verify_age {
   my($browser) = @_;
   my $orig_uri = $browser->uri;
 
   if ($browser->response->code == 303 
     && $browser->response->header('Location') =~ m!/verify_age|/accounts/!) {
+
+    my $confirmation_url = $browser->response->header('Location');
+    $browser->get($confirmation_url);
+
+    if($browser->content =~ /has_verified=1/) {
+      my($verify_url) = $browser->content =~ /href="(.*?has_verified=1)"/;
+      $verify_url = decode_entities($verify_url);
+      $browser->get($verify_url);
+      # Great that worked, otherwise probably does want a login
+      return if $browser->response->code == 200;
+    }
+
     # Lame age verification page - yes, we are grown up, please just give
     # us the video!
-    my $confirmation_url = $browser->response->header('Location');
     print "Unfortunately, due to Youtube being lame, you have to have\n" .
     "an account to download this video.\n" .
     "Username (Google Account Email): ";
