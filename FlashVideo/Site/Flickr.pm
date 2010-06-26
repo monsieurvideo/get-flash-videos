@@ -10,11 +10,6 @@ my $get_mtl = "http://www.flickr.com/apps/video/video_mtl_xml.gne?v=x";
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Flickr videos";
-  }
-
   my($id) = $browser->content =~ /photo_id=(\d+)/;
   my($secret) = $browser->content =~ /photo_secret=(\w+)/;
 
@@ -22,8 +17,7 @@ sub find_video {
 
   $browser->get($get_mtl . "&photo_id=$id&secret=$secret&olang=en-us&noBuffer=null&bitrate=700&target=_self");
 
-  my $xml = eval { XML::Simple::XMLin($browser->content) };
-  die "Failed parsing XML: $@" if $@;
+  my $xml = from_xml($browser);
 
   my $guid = $self->make_guid;
   my $video_id = $xml->{Data}->{Item}->{id}->{content};

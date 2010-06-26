@@ -11,11 +11,11 @@ use URI::Escape;
 sub search {
   my ($self, $search, $type) = @_;
 
-  unless(eval { require XML::Simple } && eval { XML::Simple::XMLin("<foo/>") }) {
+  unless(eval { from_xml("<foo/") }) {
     if($type eq 'site') {
-      die "Must have XML::Simple installed to search YouTube for 4oD videos";
+      die $@;
     } else {
-      debug "Must have XML::Simple installed to search YouTube for 4oD videos";
+      debug $@;
       return;
     }
   }
@@ -36,10 +36,8 @@ sub search {
 
   # XML::Simple keys on 'id' and some other things by default which is
   # annoying.
-  my $xml = eval { XML::Simple::XMLin($browser->content, KeyAttr => [], ForceArray => ['entry']) };
+  my $xml = from_xml($browser, KeyAttr => [], ForceArray => ['entry']);
   
-  die "Couldn't parse YouTube search Atom XML: $@" if $@;
-
   # Only care about actual 4od videos, where the author starts with '4od'.
   # (Channel 4 uses multiple authors or usernames depending on the type of
   # the video, for example 4oDDrama, 4oDFood and so on.)

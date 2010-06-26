@@ -9,11 +9,6 @@ my $base = "http://www.todaysbigthing.com/betamax";
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Today's big thing videos";
-  }
-
   my $id;
   if($browser->content =~ /item_id=(\d+)/) {
     $id = $1;
@@ -24,13 +19,7 @@ sub find_video {
 
   $browser->get("$base:$id");
 
-  my $xml = eval {
-    XML::Simple::XMLin($browser->content)
-  };
-
-  if ($@) {
-    die "Couldn't parse Today's big thing XML: $@";
-  }
+  my $xml = from_xml($browser);
 
   my $title = $xml->{title};
   $title = extract_title($browser) if ref $title;

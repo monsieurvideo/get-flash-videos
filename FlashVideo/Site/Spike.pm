@@ -10,11 +10,6 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Spike videos";
-  }
-
   my $page_url = $browser->uri->as_string;
 
   my $config_url;
@@ -26,7 +21,7 @@ sub find_video {
   die "No config_url/id found\n" unless $config_url;
 
   $browser->get(uri_unescape($config_url));
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
 
   my $feed = uri_unescape($xml->{player}->{feed});
   die "Unable to find feed URL\n" unless $feed;

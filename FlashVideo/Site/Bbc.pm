@@ -7,11 +7,6 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $page_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download BBC videos";
-  }
-
   # Get playlist XML
   my $playlist_xml;
   if ($browser->content =~ /<param name="playlist" value="(http:.+?\.xml)"/) {
@@ -65,23 +60,15 @@ sub find_video {
       $browser->response->status_line;
   }
 
-  my $playlist = eval {
-    XML::Simple::XMLin($browser->content, KeyAttr => {item => 'kind'})
-  };
+  my $playlist = eval { from_xml($browser, KeyAttr => {item => 'kind'}) };
 
   if ($@) {
     # Try to fix their potentially broken XML..
-    eval {
-      my $content = $browser->content;
-      if ($content !~ m{</media>}) {
-        $content .= "\n</media></item></playlist>\n";
-      }
-      $playlist = XML::Simple::XMLin($content, KeyAttr => {item => 'kind'})
-    };
-
-    if ($@) {
-      die "Couldn't parse BBC XML playlist: $@";
+    my $content = $browser->content;
+    if ($content !~ m{</media>}) {
+      $content .= "\n</media></item></playlist>\n";
     }
+    $playlist = from_xml($$content, KeyAttr => {item => 'kind'})
   }
 
   my $sound = ($playlist->{item}->{guidance} !~ /has no sound/);
@@ -122,16 +109,7 @@ sub find_video {
       $browser->get($redirect);
     }
 
-    my $stream_auth = eval {
-      XML::Simple::XMLin($browser->content);
-    };
-
-    if ($@) {
-      die "Couldn't parse BBC stream auth XML for 'secure' stream.\n" .
-          "XML is apparently:\n" .
-          $browser->content() . "\n" .
-          "XML::Simple said: $@";
-    }
+    my $stream_auth = from_xml($browser);
 
     my $token = $stream_auth->{token};
 

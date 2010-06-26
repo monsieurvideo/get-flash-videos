@@ -10,11 +10,6 @@ my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.-_]+};
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Mtvnservices videos";
-  }
-
   my $page_url = $browser->uri->as_string;
 
   if($embed_url !~ $MTVN_URL) {
@@ -38,7 +33,7 @@ sub find_video {
   die "No config_url/id found\n" unless $param{CONFIG_URL};
 
   $browser->get($param{CONFIG_URL});
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
 
   if($xml->{player}->{feed} && !ref $xml->{player}->{feed}) {
     my $feed = uri_unescape($xml->{player}->{feed});
@@ -58,7 +53,7 @@ sub find_video {
 sub handle_feed {
   my($self, $feed, $browser, $page_url, $uri) = @_;
 
-  my $xml = ref $feed ? $feed : XML::Simple::XMLin($feed);
+  my $xml = ref $feed ? $feed : from_xml($feed);
 
   my $filename = title_to_filename($xml->{channel}->{title});
 
@@ -71,7 +66,7 @@ sub handle_feed {
   die "Unable to find mediagen URL\n" unless $mediagen_url;
 
   $browser->get($mediagen_url);
-  $xml = XML::Simple::XMLin($browser->content);
+  $xml = from_xml($browser);
 
   my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
     ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};

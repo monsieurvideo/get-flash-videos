@@ -7,11 +7,6 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Cbs videos";
-  }
-
   my $pid;
   if ($browser->uri->as_string =~ /pid=([^&]*)/) {
     $pid = $1;
@@ -19,7 +14,7 @@ sub find_video {
 
   $browser->get("http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&MBR=true&pid=$pid");
 
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser->content);
 
   my $items = $xml->{body}->{switch};
   my $item = ref $items eq 'ARRAY' ?

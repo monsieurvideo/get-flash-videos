@@ -8,17 +8,13 @@ use POSIX();
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  if(!eval { require XML::Simple }) {
-    die "Must have XML::Simple installed to download Cartoonnetwork videos";
-  }
-
   my $video_id;
   if ($browser->uri->as_string =~ /episodeID=([a-z0-9]*)/) {
     $video_id = $1;
   }
 
   $browser->get("http://www.cartoonnetwork.com/cnvideosvc2/svc/episodeSearch/getEpisodesByIDs?ids=$video_id");
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
   my $episodes = $xml->{episode};
   my $episode = ref $episodes eq 'ARRAY' ?
     (grep { $_->{id} eq $video_id } @$episodes)[0] :

@@ -8,11 +8,6 @@ sub find_video {
   my ($self, $browser, $embed_url) = @_;
   my $base = "http://vimeo.com/moogaloop";
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Vimeo videos";
-  }
-
   my $id;
   if($embed_url =~ /clip_id=(\d+)/) {
     $id = $1;
@@ -23,13 +18,7 @@ sub find_video {
 
   $browser->get("$base/load/clip:$id/embed?param_fullscreen=1&param_clip_id=$id&param_show_byline=0&param_server=vimeo.com&param_color=cc6600&param_show_portrait=0&param_show_title=1");
 
-  my $xml = eval {
-    XML::Simple::XMLin($browser->content)
-  };
-
-  if ($@) {
-    die "Couldn't parse Vimeo XML : $@";
-  }
+  my $xml = from_xml($browser);
 
   my $filename = title_to_filename($xml->{video}->{caption});
   my $request_signature = $xml->{request_signature};

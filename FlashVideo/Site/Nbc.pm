@@ -8,11 +8,6 @@ use MIME::Base64;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Nbc videos";
-  }
-
   my $has_amf_packet = eval { require Data::AMF::Packet };
   if (!$has_amf_packet) {
     die "Must have Data::AMF::Packet installed to download Nbc videos";
@@ -77,16 +72,16 @@ sub find_video {
   #my $clipurl = $packet->messages->[0]->{value}->{clipurl};
 
   $browser->get("http://video.nbcuni.com/$clipurl");
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
   my $video_path = $xml->{body}->{switch}->{ref}->{src};
 
   $browser->get("http://videoservices.nbcuni.com/player/config?configId=17010&clear=true"); # I don't know what configId means but it seems to be generic
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
   my $app = $xml->{akamaiAppName};
   my $host = $xml->{akamaiHostName};
 
   $browser->get("http://$host/fcs/ident");
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
   my $ip = $xml->{ip};
   my $port = "1935";
 

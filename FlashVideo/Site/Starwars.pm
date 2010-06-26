@@ -7,11 +7,6 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Starwars videos";
-  }
-
   my $video_id;
   if ($browser->uri->as_string =~ /view\/([0-9]+)\.html$/) {
     $video_id = $1;
@@ -20,7 +15,7 @@ sub find_video {
   my $page_url = $browser->uri->as_string;
 
   $browser->get("http://starwars.com/webapps/video/item/$video_id");
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
 
   my $items = $xml->{channel}->{item};
   my $item = ref $items eq 'ARRAY' ?

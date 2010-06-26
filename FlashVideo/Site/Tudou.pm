@@ -12,9 +12,6 @@ sub find_video {
     die sprintf $message, $browser->response->code;
   };
 
-  die "Must have XML::Simple installed to download tudou videos"
-    unless eval { require XML::Simple };
-
 =pod
   SD video
   Watch: http://www.tudou.com/programs/view/wo2YLr4sc44
@@ -158,8 +155,7 @@ HD XML structure:
 
   # Force the 'f' tag to be always parsed as a multi-element
   # even when there is only one element
-  my $xml = eval { XML::Simple::XMLin( $raw_xml, forcearray => [ 'f' ] ) };
-  die "Unable to parse video info ($@)" if $@;
+  my $xml = from_xml($raw_xml, forcearray => [ 'f' ] );
 
   # The video is usually available on multiple servers
   # and sometimes in multiple video formats

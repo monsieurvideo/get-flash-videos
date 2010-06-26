@@ -8,11 +8,6 @@ sub find_video {
   my ($self, $browser, $embed_url) = @_;
   my $base = "http://blip.tv";
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Blip videos";
-  }
-
   my $id;
   if($embed_url =~ m{flash/(\d+)}) {
     $id = $1;
@@ -40,13 +35,7 @@ sub find_video {
 
   $browser->get("$base/rss/flash/$id");
 
-  my $xml = eval {
-    XML::Simple::XMLin($browser->content)
-  };
-
-  if ($@) {
-    die "Couldn't parse Blip XML : $@";
-  }
+  my $xml = from_xml($browser);
 
   my $content = $xml->{channel}->{item}->{"media:group"}->{"media:content"};
 

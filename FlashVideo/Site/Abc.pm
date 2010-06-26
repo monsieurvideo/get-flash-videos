@@ -7,11 +7,6 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Abc videos";
-  }
-
   # Clips are handled differently to full episodes
   if ($browser->uri->as_string =~ m'/watch/clip/[\w\-]+/(\w+)/(\w+)/(\w+)') {
     my $show_id     = $1;
@@ -32,7 +27,7 @@ sub find_video {
 
   $browser->get("http://ll.static.abc.com/s/videoplatform/services/1001/getflashvideo?video=$video_id&h=$quality");
 
-  my $xml = XML::Simple::XMLin($browser->content, KeyAttr => []);
+  my $xml = from_xml($browser, KeyAttr => []);
 
   # find a host, we'll default to L3 for now
   my $hosts = $xml->{resources}->{host};
@@ -50,7 +45,7 @@ sub find_video {
   my $playpath = $video->{src};
 
   $browser->get("http://ll.static.abc.com/s/videoplatform/services/1000/getVideoDetails?video=$video_id");
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
   my $title = $xml->{metadata}->{title};
 
   return {
@@ -81,11 +76,7 @@ sub handle_abc_clip {
     die "Couldn't download ABC clip RSS: " . $browser->response->status_line;
   }
 
-  my $xml = eval { XML::Simple::XMLin($browser->content) };
-
-  if ($@) {
-    die "Couldn't parse ABC clip RSS XML: $@";
-  }
+  my $xml = from_xml($browser);
 
   my $video_url = $xml->{channel}->{item}->{'media:content'}->{url};
   my $type      = $video_url =~ /\.mp4$/ ? 'mp4' : 'flv';

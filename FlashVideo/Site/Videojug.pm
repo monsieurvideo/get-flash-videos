@@ -9,9 +9,6 @@ my $playlist_url = "http://www.videojug.com/views/film/playlist.aspx?items=&user
 sub find_video {
   my ($self, $browser) = @_;
 
-  die "Must have XML::Simple installed to download from Videojug"
-    unless eval { require XML::Simple };
-
   # If this is an interview rather than a normal video, have to use a
   # different playlist URL. Interviews are actually separate videos, one
   # for each question.
@@ -62,7 +59,7 @@ sub find_video {
 
   my($video_url, $filename);
   eval {
-    my $xml = XML::Simple::XMLin($browser->content);
+    my $xml = from_xml($browser);
 
     # Shape list seems to be sorted in order of quality, we'll go for the highest.
     my $shape = $xml->{Shapes}->{Shape}->[-1];

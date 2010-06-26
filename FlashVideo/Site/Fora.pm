@@ -7,18 +7,12 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Fora videos";
-  }
-
   my($clip_id) = $browser->content =~ /clipid=(\d+)/;
   die "Unable to extract clipid" unless $clip_id;
 
   $browser->get("http://fora.tv/fora/fora_player_full?cid=$clip_id&h=1&b=0");
 
-  my $xml = eval { XML::Simple::XMLin($browser->content) };
-  die "Couldn't parse Fora XML: $@" if $@;
+  my $xml = from_xml($browser);
 
   my $filename = title_to_filename($xml->{clipinfo}->{clip_title});
 

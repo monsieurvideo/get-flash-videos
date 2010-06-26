@@ -61,14 +61,7 @@ sub find_video {
 sub parse_smil_like_xml {
   my $smil = shift;
 
-  die "Must have XML::Simple installed to parse SMIL"
-    unless eval { require XML::Simple };
-
-  my $parsed_smil = eval { XML::Simple::XMLin($smil) };
-
-  if ($@) {
-    die "Couldn't parse SMIL: $@";
-  }
+  my $parsed_smil = from_xml($smil);
 
   # SMIL structure is like:
   # videoObject

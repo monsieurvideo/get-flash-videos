@@ -8,11 +8,6 @@ sub find_video {
   my ($self, $browser, $embed_url) = @_;
   my $base = "http://www.collegehumor.com/moogaloop";
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Collegehumor videos";
-  }
-
   my $id;
   if($browser->content =~ /clip_id=(\d+)/) {
     $id = $1;
@@ -23,21 +18,12 @@ sub find_video {
 
   $browser->get("$base/video:$id");
 
-  my $xml = eval {
-    XML::Simple::XMLin($browser->content)
-  };
-
-  if ($@) {
-    die "Couldn't parse Collegehumor XML: $@";
-  }
+  my $xml = from_xml($browser);
 
   my $title = $xml->{video}->{caption};
   $title = extract_title($browser) if ref $title;
-  my $filename = title_to_filename($title);
 
-  my $url = $xml->{video}->{file};
-
-  return $url, $filename;
+  return $xml->{video}->{file}, title_to_filename($title);
 }
 
 1;

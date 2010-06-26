@@ -15,7 +15,7 @@ our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
   is_program_on_path get_terminal_width json_unescape
-  convert_sami_subtitles_to_srt);
+  convert_sami_subtitles_to_srt from_xml);
 
 sub debug(@) {
   # Remove some sensitive data
@@ -264,6 +264,8 @@ sub get_terminal_width {
 }
 
 # Maybe should use a proper JSON parser, but want to avoid the dependency for now..
+# (There is now one in FlashVideo::JSON, so consider that -- this is just here
+# until we have a chance to fix things using it).
 sub json_unescape {
   my($s) = @_;
 
@@ -337,6 +339,26 @@ sub convert_sami_subtitles_to_srt {
   close $subtitle_fh;
 
   return 1;
+}
+
+sub from_xml {
+  my($xml, @args) = @_;
+
+  if(!eval { require XML::Simple && XML::Simple::XMLin("<foo/>") }) {
+    die "Must have XML::Simple to download " . caller =~ /::([^:])+$/ . " videos\n";
+  }
+
+  my $xml = eval {
+    XML::Simple::XMLin(ref $xml eq 'SCALAR' ? $xml
+      : ref $xml ? $xml->content
+      : $xml, @args);
+  };
+
+  if($@) {
+    die "$@ (from ", join("::", caller), ")\n";
+  }
+
+  return $xml;
 }
 
 1;

@@ -9,21 +9,12 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser) = @_;
 
-  my $has_xml_simple = eval { require XML::Simple };
-  if(!$has_xml_simple) {
-    die "Must have XML::Simple installed to download Sevenload videos";
-  }
-
   die "Could not find configPath" unless $browser->content =~ /configPath=([^"']+)/;
   my $configpath = uri_unescape(decode_entities($1));
   $browser->get($configpath);
 
-  my $config = eval { XML::Simple::XMLin($browser->content) };
+  my $config = from_xml($browser);
   
-  if($@) {
-    die "Error parsing config XML: $@";
-  }
-
   my($title, $location);
 
   eval {

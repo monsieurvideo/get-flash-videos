@@ -7,10 +7,6 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  if(!eval { require XML::Simple }) {
-    die "Must have XML::Simple installed to download Tbs videos";
-  }
-
   my $oid;
   # as in http://www.tbs.com/video/index.jsp?oid=187350
   if ($browser->uri->as_string =~ /oid=([0-9]*)/) {
@@ -19,7 +15,7 @@ sub find_video {
 
   $browser->get("http://www.tbs.com/video/cvp/videoData.jsp?oid=$oid");
 
-  my $xml = XML::Simple::XMLin($browser->content);
+  my $xml = from_xml($browser);
 
   my $headline = $xml->{headline};
 
