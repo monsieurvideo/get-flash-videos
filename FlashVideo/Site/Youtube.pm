@@ -5,6 +5,7 @@ use strict;
 use Encode;
 use HTML::Entities;
 use FlashVideo::Utils;
+use FlashVideo::JSON;
 use URI::Escape;
 
 my @formats = (
@@ -90,11 +91,14 @@ sub find_video {
         $title .= sprintf " S%02dE%02d", $season, $episode;
       }
 
-      # SWF verification, blah
+      # Need flash URL for SWF verification
       my $swf_url;
       if ($browser->content =~ /SWF_URL['"] ?: ?.{0,90}?(http:\/\/[^ ]+\.swf)/) {
         $swf_url = $1;
-      } elsif($browser->content =~ /src=\\['"](.*?\.swf)/) {
+      } elsif($browser->content =~ /swfConfig\s*=\s*(\{.*?\});/ && (my $swf = from_json($1))) {
+        my $swf = from_json($1);
+        $swf_url = $swf->{url};
+      } elsif($browser->content =~ /src=\\['"]([^'"]+\.swf)/) {
         $swf_url = json_unescape($1);
       } else {
         die "Couldn't extract SWF URL";
