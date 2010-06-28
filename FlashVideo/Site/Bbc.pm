@@ -81,6 +81,29 @@ sub find_video {
 
   $info->{application} ||= "ondemand";
 
+  # Different method for retrieving some BBC videos, for example:
+  #   http://news.bbc.co.uk/sport1/hi/motorsport/formula_one/8766344.stm
+  if (!$info->{server}) {
+    my $id = $playlist->{item}->{mediator}->{identifier};
+
+    my $stream_info_url = sprintf
+      "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s", $id;
+
+    $browser->back();
+    $browser->get($stream_info_url);
+
+    if (!$browser->success) {
+      die "Couldn't get BBC stream info URL: " .
+        $browser->response->status_line;
+    }
+
+    my $stream_info = from_xml($browser->content);
+
+    $info = ref $stream_info->{media} eq 'ARRAY'
+      ? $stream_info->{media}->[0]->{connection}
+      : $stream_info->{media}->{connection};
+  }
+
   my $data = {
     app      => $info->{application},
     tcUrl    => "rtmp://$info->{server}/$info->{application}",
@@ -91,6 +114,22 @@ sub find_video {
     flv      => title_to_filename('BBC - ' . $playlist->{title} .
                                 ($sound ? '' : ' (no sound)'))
   };
+
+  # Different kind of 'secure' video. The auth string (or token) is already
+  # provided in the XML. The auth string actually includes other RTMP
+  # parameters as well - unlike in the case below, it's not just the actual
+  # token.
+  if ($info->{authString}) {
+    my $token = $info->{authString};
+
+    $data->{app} = "$info->{application}?_fcs_vhost=$info->{server}" .
+                   "&$token";
+                    
+    $data->{tcUrl} = "rtmp://$info->{server}/$info->{application}?_fcs_vhost=$info->{server}"
+            . "&$token";
+
+    $data->{playpath} .= "?$token";
+  }
 
   # 'Secure' items need to be handled differently - have to get a token to
   # pass to the rtmp server.
