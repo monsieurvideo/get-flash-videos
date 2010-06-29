@@ -15,24 +15,49 @@ my @res = (
 sub find_video {
   my ($self, $browser, $page_url, $prefs) = @_;
 
-  my $player_info = ($browser->content =~ m{player\.init\(.*"(/\w+/\d+)})[0];
+  # The videoplayerinfo info URL now appears as the Nth parameter to
+  # player.init(), so just look for the videoplayerinfo directly, rather
+  # than looking for player.init and the first parameter.
+  my $player_info = ($browser->content =~ m{(/videoplayerinfo/\d+[^"]+)"})[0];
+
+  # Remove escaped slashes
+  (my $content = $browser->content) =~ s{\\/}{/}g;
 
   # Grab title and normalise
   my %seen; # avoid duplication in filenames
-  my @titles = grep { !$seen{$_}++ } 
-               map { decode_entities($_) } $browser->content =~ m{<h3\s+id="title(?:Ext)?"[^>]*>(.*?)</h3>}ig;
+  
+  # Annoyingly it's no longer easy to find out the series/season and
+  # episode number.
+  my %metadata = map { $_ => '' } qw(brandTitle seriesTitle programmeTitle);
 
-  if($titles[1] =~ /Series (\d+)/i || $titles[0] =~ s/\s*Series (\d+)\s*//i) {
-    $titles[1] = sprintf "S%02d", $1;
-    if($titles[2] =~ s/Episode (\d+):?// || $titles[1] =~ s/Episode (\d+):?//) {
-      $titles[1] .= sprintf "E%02d", $1;
+  # Need to make this Dublin Core / ISO 15836 compliant.
+  foreach my $metadata_item (keys %metadata) {
+    if (my $value = ($content =~ m{<$metadata_item>(.*?)</$metadata_item>}isg)[0]) {
+      $value = decode_entities($value);
+
+      # Handle various metadata items being identical.
+      next if $seen{$value};
+
+      $metadata{$metadata_item} = $value;
     }
   }
 
-  my $title = join " - ", grep length, @titles;
+  # Just in case series and episode numbers return.
+  foreach my $item (values %metadata) {
+    $item =~ s/^(?:(S)eries|(E)pisode) (\d+).*$/sprintf "%s%02d", $1, $2/ie;
+  }
+
+  my $title = join " - ", grep length,
+                          @metadata{qw(brandTitle seriesTitle programmeTitle)};
 
   # Grab player info
   $browser->get($player_info);
+
+  debug "Got player info URL $player_info";
+
+  if (!$browser->success) {
+    die "Couldn't get player info: " . $browser->response->status_line;
+  }
 
   my @urls;
   for my $res(@res) {
@@ -76,7 +101,7 @@ sub find_video {
   }
 
   return {
-    flv      => title_to_filename($title),
+    flv      => title_to_filename($title, $prefix),
     rtmp     => $rtmp->{url},
     app      => $app,
     playpath => "$prefix:$playpath$query"
