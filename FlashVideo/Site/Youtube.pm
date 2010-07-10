@@ -9,6 +9,7 @@ use FlashVideo::JSON;
 use URI::Escape;
 
 my @formats = (
+  { id => 38, resolution => [4096, 2304] },
   { id => 37, resolution => [1920, 1080] },
   { id => 22, resolution => [1280, 720] },
   { id => 35, resolution => [854, 480] },
