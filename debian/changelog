@@ -1,3 +1,9 @@
+get-flash-videos (1.23-1) rotten-reindeer; urgency=low
+
+  * Fix issue with barewords in combined version
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Thu, 22 Jul 2010 23:17:51 +0200
+
 get-flash-videos (1.22-1) quaint-quokka; urgency=low
 
   * Fix YouTube, BBC, Blip, Break and others
