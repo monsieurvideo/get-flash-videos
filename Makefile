@@ -72,6 +72,7 @@ release-main: $(MAIN)-$(VERSION) changelog-update wiki-update release-combined
 	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 	git commit -m "Version $(VERSION)" debian/changelog
 	git tag -a -m "Version $(VERSION)" v$(VERSION)
+	git push origin v$(VERSION)
 
 release-combined: combined-$(MAIN)-$(VERSION)
 	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
