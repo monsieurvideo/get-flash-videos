@@ -47,9 +47,9 @@ sub find_video {
 
   # If the page contains fmt_url_map, then process this. With this, we
   # don't require the 't' parameter.
-  if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}["']([^"']+)["']/) {
-    debug "Using fmt_url_map method from page";
-    return $self->download_fmt_map($prefs, $browser, $title, {}, $1);
+  if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}(["'][^"']+["'])/) {
+    debug "Using fmt_url_map method from page ($1)";
+    return $self->download_fmt_map($prefs, $browser, $title, {}, @{from_json $1});
   }
 
   my $video_id;
@@ -97,7 +97,6 @@ sub find_video {
       if ($browser->content =~ /SWF_URL['"] ?: ?.{0,90}?(http:\/\/[^ ]+\.swf)/) {
         $swf_url = $1;
       } elsif($browser->content =~ /swfConfig\s*=\s*(\{.*?\});/ && (my $swf = from_json($1))) {
-        my $swf = from_json($1);
         $swf_url = $swf->{url};
       } elsif($browser->content =~ /src=\\['"]([^'"]+\.swf)/) {
         $swf_url = json_unescape($1);
