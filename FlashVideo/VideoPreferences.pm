@@ -3,6 +3,7 @@ package FlashVideo::VideoPreferences;
 
 use strict;
 use FlashVideo::VideoPreferences::Quality;
+use FlashVideo::VideoPreferences::Account;
 
 sub new {
   my($class, %opt) = @_;
@@ -24,4 +25,11 @@ sub subtitles {
 
   return $self->{subtitles};
 }
+
+sub account {
+  my($self, $site, $prompt) = @_;
+
+  return FlashVideo::VideoPreferences::Account->new($site, $prompt);
+}
+
 1;

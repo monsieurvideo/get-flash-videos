@@ -35,7 +35,7 @@ sub find_video {
   }
 
   if (!$browser->success) {
-    verify_age($browser);
+    verify_age($browser, $prefs);
   }
 
   my $title = extract_info($browser)->{meta_title};
@@ -207,7 +207,7 @@ sub check_die {
 }
 
 sub verify_age {
-  my($browser) = @_;
+  my($browser, $prefs) = @_;
   my $orig_uri = $browser->uri;
 
   if ($browser->response->code == 303 
@@ -226,29 +226,17 @@ sub verify_age {
 
     # Lame age verification page - yes, we are grown up, please just give
     # us the video!
-    my ($username, $password);
-    ($username, $password) = netrc_get('youtube') or do {
-        print <<EOT;
+    my $account = $prefs->account("youtube", <<EOT);
 Unfortunately, due to Youtube being lame, you have to have
-an account to download this video.
-
-If you had a ~/.netrc file we wouldn't have to ask you now:
-
-  machine youtube login JackieChan password BeatsChuckNorris
-
-(Only put your own details in.  Those ones don't work. :)
+an account to download this video. (See the documentation for how to configure
+~/.netrc)
 
 EOT
 
-        print "Username (Google Account Email): ";
-        chomp($username = <STDIN>);
-        print "Ok, need your password (will be displayed): ";
-        chomp($password = <STDIN>);
-        unless ($username and $password) {
-            error "You must supply Youtube account details.";
-            exit 1;
-        }
-    };
+    unless ($account->username and $account->password) {
+      error "You must supply Youtube account details.";
+      exit 1;
+    }
 
     $browser->get("http://www.youtube.com/login");
     if ($browser->response->code != 303) {
@@ -259,8 +247,10 @@ EOT
     $browser->get($real_login_url);
 
     $browser->form_with_fields('Email', 'Passwd');
-    $browser->set_fields(Email  => $username,
-      Passwd => $password);
+    $browser->set_fields(
+      Email  => $account->username,
+      Passwd => $account->password,
+    );
     $browser->submit();
 
     if ($browser->content =~ /your login was incorrect/) {
