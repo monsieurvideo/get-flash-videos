@@ -40,12 +40,12 @@ sub download {
     my $pid = fork;
     die "Fork failed" unless defined $pid;
     if(!$pid) {
-      fcntl $r_fh, Fcntl::F_SETFD, ~Fcntl::FD_CLOEXEC;
+      fcntl $r_fh, Fcntl::F_SETFD(), ~Fcntl::FD_CLOEXEC();
       exec $self->replace_filename($::opt{player}, "/dev/fd/" . fileno $r_fh);
       die "Exec failed\n";
     }
 
-    fcntl $w_fh, Fcntl::F_SETFD, ~Fcntl::FD_CLOEXEC;
+    fcntl $w_fh, Fcntl::F_SETFD(), ~Fcntl::FD_CLOEXEC();
     $rtmp_data->{flv} = "/dev/fd/" . fileno $w_fh;
 
     $self->{stream} = undef;
