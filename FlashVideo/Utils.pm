@@ -15,7 +15,8 @@ our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
   is_program_on_path get_terminal_width json_unescape
-  convert_sami_subtitles_to_srt from_xml);
+  convert_sami_subtitles_to_srt from_xml
+  netrc_get);
 
 sub debug(@) {
   # Remove some sensitive data
@@ -359,6 +360,13 @@ sub from_xml {
   }
 
   return $xml;
+}
+
+sub netrc_get ($) {
+    my ($site) = @_;
+    require Net::Netrc;         # core since 5.8, so we just delay-load it.
+    my $record = Net::Netrc->lookup($site) or return;
+    $record->lpa;
 }
 
 1;

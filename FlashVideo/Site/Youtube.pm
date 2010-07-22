@@ -226,16 +226,29 @@ sub verify_age {
 
     # Lame age verification page - yes, we are grown up, please just give
     # us the video!
-    print "Unfortunately, due to Youtube being lame, you have to have\n" .
-    "an account to download this video.\n" .
-    "Username (Google Account Email): ";
-    chomp(my $username = <STDIN>);
-    print "Ok, need your password (will be displayed): ";
-    chomp(my $password = <STDIN>);
-    unless ($username and $password) {
-      error "You must supply Youtube account details.";
-      exit 1;
-    }
+    my ($username, $password);
+    ($username, $password) = netrc_get('youtube') or do {
+        print <<EOT;
+Unfortunately, due to Youtube being lame, you have to have
+an account to download this video.
+
+If you had a ~/.netrc file we wouldn't have to ask you now:
+
+  machine youtube login JackieChan password BeatsChuckNorris
+
+(Only put your own details in.  Those ones don't work. :)
+
+EOT
+
+        print "Username (Google Account Email): ";
+        chomp($username = <STDIN>);
+        print "Ok, need your password (will be displayed): ";
+        chomp($password = <STDIN>);
+        unless ($username and $password) {
+            error "You must supply Youtube account details.";
+            exit 1;
+        }
+    };
 
     $browser->get("http://www.youtube.com/login");
     if ($browser->response->code != 303) {
