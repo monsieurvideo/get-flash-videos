@@ -1,3 +1,21 @@
+get-flash-videos (1.22-1) quaint-quokka; urgency=low
+
+  * Fix YouTube, BBC, Blip, Break and others
+
+  * Add support for Abc, Cartoon Network, CBS, Ctv, Gamespot, ITV, NBC,
+    Pennyarcade, Redbull, Stickam, Tou, Traileraddict, TVA (many thanks to
+    various contributions, see git commit logs for details)
+
+  * Optional preference to download subtitles
+
+  * Minimal JSON parser
+
+  * Recognise more QuickTime formats as media
+
+  * (Switch to github.com for version control)
+
+ -- MonsieurVideo <monsieurvideo@gmail.com>  Thu, 22 Jul 2010 22:51:48 +0200
+
 get-flash-videos (1.21-1) just-do-it; urgency=low
 
   * Fix YouTube, Google Video Search, Muzu, eHow, Liveleak, Xnxx.
