@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 use URI::Escape;
 
-my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.-_]+};
+my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.\-_]+};
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
