@@ -6,30 +6,24 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
-  # Extract the video url from the page.
-  # Attempt to get the higher quality .wmv first, falling back to the .flv
-  my $url;
-  if ($browser->content =~ /url:\s*'([^']+\.wmv)'/) {
-    $url = $1;
-  } elsif ($browser->content =~ /url:\s*'([^']+\.flv)'/) {
-    $url = $1;
-  } else {
-    die "Unable to extract video url" unless $url;
-  }
-
-  # Quick and dirty unencode of the url
-  $url =~ s/\\x3a/:/g;
-  $url =~ s/\\x2f/\//g;
-
-  # Extract the video title from the page
-  my $filename;
-  my $fileExt = ($url =~ /(\.[a-z]+)$/i)[0];
+  my $title;
   if ($browser->content =~ /sourceFriendly:\s*'([^']+)'[\s\S]+?\s*title:\s*'([^']+)'/) {
-    $filename = title_to_filename("$1 - $2.$fileExt");
+    $title = "$1 - $2";
   }
-  $filename ||= get_video_filename();
 
-  return $url, $filename;
+  my $url;
+  if ($browser->content =~ /formatCode:\s*1003,\s*url:\s*'([^']+)'/) {
+    $url = $1;
+
+    # Unencode the url
+    $url =~ s/\\x([0-9a-f]{2})/chr hex $1/egi;
+  }
+  die "Unable to extract video url" unless $url;
+
+  # MSNBC hosted videos use 302 redirects
+  $browser->allow_redirects;
+
+  return $url, title_to_filename($title);
 }
 
 1;
