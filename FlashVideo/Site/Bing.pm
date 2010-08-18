@@ -6,6 +6,11 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
+  my $count = 0;
+  while((my $location = $browser->response->header("Location")) && $count++ < 5) {
+    $browser->get($location);
+  }
+
   my $title;
   if ($browser->content =~ /sourceFriendly:\s*'([^']+)'[\s\S]+?\s*title:\s*'([^']+)'/) {
     $title = "$1 - $2";
