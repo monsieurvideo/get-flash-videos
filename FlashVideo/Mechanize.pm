@@ -62,7 +62,8 @@ sub update_html {
   # If we have no character set in the header (therefore it is worth looking
   # for a http-equiv in the body) or the content hasn't been decoded (older
   # versions of Mech).
-  if(!$charset || !Encode::is_utf8($html)) {
+  if($LWP::UserAgent::VERSION < 5.827
+    && (!$charset || !Encode::is_utf8($html))) {
 
     # HTTP::Message helpfully decodes to iso-8859-1 by default. Therefore we
     # do the inverse. This is fucking frail and will probably break.
