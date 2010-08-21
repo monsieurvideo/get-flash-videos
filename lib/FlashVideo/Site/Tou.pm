@@ -69,7 +69,7 @@ sub find_video {
   }
   debug "PLAYPATH = " . $playpath;
 
-=pod
+=for comment
 #	et ca donne....
 #
 #  rtmpdump.exe
@@ -104,7 +104,7 @@ sub search {
 
   my $results = $browser->content;
 
-=pod
+=for comment
   <a href="/les-invincibles" id="MainContent_ctl00_ResultsEmissionsRepeater_TousLesEpisodesLink_0" class="tousEpisodes"></a>
   <a href="/c-est-ca-la-vie" id="MainContent_ctl00_ResultsEmissionsRepeater_TousLesEpisodesLink_1" class="tousEpisodes"></a>
 =cut

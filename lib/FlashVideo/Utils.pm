@@ -2,6 +2,7 @@
 package FlashVideo::Utils;
 
 use strict;
+no warnings 'uninitialized';
 use base 'Exporter';
 use HTML::Entities;
 use HTML::TokeParser;
@@ -348,7 +349,7 @@ sub from_xml {
     die "Must have XML::Simple to download " . caller =~ /::([^:])+$/ . " videos\n";
   }
 
-  my $xml = eval {
+  $xml = eval {
     XML::Simple::XMLin(ref $xml eq 'SCALAR' ? $xml
       : ref $xml ? $xml->content
       : $xml, @args);

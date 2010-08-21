@@ -8,7 +8,7 @@ sub new {
   my $class = shift;
 
   my $self = {
-    has_readkey => eval { require Term::ReadKey }
+    has_readkey => scalar eval { require Term::ReadKey }
   };
 
   bless $self, $class;

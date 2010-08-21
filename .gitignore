@@ -6,3 +6,9 @@ wiki
 *.mp4
 *.flv
 .*sw[op]
+blib
+pm_to_blib
+MANIFEST
+META.yml
+mk/makemaker.mk
+mk/makemaker.mk.old

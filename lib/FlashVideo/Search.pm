@@ -33,7 +33,7 @@ sub search {
 
     eval "require $possible_package";
 
-    if (UNIVERSAL::can($possible_package, "search")) {
+    if ($possible_package->can("search")) {
       # Only search this site
       debug "Search for '$search' will only search $possible_site.";
 
@@ -54,7 +54,7 @@ sub search {
 
     eval "require $plugin_package";
 
-    if (UNIVERSAL::can($plugin_package, "search")) {
+    if ($plugin_package->can("search")) {
       debug "Plugin '$plugin' has a search method.";
 
       unshift @search_sites, $plugin_package;

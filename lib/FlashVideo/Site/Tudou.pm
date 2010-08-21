@@ -12,7 +12,7 @@ sub find_video {
     die sprintf $message, $browser->response->code;
   };
 
-=pod
+=for comment
   SD video
   Watch: http://www.tudou.com/programs/view/wo2YLr4sc44
   Embed: http://www.tudou.com/v/wo2YLr4sc44
@@ -84,7 +84,7 @@ sub find_video {
 sub parse_video_info {
   my ( $raw_xml ) = @_;
 
-=begin
+=for comment
 SD XML structure:
 <v
   time="101300" vi="1" ch="5" nls="0"

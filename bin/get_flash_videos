@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!perl
 #
 # get_flash_videos -- download all the Flash videos off a web page
 #
@@ -35,7 +35,7 @@ use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-use constant VERSION => "1.24";
+our $VERSION = "1.24";
 
 our %opt;
 BEGIN {
@@ -69,7 +69,7 @@ BEGIN {
 }
 
 use constant VER_INFO => <<EOF;
-get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
+get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
 EOF
 
 use constant USAGE => VER_INFO . <<EOF;
@@ -426,7 +426,7 @@ sub update {
 
     # Split version on . and compare..
     my @v = split /\./, $version;
-    my @V = split /\./, VERSION;
+    my @V = split /\./, $VERSION;
 
     my $newer = 0;
     my $i = 0;

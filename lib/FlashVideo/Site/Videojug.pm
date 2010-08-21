@@ -35,7 +35,7 @@ sub find_video {
 
   $browser->get($playlist_url . $video_id);
 
-=pod
+=for comment
 
   This XML gives us:
 

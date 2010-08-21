@@ -1,5 +1,6 @@
 #!perl
 use strict;
+no warnings;
 use lib qw(..);
 use Test::More tests => 2;
 use FlashVideo::Site::Googlevideosearch;

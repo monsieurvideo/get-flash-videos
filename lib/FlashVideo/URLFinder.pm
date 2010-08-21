@@ -68,7 +68,7 @@ sub find_package_url {
     my $possible_package = "FlashVideo::Site::$host_part";
     eval "require $possible_package";
 
-    if(UNIVERSAL::can($possible_package, "find_video")) {
+    if($possible_package->can("find_video")) {
 
       if($possible_package->can("can_handle")) {
         next unless $possible_package->can_handle($browser, $url);

@@ -1,5 +1,5 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
-=pod
+=for comment
    Uses TVA/Canoe-Specific way to get the brightcove metadata, 
     then forwards to the brightcove module.
  

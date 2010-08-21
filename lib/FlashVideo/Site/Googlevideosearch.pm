@@ -2,6 +2,7 @@
 package FlashVideo::Site::Googlevideosearch;
 
 use strict;
+no warnings 'uninitialized';
 use FlashVideo::Mechanize;
 
 sub search {
