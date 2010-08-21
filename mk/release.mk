@@ -3,14 +3,20 @@
 # Put this in ~/bin:
 #  http://code.google.com/p/support/source/browse/trunk/scripts/googlecode_upload.py
 
-release: release-main deb
+release: release-test release-tag release-cpan release-upload deb
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 
-release-main: $(BASEEXT)-$(VERSION) changelog-update wiki-update release-combined
-	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
+release-test: $(BASEEXT)-$(VERSION) combined-$(BASEEXT)-$(VERSION) test
+
+release-cpan: manifest dist
+
+release-tag: $(BASEEXT)-$(VERSION) changelog-update wiki-update
 	git commit -m "Version $(VERSION)" debian/changelog
 	git tag -a -m "Version $(VERSION)" v$(VERSION)
 	git push origin v$(VERSION)
+
+release-upload: release-tag release-combined
+	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
 
 release-combined: combined-$(BASEEXT)-$(VERSION)
 	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
@@ -28,7 +34,7 @@ wiki-update: wiki
 	@svn diff wiki/Installation.wiki wiki/Version.wiki | grep -q . || (echo "Version already released" && exit 1)
 	@svn diff wiki/Installation.wiki wiki/Version.wiki && echo "OK? (ctrl-c to abort)" && read F
 
-deb: release-main
+deb: release-tag
 	mkdir -p /tmp/deb
 	git archive --prefix=v$(VERSION)/ v$(VERSION) | tar -xvf - -C /tmp/deb
 	cd /tmp/deb/v$(VERSION) && (dpkg-buildpackage || echo "Ignoring return value..")

@@ -19,6 +19,7 @@
 # Contributions are welcome and encouraged, but please take care to
 # maintain the JustWorks(tm) nature of the program.
 
+package App::get_flash_videos;
 use strict;
 use Encode ();
 use File::Basename qw(basename);
@@ -35,7 +36,10 @@ use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-our $VERSION = "1.24";
+our $VERSION;
+BEGIN {
+  $VERSION = "1.24";
+}
 
 our %opt;
 BEGIN {

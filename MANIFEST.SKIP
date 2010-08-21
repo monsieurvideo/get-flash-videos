@@ -1,0 +1,12 @@
+.*\.tar\.gz$
+\.sitemodules
+..*sw[op]$
+.*\.bak
+\.git
+blib
+debian
+combined-get_flash_videos(|-\d.*)$
+get_flash_videos-\d.*$
+mk/makemaker.mk
+t/test-\d+/
+.*\.{flv,mp4,mpg,mpeg,wmv,avi,mov}

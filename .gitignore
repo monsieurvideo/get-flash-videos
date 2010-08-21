@@ -3,8 +3,11 @@ get_flash_videos-*
 get_flash_videos.1
 .sitemodules
 wiki
+*.bak
+*.old
 *.mp4
 *.flv
+*.gz
 .*sw[op]
 blib
 pm_to_blib
