@@ -6,7 +6,7 @@
 release: release-test release-tag release-cpan release-upload deb
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 
-release-test: $(BASEEXT)-$(VERSION) combined-$(BASEEXT)-$(VERSION) test
+release-test: $(BASEEXT)-$(VERSION) release-combined test
 	@git status --porcelain | grep -q . ;\
 	  if [ $$? = 0 ]; then \
 	    echo "Tree dirty, won't release.";\
@@ -15,16 +15,18 @@ release-test: $(BASEEXT)-$(VERSION) combined-$(BASEEXT)-$(VERSION) test
 
 release-cpan: manifest dist
 
-release-tag: $(BASEEXT)-$(VERSION) changelog-update wiki-update
+release-tag: release-test changelog-update wiki-update
 	git commit -m "Version $(VERSION)" debian/changelog
 	git tag -a -m "Version $(VERSION)" v$(VERSION)
 	git push origin v$(VERSION)
 
-release-upload: release-tag release-combined
-	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $<
+release-upload: release-tag release-cpan deb
+	googlecode_upload.py -l "Featured,OpSys-All" -s "Version $(VERSION)" -p get-flash-videos $(BASEEXT)-$(VERSION)
+	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) - CPAN dist" -p get-flash-videos $(DISTVNAME).tar.gz
+	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos combined-$(BASEEXT)-$(VERSION)
+	googlecode_upload.py -l "Type-Package,OpSys-Linux" -s "Version $(VERSION) -- Debian package, for Debian and Ubuntu" -p get-flash-videos get-flash-videos_$(VERSION)-1_all.deb
 
 release-combined: combined-$(BASEEXT)-$(VERSION)
-	googlecode_upload.py -l "OpSys-All" -s "Version $(VERSION) -- combined version including some required modules." -p get-flash-videos $^
 
 wiki:
 	svn checkout https://get-flash-videos.googlecode.com/svn/wiki/ $@
@@ -43,6 +45,6 @@ deb: release-tag
 	mkdir -p /tmp/deb
 	git archive --prefix=v$(VERSION)/ v$(VERSION) | tar -xvf - -C /tmp/deb
 	cd /tmp/deb/v$(VERSION) && (dpkg-buildpackage || echo "Ignoring return value..")
-	googlecode_upload.py -l "Type-Package,OpSys-Linux" -s "Version $(VERSION) -- Debian package, for Debian and Ubuntu" -p get-flash-videos /tmp/deb/get-flash-videos_$(VERSION)-1_all.deb
+	cp /tmp/deb/get-flash-videos_$(VERSION)-1_all.deb .
 	rm -rf /tmp/deb/v$(VERSION)
 

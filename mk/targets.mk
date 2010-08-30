@@ -12,10 +12,10 @@ EXTRATARGETS = combined-$(BASEEXT) combined-$(BASEEXT)-$(VERSION) $(BASEEXT)-$(V
 # Build the main get_flash_videos, by combining the modules and sites into one
 # file, for easier download and installation.
 
-$(BASEEXT)-$(VERSION): $(INST_SCRIPT)/$(BASEEXT) pm_to_blib .sitemodules \
+$(BASEEXT)-$(VERSION): bin/$(BASEEXT) pm_to_blib .sitemodules \
   utils/combine-header
 	$(COMBINE) --name="$(BASEEXT)" --include="^FlashVideo::" \
-	  utils/combine-header .sitemodules $(INST_SCRIPT)/$(BASEEXT) > $@
+	  utils/combine-header .sitemodules bin/$(BASEEXT) > $@
 	chmod a+x $@
 
 # This makes sure to 'use' all the Site modules, so that the combiner can pick
@@ -28,7 +28,7 @@ $(BASEEXT)-$(VERSION): $(INST_SCRIPT)/$(BASEEXT) pm_to_blib .sitemodules \
 # need HTML::Parser, as this is XS, and optionally XML::Simple, but LWP and
 # Mechanize are included by this).
 
-COMBINED_SOURCES = utils/combine-head .sitemodules $(INST_SCRIPT)/$(BASEEXT)
+COMBINED_SOURCES = utils/combine-head .sitemodules bin/$(BASEEXT)
 
 combined-$(BASEEXT)-$(VERSION): combined-get_flash_videos
 	cp -p $^ $@
