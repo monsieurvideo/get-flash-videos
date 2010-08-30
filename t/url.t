@@ -10,7 +10,7 @@ chdir "t";
 
 # We don't want to do this unless they really meant it, as it downloads a lot.
 unless($ENV{SITE}) {
-  plan skip_all => "Not going online, set SITE if you wish to run these tests";
+  plan skip_all => "Not going online, set SITE to run these tests";
   exit;
 }
 
@@ -69,6 +69,6 @@ sub assemble_urls {
       push @urls, [ $_, $note ];
     }
   }
-  
+
   return @urls;
 }
