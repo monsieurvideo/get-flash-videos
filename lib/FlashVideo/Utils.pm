@@ -22,11 +22,11 @@ sub debug(@) {
   # Remove some sensitive data
   my $string = "@_\n";
   $string =~ s/\Q$ENV{HOME}\E/~/g;
-  print STDERR $string if $::opt{debug};
+  print STDERR $string if $App::get_flash_videos::opt{debug};
 }
 
 sub info(@) {
-  print STDERR "@_\n" unless $::opt{quiet};
+  print STDERR "@_\n" unless $App::get_flash_videos::opt{quiet};
 }
 
 sub error(@) {

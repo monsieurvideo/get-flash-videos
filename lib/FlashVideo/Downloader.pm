@@ -4,6 +4,8 @@ package FlashVideo::Downloader;
 use strict;
 use FlashVideo::Utils;
 
+use base "FlashVideo::Site";
+
 sub new {
   my $class = shift;
 
@@ -21,7 +23,7 @@ sub play {
   $self->{stream} = sub {
     $self->{stream} = undef;
 
-    if ($^O =~ /MSWin/i and $::opt{player} eq "VLC") {
+    if ($^O =~ /MSWin/i and $self->player eq "VLC") {
       # mplayer is the default - but most Windows users won't have it. If no
       # other player is specified, check to see if VLC is installed, and if so,
       # use it. In future perhaps this should use Win32::FileOp's
@@ -64,7 +66,7 @@ sub play {
       my $pid = fork;
       die "Fork failed" unless defined $pid;
       if(!$pid) {
-        exec $self->replace_filename($::opt{player}, $file);
+        exec $self->replace_filename($self->player, $file);
         die "Exec failed\n";
       }
     }
@@ -95,10 +97,10 @@ sub download {
       $self->{stream}->() if defined $self->{stream};
       return;
     }
-    
+
     info "File $self->{printable_filename} already exists, seeing if resuming is supported.";
     if (!$response->header('Accept-Ranges')) {
-      if(!$::opt{yes}) {
+      if(!$self->yes) {
         error "This server doesn't explicitly support resuming.\n" .
                    "Do you want to try resuming anyway (y/n)?";
         chomp(my $answer = <STDIN>);
@@ -115,14 +117,14 @@ sub download {
 
   open my $video_fh, $mode, $file or die $!;
   binmode $video_fh;
-  $self->{fh} = $video_fh; 
+  $self->{fh} = $video_fh;
 
   info "Downloading $url...";
   if ($offset) {
     $browser->add_header("Range", "bytes=$offset-");
   }
-  my $response = $browser->get($url, 
-    ':content_cb' => sub { 
+  my $response = $browser->get($url,
+    ':content_cb' => sub {
         my ($data, $response) = @_;
 
         # If we're resuming, Content-Length will just be the length of the
@@ -210,7 +212,7 @@ sub progress {
   my($self) = @_;
 
   return unless -t STDERR;
-  return if $::opt{quiet};
+  return if $self->quiet;
 
   my $progress_text;
 
@@ -227,7 +229,7 @@ sub progress {
     }
   } else {
     # Handle lame servers that don't tell us how big the file is
-    my $data_transferred = _bytes_to_kib($self->{downloaded});;
+    my $data_transferred = _bytes_to_kib($self->{downloaded});
     if ($data_transferred != $self->{data_transferred}) {
       $progress_text = ": $data_transferred KiB";
     }

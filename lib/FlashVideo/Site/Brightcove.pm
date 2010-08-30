@@ -101,7 +101,7 @@ EOF
 
   $packet = Data::AMF::Packet->deserialize($browser->content);
 
-  if($::opt{debug}) {
+  if($self->debug) {
     require Data::Dumper;
     debug Data::Dumper::Dumper($packet);
   }

@@ -70,7 +70,7 @@ sub find_video {
   my $video_page_url = $browser->uri->as_string;
 
   if (my %info = get_youtube_video_info($browser->clone, $video_id, $video_page_url, $t)) {
-    if($::opt{debug}) {
+    if($self->debug) {
       require Data::Dumper;
       debug Data::Dumper::Dumper(\%info);
     }

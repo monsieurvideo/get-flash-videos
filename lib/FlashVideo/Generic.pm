@@ -221,7 +221,7 @@ sub guess_file {
 
     if($uri) {
       # Check to see if this URL is for a supported site.
-      my ($package, $url) = FlashVideo::URLFinder::find_package($uri,
+      my ($package, $url) = FlashVideo::URLFinder->find_package($uri,
         $browser->clone);
 
       if($package && $package ne __PACKAGE__) {

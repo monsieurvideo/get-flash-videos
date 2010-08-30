@@ -1,4 +1,4 @@
-#!perl
+#!/usr/bin/perl
 #
 # get_flash_videos -- download all the Flash videos off a web page
 #
@@ -28,6 +28,7 @@ use Getopt::Long;
 use Text::Wrap;
 
 use FlashVideo::URLFinder;
+use FlashVideo::Mechanize;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 use FlashVideo::Search;
@@ -107,13 +108,13 @@ A required Perl module for downloading this video is not installed.
 EOF
 
 use constant FRIENDLY_FAILURE => <<EOF;
-  
+
 Couldn't extract Flash movie URL. This site may need specific support adding,
 or fixing.
 
 Please confirm the site is using Flash video and if you have Flash available
 check that the URL really works(!).
-  
+
 Check for updates by running: $0 --update
 
 If the latest version does not support this please open a bug (or
@@ -158,14 +159,6 @@ if ($opt{debug}) {
   }
 }
 
-if (FlashVideo::Mechanize->new->get_socks_proxy()) {
-  my $HAS_LWP_PROTOCOL_SOCKS = eval { require LWP::Protocol::socks };
-
-  if (!$HAS_LWP_PROTOCOL_SOCKS) {
-    die "LWP::Protocol::socks is required for SOCKS support, please install it"
-  }
-}
-
 if($^O =~ /MSWin/i) {
   $opt{filename} = Encode::decode(get_win_codepage(), $opt{filename});
   binmode STDERR, ":encoding(" . get_win_codepage() . ")";
@@ -189,13 +182,13 @@ if ( ((@urls == 1) and $urls[0] !~ m'\.') or
 my @download_urls;
 
 if ($search) {
-  if (my @results = FlashVideo::Search::search($search, 10, 20)) {
+  if (my @results = FlashVideo::Search->search($search, 10, 20)) {
     if ($opt{yes} or @results == 1) {
       my $message = (@results == 1) ?
         "Downloading only match for '$search': '$results[0]->{name}'" :
         "Downloading first match for '$search': '$results[0]->{name}'" ;
       info $message;
-           
+
       push @download_urls, $results[0]->{url};
     }
     else {
@@ -204,7 +197,7 @@ if ($search) {
       # Need 5 chars for "[nn] ".
       my $columns = get_terminal_width() - 5;
       local $Text::Wrap::columns = $columns;
-    
+
       my $count = 1;
       for my $result(@results) {
         printf "[%2d] %s\n", $count, $result->{name};
@@ -224,7 +217,7 @@ if ($search) {
             "(separate multiple with comma or space): ";
       chomp(my $choice = <STDIN>);
       $choice ||= 1;
-      
+
       for(split /[ ,]+/, $choice) {
         if (/-/) {
           my ($lower, $upper) = split /-/, $choice;
@@ -253,7 +246,6 @@ if ($search) {
     print STDERR "No results found for '$search'.\n";
     exit 1;
   }
-  
 }
 else {
   @download_urls = @urls;
@@ -300,8 +292,8 @@ sub download {
   }
 
   # Figure out what package we need to use to get either the HTTP URL or
-  # rtmpdump data for the video. 
-  my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
+  # rtmpdump data for the video.
+  my($package, $possible_url) = FlashVideo::URLFinder->find_package($url, $browser);
 
   my($actual_url, @suggested_fnames) = eval {
     $package->find_video($browser, $possible_url, $prefs);
@@ -530,7 +522,7 @@ sub install_plugin {
   my ($browser, $url, $file) = @_;
 
   # So we can track newly installed plugins as well as updated ones
-  my $plugin_exists = -f $file; 
+  my $plugin_exists = -f $file;
 
   my $new_file = $plugin_exists ? "$file.new" : $file;
 
@@ -547,7 +539,7 @@ sub install_plugin {
       info "(previous version backed up to $file.old).";
     }
     else {
-      info "New plugin $short_name installed as $file"; 
+      info "New plugin $short_name installed as $file";
     }
 
     return 1;
@@ -579,7 +571,7 @@ sub plugin_loader {
       return $plugin_fh; # Perl then reads the plugin from the FH
     }
   }
-  
+
   return;
 }
 

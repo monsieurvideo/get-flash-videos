@@ -12,7 +12,7 @@ sub new {
   my $browser = $class->SUPER::new(autocheck => 0);
   $browser->agent_alias("Windows Mozilla");
 
-  my $proxy = $::opt{proxy};
+  my $proxy = $App::get_flash_videos::opt{proxy};
   if($proxy && $proxy !~ /^\w+:/) {
     my $port = ($proxy =~ /:(\d+)/)[0] || 1080;
     $proxy = "socks://$1:$port";
@@ -20,6 +20,12 @@ sub new {
 
   if($proxy) {
     $browser->proxy([qw[http https]] => $proxy);
+  }
+
+  if($browser->get_socks_proxy) {
+    if(!eval { require LWP::Protocol::socks }) {
+      die "LWP::Protocol::socks is required for SOCKS support, please install it\n";
+    }
   }
 
   return $browser;
@@ -39,11 +45,11 @@ sub allow_redirects {
 sub get {
   my($self, @rest) = @_;
 
-  print STDERR "-> GET $rest[0]\n" if $::opt{debug};
+  print STDERR "-> GET $rest[0]\n" if $App::get_flash_videos::opt{debug};
 
   my $r = $self->SUPER::get(@rest);
 
-  if($::opt{debug}) {
+  if($App::get_flash_videos::opt{debug}) {
     my $text = join " ", $self->response->code,
       $self->response->header("Content-type"), "(" . length($self->content) . ")";
     $text .= ": " . DBI::data_string_desc($self->content) if eval { require DBI };
@@ -98,7 +104,7 @@ sub get_socks_proxy {
   my $self = shift;
   my $proxy = $self->proxy("http");
 
-  if($proxy =~ m!^socks://(.*?):(\d+)!) {
+  if(defined $proxy && $proxy =~ m!^socks://(.*?):(\d+)!) {
     return "$1:$2";
   }
 

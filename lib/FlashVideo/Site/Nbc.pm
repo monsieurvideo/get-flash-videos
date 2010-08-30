@@ -29,7 +29,7 @@ sub find_video {
   #$packet->messages->[0]->{value}->[2] = "632";
   #$packet->messages->[0]->{value}->[3] = "-1";
 
-  if($::opt{debug}) {
+  if($self->debug) {
     require Data::Dumper;
     debug Data::Dumper::Dumper($packet);
   }
@@ -45,9 +45,7 @@ sub find_video {
   die "Failed to post to Nbc AMF gateway"
     unless $browser->response->is_success;
 
-  if($::opt{debug}) {
-    debug $browser->content;
-  }
+  debug $browser->content;
 
   # AMF fails so just regex for now
 
@@ -55,21 +53,8 @@ sub find_video {
 
   my($title) = $browser->content =~ /headline.{1,3}([^\0]+)/;
 
-  if($::opt{debug}) {
-    debug "$clipurl\n";
-    debug "$title\n";
-  }
-
-  #$browser->content =~ s/............//;
-
-  #$packet = Data::AMF::Packet->deserialize($browser->content);
-
-  #if($::opt{debug}) {
-  #  require Data::Dumper;
-  #  debug Data::Dumper::Dumper($packet);
-  #}
-
-  #my $clipurl = $packet->messages->[0]->{value}->{clipurl};
+  debug $clipurl;
+  debug $title;
 
   $browser->get("http://video.nbcuni.com/$clipurl");
   my $xml = from_xml($browser);

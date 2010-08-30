@@ -3,21 +3,16 @@ package FlashVideo::Search;
 
 use strict;
 use Carp;
-
 use FlashVideo::Utils;
 
 # Sites which support searching
 my @sites_with_search = ('4oD', 'GoogleVideoSearch');
 
 sub search {
-  my ($search, $max_per_site, $max_results) = @_;
+  my ($class, $search, $max_per_site, $max_results) = @_;
 
-  my @search_sites = map { /^FlashVideo::Site::/ ? $_ 
-                                                 : "FlashVideo::Site::$_"; }
-                     map { ucfirst lc } @sites_with_search;
- 
   # Preload search sites
-  eval "require $_" for @search_sites;
+  my @search_sites = map { FlashVideo::URLFinder::_load($_) } @sites_with_search;
 
   # If a user searches for "foo something", check to see if "foo" is a site
   # we support. If it is, only search that site.
@@ -26,9 +21,7 @@ sub search {
 
     debug "Checking to see if '$possible_site' in '$search' is a search-supported site.";
 
-    my $possible_package = "FlashVideo::Site::$possible_site";
-
-    eval "require $possible_package";
+    my $possible_package = FlashVideo::URLFinder::_load($possible_site);
 
     if ($possible_package->can("search")) {
       # Only search this site
@@ -42,14 +35,12 @@ sub search {
   }
 
   # Check to see if any plugins have a search function defined.
-  my @plugins = main::get_installed_plugins();
+  my @plugins = App::get_flash_videos::get_installed_plugins();
 
   foreach my $plugin (@plugins) {
     $plugin =~ s/\.pm$//;
 
-    my $plugin_package = "FlashVideo::Site::$plugin";
-
-    eval "require $plugin_package";
+    my $plugin_package = FlashVideo::URLFinder::_load($plugin);
 
     if ($plugin_package->can("search")) {
       debug "Plugin '$plugin' has a search method.";

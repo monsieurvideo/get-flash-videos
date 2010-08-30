@@ -45,7 +45,7 @@ sub find_video {
 
   if(!$video) {
     # Sometimes dailymotion actually embeds another site, so check that..
-    my($package, $possible_url) = FlashVideo::URLFinder::find_package($browser->uri, $browser);
+    my($package, $possible_url) = FlashVideo::URLFinder->find_package($browser->uri, $browser);
 
     if($package ne __PACKAGE__) {
       return $package->find_video($browser, $possible_url, $prefs);

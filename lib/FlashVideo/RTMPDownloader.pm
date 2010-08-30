@@ -29,19 +29,19 @@ sub download {
 
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
-  if ($rtmp_data->{live} && $::opt{play}) {
+  if ($rtmp_data->{live} && $self->action eq 'play') {
     # Playing live stream, we pipe this straight to the player, rather than
     # saving on disk.
     # XXX: The use of /dev/fd could go away now rtmpdump supports streaming to
     # STDOUT.
-   
+
     pipe($r_fh, $w_fh);
 
     my $pid = fork;
     die "Fork failed" unless defined $pid;
     if(!$pid) {
       fcntl $r_fh, Fcntl::F_SETFD(), ~Fcntl::FD_CLOEXEC();
-      exec $self->replace_filename($::opt{player}, "/dev/fd/" . fileno $r_fh);
+      exec $self->replace_filename($self->player, "/dev/fd/" . fileno $r_fh);
       die "Exec failed\n";
     }
 
@@ -60,7 +60,7 @@ sub download {
     exit 1;
   }
 
-  if($::opt{debug}) {
+  if($self->debug) {
     $rtmp_data->{verbose} = undef;
   }
 
@@ -138,7 +138,7 @@ sub run {
       kill 'TERM', $pid;
       exit;
     };
-  } 
+  }
 
   my $complete = 0;
   my $buf = "";
