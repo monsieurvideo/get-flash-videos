@@ -118,21 +118,6 @@ JSON structure:
   my ( $keyB ) = ( $json =~ /"key2":"([^"]+)"/ );
   my $key = sprintf "%s%x", $keyB, hex( $keyA ) ^ hex( 'a55aa5a5' );
 
-  # Combine it all for the final request to grab the video link
-  $browser->get(
-    sprintf "http://f.youku.com/player/getFlvPath/sid/%s/st/%s/fileid/%s?K=%s&myp=null",
-      $sID, $stream, $fileID, $key );
-
-  # If we're successful, we should get a 302 with the location of the video
-  my $url = $browser->response->header( 'Location' );
-  die "Youku rejected our attempt to get the video, we're probably out of date"
-    unless $browser->response->code eq 302 and $url;
-
-  # Sometimes, for whatever reason, the location we get back is missing
-  # the file extension
-  debug "Video location is $url";
-  $url = "$url.$stream" unless $url =~ /$stream$/;
-
   # Video title is in escaped unicode format
   my ( $title ) = ( $json =~ /"title":"([^"]+)"/ );
   $title =~ s/\\u([a-f0-9]{4})/chr(hex $1)/egi;
@@ -142,14 +127,47 @@ JSON structure:
   $filename = title_to_filename( $title, $stream ) if $title;
 
   my ( $stream_info ) = ( $json =~ /"segs":{"$stream":\[([^\]]+)\]/ );
-  my ( $stream_duration ) = ( $stream_info =~ /"seconds":"([^"]+)"/ );
-  my ( $stream_size ) = ( $stream_info =~ /"size":"([^"]+)"/ );
-  debug sprintf
-    "%s, %s seconds, %s bytes",
-    $title, $stream_duration, $stream_size
-      if ( $title and $stream_duration and $stream_size );
+  my @urls;
+  my $part_count = 0;
 
-  return ( $url, $filename );
+  while ($stream_info =~ /\G{"no":"(\d+)",([^}]+)},?/g) {
+    my ( $segment_number, $segment_info ) = ( $1, $2 );
+    my ( $segment_duration ) = ( $segment_info =~ /"seconds":"([^"]+)"/ );
+    my ( $segment_size ) = ( $segment_info =~ /"size":"([^"]+)"/ );
+
+    # To download segments other than the first (00), we replace
+    # the digits at position 8 in the file ID with the segment
+    # number as a two digit upper-case hexidecimal
+    my $segment_number_str = sprintf '%02X', $segment_number;
+    my $segment_fileID = $fileID;
+    substr $segment_fileID, 8, 2, $segment_number_str;
+
+    # Combine it all for the request to grab the video link for this segment
+    $browser->get(
+      sprintf "http://f.youku.com/player/getFlvPath/sid/%s/st/%s/fileid/%s?K=%s&myp=null",
+        $sID, $stream, $segment_fileID, $key );
+
+    # If we're successful, we should get a 302 with the location of the segment
+    my $url = $browser->response->header( 'Location' );
+    die "Youku rejected our attempt to get the video, we're probably out of date"
+      unless $browser->response->code eq 302 and $url;
+
+    # Sometimes, for whatever reason, the location we get back is missing
+    # the file extension
+    debug "Video location for segment $segment_number is $url";
+    $url = "$url.$stream" unless $url =~ /$stream$/;
+
+    debug sprintf
+      "%s, segment %d, %s seconds, %s bytes",
+      $title, $segment_number, $segment_duration, $segment_size
+        if ( $title and $segment_duration and $segment_size );
+
+    push @urls, [$url, ++$part_count, 0, $segment_size];
+  }
+
+  $_->[2] = $part_count for @urls;
+
+  return ( \@urls, $filename );
 }
 
 # Modified Fisher-Yates shuffle
