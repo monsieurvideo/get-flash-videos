@@ -130,7 +130,7 @@ JSON structure:
   my @urls;
   my $part_count = 0;
 
-  while ($stream_info =~ /\G{"no":"(\d+)",([^}]+)},?/g) {
+  while ($stream_info =~ /\G{"no":"?(\d+)"?,([^}]+)},?/g) {
     my ( $segment_number, $segment_info ) = ( $1, $2 );
     my ( $segment_duration ) = ( $segment_info =~ /"seconds":"([^"]+)"/ );
     my ( $segment_size ) = ( $segment_info =~ /"size":"([^"]+)"/ );
