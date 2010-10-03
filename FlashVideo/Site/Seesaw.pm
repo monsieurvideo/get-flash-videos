@@ -29,6 +29,11 @@ sub find_video {
   # Annoyingly it's no longer easy to find out the series/season and
   # episode number.
   my %metadata = map { $_ => '' } qw(brandTitle seriesTitle programmeTitle);
+ 
+  my ($series, $episode) = ($browser->content =~ /Series (\d+) - Ep(?:isode)?\.? (\d+)/);
+  if ($series and $episode) {
+    $metadata{series_and_episode} = sprintf "S%02dE%02d", $series, $episode;
+  }
 
   # Need to make this Dublin Core / ISO 15836 compliant.
   foreach my $metadata_item (keys %metadata) {
@@ -38,17 +43,15 @@ sub find_video {
       # Handle various metadata items being identical.
       next if $seen{$value};
 
+      $seen{$value}++;
+
       $metadata{$metadata_item} = $value;
     }
   }
 
-  # Just in case series and episode numbers return.
-  foreach my $item (values %metadata) {
-    $item =~ s/^(?:(S)eries|(E)pisode) (\d+).*$/sprintf "%s%02d", $1, $2/ie;
-  }
-
-  my $title = join " - ", grep length,
-                          @metadata{qw(brandTitle seriesTitle programmeTitle)};
+  my $title = join "-", map { trim($_) }
+                        grep length,
+                        @metadata{qw(brandTitle series_and_episode seriesTitle programmeTitle)};
 
   # Grab player info
   $browser->get($player_info);
@@ -75,10 +78,12 @@ sub find_video {
   $prefix = "flv" if $playpath =~ /\.flv$/;
 
   if ($prefs->subtitles) {
-    $browser->back;
-
-    if ($browser->content =~ m{setConfig\('', '(/\w/\w+/\d{6,10}/\d+\.smi)'}) {
-      my $subtitles_url = "http://www.seesaw.com$1";
+    if ($browser->content =~ m{"subtitleLocation":\["([^"]+)"\]}) {
+      my $subtitles_url = $1;
+      
+      if ($subtitles_url =~ m{^/}) {
+        $subtitles_url = "http://www.seesaw.com$subtitles_url";
+      }
 
       debug "Got Seesaw subtitles URL: $subtitles_url";
 
@@ -224,6 +229,14 @@ sub _update_with_content {
   $content = json_unescape($content);
   debug "Content is '$content'";
   $browser->update_html($content);
+}
+
+sub trim {
+  local $_ = shift;
+
+  s/^\s+|\s+$//g;
+
+  return $_;
 }
 
 1;
