@@ -275,33 +275,83 @@ sub json_unescape {
 }
 
 sub convert_sami_subtitles_to_srt {
-  my ($sami_subtitles, $filename) = @_;
+  my ($sami_subtitles, $filename, $decrypt_callback) = @_;
 
   die "SAMI subtitles must be provided"      unless $sami_subtitles;
   die "Output SRT filename must be provided" unless $filename;
 
-  my $parser = HTML::TokeParser->new(\$sami_subtitles);
+  # Use regexes to "parse" SAMI since HTML::TokeParser is too awkward. It
+  # makes it hard to preserve linebreaks and other formatting in subtitles.
+  # It's also quite slow.
+  $sami_subtitles =~ s/[\r\n]//g; # flatten
+
+  my @lines = split /<Sync\s/i, $sami_subtitles;
+  shift @lines; # Skip headers
 
   my @subtitles;
   my $count = 0;
 
-  while (my $token = $parser->get_token()) {
-    my ($start_or_end, $tag, $attributes) = @$token;
+  my $last_proper_sub_end_time = '';
 
-    if ($start_or_end eq 'S' and $tag eq 'sync') {
-      my $begin = $attributes->{start};
+  for (@lines) {
+    my ($begin, $sub);
+    # Remove span elements
+    s|<\/?span.*?>| |g;
+    
+    # replace "&amp;" with "&"
+    s|&amp;|&|g;
 
-      my $subtitle_text = $parser->get_trimmed_text('sync');
-      $subtitle_text =~ s/\xA0/ /g; # convert non-breaking space to normal
+    # replace "&nbsp;" with " "
+    s{&(?:nbsp|#160);}{ }g;
 
+    # Start="2284698"><P Class="ENCC">I won't have to drink it<br />in this crappy warehouse.</P></Sync>
+    #($begin, $sub) = ($1, $2) if m{.*Start="(.+?)".+<P.+?>(.+?)<\/p>.*?<\/Sync>}i;
+
+    ($begin, $sub) = ($1, $2) if m{[^>]*Start="(.+?)"[^>]*>(.*?)<\/Sync>}i;
+
+    if (/^\s*Encrypted="true"\s*/i) {
+      if ($decrypt_callback and ref($decrypt_callback) eq 'CODE') {
+        $sub = $decrypt_callback->($sub);
+      }
+    }
+
+    $sub =~ s@&amp;@&@g;
+    $sub =~ s@(?:</?span[^>]*>|&nbsp;|&#160;)@ @g;
+
+    # Do some tidying up.
+    # Note only <P> tags are removed--<i> tags are left in place since VLC
+    # and others support this for formatting.
+    $sub =~ s{</?P[^>]*?>}{}g;  # remove <P Class="ENCC"> and similar
+
+    # VLC is very sensitive to tag case.
+    $sub =~ s{<(/)?([BI])>}{"<$1" . lc($2) . ">"}eg;
+    
+    decode_entities($sub); # in void context, this works in place
+
+    if ($sub and ($begin or $begin == 0)) {
       # Convert milliseconds into HH:MM:ss,mmm format
-      my $seconds = int($begin / 1000);
-      my $milliseconds = $begin - ($seconds * 1000);
-      $begin = sprintf("%02d:%02d:%02d,%03d", (gmtime($seconds))[2,1,0],
-          $milliseconds);
+      my $seconds = int( $begin / 1000.0 );
+      my $ms = $begin - ( $seconds * 1000.0 );
+      $begin = sprintf("%02d:%02d:%02d,%03d", (gmtime($seconds))[2,1,0], $ms );
+
+      # Don't strip simple HTML like <i></i> - VLC and other players
+      # support basic subtitle styling, see:
+      # http://git.videolan.org/?p=vlc.git;a=blob;f=modules/codec/subtitles/subsdec.c
+
+      # Leading/trailing spaces
+      $sub =~ s/^\s*(.*?)\s*$/\1/;
+
+      # strip multispaces
+      $sub =~ s/\s{2,}/ /g;
+
+      # Replace <br /> (and similar) with \n. VLC handles \n in SubRip files
+      # fine. For <br> it is case and slash sensitive.
+      $sub =~ s|<br ?\/? ?>|\n|ig;
+
+      $sub =~ s/^\s*|\s*$//mg;
 
       if ($count and !$subtitles[$count - 1]->{end}) {
-        $subtitles[$count - 1]->{end} = $begin;      
+        $subtitles[$count - 1]->{end} = $begin;
       }
 
       # SAMI subtitles are a bit crap. Only a start time is specified for
@@ -309,27 +359,40 @@ sub convert_sami_subtitles_to_srt {
       # until the next subtitle is ready to be shown. This means that if
       # subtitles aren't meant to be shown for part of the video, a dummy
       # subtitle (usually just a space) has to be inserted.
-      if (!$subtitle_text or $subtitle_text eq ' ') {
+      if (!$sub or $sub =~ /^\s+$/) {
+        if ($count) {
+          $last_proper_sub_end_time = $subtitles[$count - 1]->{end};
+        }
+
         # Gap in subtitles.
         next; # this is not a meaningful subtitle
       }
 
       push @subtitles, {
         start => $begin,
-        text  => $subtitle_text,
+        text  => $sub,
       };
 
       $count++;
     }
   }
 
-  $subtitles[$count - 1]->{end} = $subtitles[$count - 1]{start};
+  # Ensure the end time for the last subtitle is correct.
+  $subtitles[$count - 1]->{end} = $last_proper_sub_end_time;
 
   # Write subtitles
   open my $subtitle_fh, '>', $filename
     or die "Can't open subtitles file $filename: $!";
 
+  # Set filehandle to UTF-8 to avoid "wide character in print" warnings.
+  # Note this does *not* double-encode data as UTF-8 (verify with hexdump).
+  # As per the documentation for binmode: ":utf8 just marks the data as
+  # UTF-8 without further checking". This will cause mojibake if 
+  # ISO-8859-1/Latin1 and UTF-8 and are mixed in the same file though.
+  binmode $subtitle_fh, ':utf8';
+
   $count = 1;
+
   foreach my $subtitle (@subtitles) {
     print $subtitle_fh "$count\n$subtitle->{start} --> $subtitle->{end}\n" .
                        "$subtitle->{text}\n\n";
