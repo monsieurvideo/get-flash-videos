@@ -37,7 +37,6 @@ use strict;
 use FlashVideo::Utils;
 use URI::Escape;
 use URI::QueryParam;
-use WWW::Mechanize;
 
 # Warning! This is the only perl code I've ever written.
 
@@ -72,9 +71,8 @@ sub get_old_monster_player_url {
     my($self, $browser) = @_;
     $browser->content =~ m/$old_monster_player_regex/;
     my $embedded_url = $1;
-    my $mech = WWW::Mechanize->new();
-    $mech->get($embedded_url);
-    my $url = $mech->uri();
+    $browser->get($embedded_url);
+    my $url = $browser->uri;
     return URI->new($url)->query_param('file') or die "no file key in player link";
 }
 
@@ -100,9 +98,8 @@ sub find_video {
     } else {
 	$title = $browser->title;
     }
-    my $filename = title_to_filename($title);
 
-    return $real_url, $filename;
+    return $real_url, title_to_filename($title);
 }
 
 1;
