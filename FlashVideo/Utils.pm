@@ -114,7 +114,7 @@ sub title_to_filename {
   if($title =~ s/(@{[EXTENSIONS]})$//) {
     $type = substr $1, 1;
   } else {
-    $type = (URI->new($type)->path =~ /(@{[EXTENSIONS]})$/)[0];
+    $type = substr((URI->new($type)->path =~ /(@{[EXTENSIONS]})$/)[0], 1);
   }
 
   $type ||= "flv";
