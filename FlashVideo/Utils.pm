@@ -8,7 +8,7 @@ use HTML::TokeParser;
 use Encode;
 
 use constant FP_KEY => "Genuine Adobe Flash Player 001";
-use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv|avi)/i;
+use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv|avi|m4v)/i;
 use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
@@ -109,11 +109,15 @@ sub url_exists {
 
 sub title_to_filename {
   my($title, $type) = @_;
-  $type ||= "flv";
 
   # Extract the extension if we're passed a URL.
-  $type = substr $1, 1 if $title =~ s/(@{[EXTENSIONS]})$//;
-  $type = substr $1, 1 if $type =~ s/(@{[EXTENSIONS]})$//;
+  if($title =~ s/(@{[EXTENSIONS]})$//) {
+    $type = substr $1, 1;
+  } else {
+    $type = (URI->new($type)->path =~ /(@{[EXTENSIONS]})$/)[0];
+  }
+
+  $type ||= "flv";
 
   # We want \w below to match non-ASCII characters.
   utf8::upgrade($title);
