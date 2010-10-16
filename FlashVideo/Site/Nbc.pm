@@ -51,7 +51,7 @@ sub find_video {
 
   # AMF fails so just regex for now
 
-  my($clipurl) = $browser->content =~ /clipurl.{3,5}(nbcrewind[^\0]+)/;
+  my($clipurl) = $browser->content =~ /clipurl.{0,5}(nbc[^\0]+)/;
 
   my($title) = $browser->content =~ /headline.{1,3}([^\0]+)/;
 
