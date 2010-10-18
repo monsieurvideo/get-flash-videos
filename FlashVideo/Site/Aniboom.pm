@@ -26,8 +26,6 @@ sub find_video {
     die "Could not get flv/mp4 location!";
   }
   
-  debug $url;
-
   return $url, title_to_filename($title);
 }
 
