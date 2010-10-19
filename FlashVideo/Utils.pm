@@ -113,7 +113,7 @@ sub title_to_filename {
   # Extract the extension if we're passed a URL.
   if($title =~ s/(@{[EXTENSIONS]})$//) {
     $type = substr $1, 1;
-  } else {
+  } elsif ($type !~ /^\w+$/) {
     $type = substr((URI->new($type)->path =~ /(@{[EXTENSIONS]})$/)[0], 1);
   }
 
