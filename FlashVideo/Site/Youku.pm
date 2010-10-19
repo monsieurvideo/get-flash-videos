@@ -99,8 +99,14 @@ JSON structure:
   debug "Choosing to use the $stream stream (available: $streams)";
 
   # Use the file ID associate with the stream we choose when available
-  my ( $fileID ) = ( $json =~ /"streamfileids":{"$stream":"([^"]+)"/ );
+  my $fileID = '';
+  if ($json =~ /"streamfileids":{([^}]+)}/) {
+    my $streamfileids = $1;
+    ( $fileID ) = ( $streamfileids =~ /"$stream":"([^"]+)"/ );
+  }
   ( $fileID ) = ( $json =~ /"fileid":"([^"]+)"/ ) if not $fileID;
+  die "Can't find the encrypted file ID in the video info JSON"
+    unless $fileID;
   debug "Encrypted file ID: $fileID";
 
   # File ID is given in obfuscated form, each entry is an index in a lookup
