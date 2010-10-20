@@ -45,8 +45,11 @@ BEGIN {
   # On OSX we default to open, if mplayer isn't available
   $player = "open" if $^O =~ /darwin/ && !is_program_on_path("mplayer");
 
-  if(is_program_on_path("gnome-open") && !is_program_on_path("mplayer")) {
-    # If mplayer isn't available, but gnome-open is, use that.
+  if(is_program_on_path("xdg-open") && !is_program_on_path("mplayer")) {
+    # If mplayer isn't available, but xdg-open is, use that.
+    $player = "xdg-open";
+  } elsif(is_program_on_path("gnome-open") && !is_program_on_path("mplayer")) {
+    # Alternatively try gnome-open..
     $player = "gnome-open";
   } elsif(is_program_on_path("kde-open") && !is_program_on_path("mplayer")) {
     # Alternatively try kde-open..
