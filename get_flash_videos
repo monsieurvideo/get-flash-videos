@@ -26,6 +26,17 @@ use File::stat;
 use Getopt::Long;
 use Text::Wrap;
 
+BEGIN {
+  # If using the development version and not called directly from the
+  # repo directory, alter the module search path.
+  unless ($::SCRIPT_NAME) {
+    require Cwd;
+    require File::Spec::Functions;
+    File::Spec::Functions->import(qw(catpath splitpath));
+    push @INC, catpath((splitpath(Cwd::realpath(__FILE__)))[0, 1])
+  }
+}
+
 use FlashVideo::URLFinder;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
