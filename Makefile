@@ -44,6 +44,7 @@ combined-$(MAIN): $(COMBINE) $(COMBINED_SOURCES)
 # Run our Perl tests.
 check: $(MAIN)-$(VERSION)
 	SCRIPT=$^ prove t
+test: check
 
 # Manpage
 $(MAIN).1: $(MAIN).pod
