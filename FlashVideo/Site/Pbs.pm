@@ -9,16 +9,22 @@ use FlashVideo::Utils;
 use Crypt::Rijndael;
 use MIME::Base64 qw(decode_base64);
 
-use constant DEBUG => 1;
-
 =pod
 
-Examples that work:
-    http://video.pbs.org/video/1623753774/
-    http://www.pbs.org/wnet/nature/episodes/revealing-the-leopard/full-episode/6084/
+Programs that work:
+    - http://video.pbs.org/video/1623753774/
+    - http://www.pbs.org/wnet/nature/episodes/revealing-the-leopard/full-episode/6084/
+    - http://www.pbs.org/wgbh/nova/ancient/secrets-stonehenge.html
+    - http://www.pbs.org/wnet/americanmasters/episodes/lennonyc/outtakes-jack-douglas/1718/
+    - http://www.pbs.org/wnet/need-to-know/video/need-to-know-november-19-2010/5189/
 
-Examples that don't work yet:
-    http://www.pbs.org/wgbh/pages/frontline/woundedplatoon/view/
+Programs that don't work yet:
+    - http://www.pbs.org/wgbh/pages/frontline/woundedplatoon/view/
+    - http://www.pbs.org/newshour/bb/transportation/july-dec10/airport_11-22.html
+    - http://www.pbs.org/wgbh/roadshow/rmw/RMW-003_200904F02.html
+
+TODO:
+    - subtitles
 
 =cut
 
@@ -32,6 +38,9 @@ sub find_video {
     ($media_id) = $browser->content =~ m[
       http://video\.pbs\.org/widget/partnerplayer/(\d+)
     ]x;
+  }
+  unless (defined $media_id) {
+    ($media_id) = $browser->content =~ m[var videoUrl = "([^"]+)"];
   }
   die "Couldn't find media_id\n" unless defined $media_id;
   debug "media_id: $media_id\n";
@@ -62,8 +71,8 @@ sub find_video {
 
   $browser->get($release_url);
 
-  my $rtmp_url = $browser->res->header('location');
-  die "Couldn't find stream url\n" unless $rtmp_url;
+  my $rtmp_url = $browser->res->header('location')
+    or die "Couldn't find stream url\n";
   $rtmp_url =~ s/<break>//;
 
   my ($file) = $rtmp_url =~ m{([^/]+)$};
