@@ -17,10 +17,10 @@ Programs that work:
     - http://www.pbs.org/wgbh/nova/ancient/secrets-stonehenge.html
     - http://www.pbs.org/wnet/americanmasters/episodes/lennonyc/outtakes-jack-douglas/1718/
     - http://www.pbs.org/wnet/need-to-know/video/need-to-know-november-19-2010/5189/
+    - http://www.pbs.org/newshour/bb/transportation/july-dec10/airport_11-22.html
 
 Programs that don't work yet:
     - http://www.pbs.org/wgbh/pages/frontline/woundedplatoon/view/
-    - http://www.pbs.org/newshour/bb/transportation/july-dec10/airport_11-22.html
     - http://www.pbs.org/wgbh/roadshow/rmw/RMW-003_200904F02.html
 
 TODO:
@@ -29,10 +29,10 @@ TODO:
 =cut
 
 sub find_video {
-  my ($self, $browser, $embed_url) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   my ($media_id) = $browser->uri->as_string =~ m[
-      ^http://video\.pbs\.org/video/(\d+)
+    ^http://video\.pbs\.org/video/(\d+)
   ]x;
   unless (defined $media_id) {
     ($media_id) = $browser->content =~ m[
@@ -41,6 +41,17 @@ sub find_video {
   }
   unless (defined $media_id) {
     ($media_id) = $browser->content =~ m[var videoUrl = "([^"]+)"];
+  }
+  unless (defined $media_id) {
+    my ($pap_id, $youtube_id) = $browser->content =~ m[
+      \bDetectFlashDecision\ \('([^']+)',\ '([^']+)'\);
+    ]x;
+    if ($youtube_id) {
+      debug "Youtube ID found, delegating to Youtube plugin\n";
+      my $url = "http://www.youtube.com/v/$youtube_id";
+      require FlashVideo::Site::Youtube;
+      return FlashVideo::Site::Youtube->find_video($browser, $url, $prefs);
+    }
   }
   die "Couldn't find media_id\n" unless defined $media_id;
   debug "media_id: $media_id\n";
