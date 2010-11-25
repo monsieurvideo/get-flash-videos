@@ -40,6 +40,11 @@ sub find_video {
     ]x;
   }
   unless (defined $media_id) {
+    ($media_id) = $browser->content =~ m[
+      /embed-player[^"]+\bepisodemediaid=(\d+)
+    ]x;
+  }
+  unless (defined $media_id) {
     ($media_id) = $browser->content =~ m[var videoUrl = "([^"]+)"];
   }
   unless (defined $media_id) {
