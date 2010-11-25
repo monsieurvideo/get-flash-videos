@@ -88,7 +88,8 @@ sub find_video {
   $browser->get($release_url);
 
   my $rtmp_url = $browser->res->header('location')
-    or die "Couldn't find stream url\n";
+    || from_xml($browser->content)->{choice}{url}
+    || die "Couldn't find stream url\n";
   $rtmp_url =~ s/<break>//;
 
   my ($file) = $rtmp_url =~ m{([^/]+)$};
