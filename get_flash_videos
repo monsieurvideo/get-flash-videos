@@ -31,7 +31,7 @@ BEGIN {
   if(!$::SCRIPT_NAME) {
     # Are we running in development mode?
     require FindBin;
-    unshift @INC, "$FindBin::Bin/../lib";
+    unshift @INC, "$FindBin::Bin/lib";
   }
 }
 
