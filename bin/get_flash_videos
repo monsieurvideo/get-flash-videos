@@ -27,6 +27,14 @@ use File::stat;
 use Getopt::Long;
 use Text::Wrap;
 
+BEGIN {
+  if(!$::SCRIPT_NAME) {
+    # Are we running in development mode?
+    require FindBin;
+    unshift @INC, "$FindBin::Bin/../lib";
+  }
+}
+
 use FlashVideo::URLFinder;
 use FlashVideo::Mechanize;
 use FlashVideo::Downloader;
