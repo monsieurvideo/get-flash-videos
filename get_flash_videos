@@ -30,8 +30,10 @@ use Text::Wrap;
 BEGIN {
   if(!$::SCRIPT_NAME) {
     # Are we running in development mode?
-    require FindBin;
-    unshift @INC, "$FindBin::Bin/lib";
+    require Cwd;
+    require File::Spec;
+    my($vol, $dir) = (File::Spec->splitpath(Cwd::realpath($0)))[0, 1];
+    unshift @INC, File::Spec->catpath($vol, File::Spec->catdir($dir, "lib"));
   }
 }
 
