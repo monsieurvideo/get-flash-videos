@@ -411,6 +411,13 @@ sub add_plugin {
 }
 
 sub update {
+  my %update_types = (
+    'cpan-cpan' => [1, "cpan " . __PACKAGE__],
+    'cpan-cpanp' => [1, "cpanp i " . __PACKAGE__],
+    'cpan-cpanm' => [1, "cpanm " . __PACKAGE__],
+    'cpan-manual' => [0, "Manual install"],
+  );
+
   # SCRIPT_NAME is some magic set by combine-perl or via MakeMaker
   if($::SCRIPT_NAME) {
     my $browser = FlashVideo::Mechanize->new;
@@ -418,7 +425,7 @@ sub update {
     $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
 
     if(!$browser->response->is_success) {
-      die "Unable to retrieve version data: " . $browser->response->status_line;
+      die "Unable to retrieve version data: " . $browser->response->status_line . "\n";
     }
 
     my $version = ($browser->content =~ /version: (\S+)/)[0];
@@ -443,8 +450,26 @@ sub update {
 
     if($newer) {
       info "Newer version ($version) available";
+      debug "(Install type: $::INSTALL_TYPE)";
 
       if($::INSTALL_TYPE =~ /^cpan-/) {
+
+        my $update_method = $update_types{$::INSTALL_TYPE};
+        if($update_method->[0]) {
+          info "This was installed via CPAN, you may upgrade by running:";
+          info $update_method->[1];
+
+          my $run_cpan = $opt{yes} || do {
+            info "Shall I run that for you? (Y/n)";
+            <STDIN> =~ /(?:^\s*$|y)/i;
+          };
+
+          if($run_cpan) {
+            system $update_method->[1];
+          }
+        } else {
+          info "Please visit http://code.google.com/p/get-flash-videos to upgrade";
+        }
       } else {
         update_script($browser, $url, $info);
       }
