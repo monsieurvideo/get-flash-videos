@@ -13,7 +13,7 @@ release-test: $(BASEEXT)-$(VERSION) release-combined test
 	    exit 1;\
 	  fi
 
-release-cpan: manifest dist
+release-cpan: metafile manifest dist
 
 release-tag: release-test changelog-update wiki-update
 	git commit -m "Version $(VERSION)" debian/changelog
