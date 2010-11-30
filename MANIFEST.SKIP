@@ -4,6 +4,7 @@
 .*\.bak
 \.git
 blib
+bin\/get_flash_videos$
 debian
 combined-get_flash_videos(|-\d.*)$
 get_flash_videos-\d.*$
