@@ -23,7 +23,7 @@ sub find_video {
 
   my $rtmpurl = $item->{video}->{src};
   $rtmpurl =~ s/<break>.*//;
-  my $title = $item->{ref}->{title}->{content};
+  my $title = $item->{ref}->{title};
 
   return {
     rtmp => $rtmpurl,

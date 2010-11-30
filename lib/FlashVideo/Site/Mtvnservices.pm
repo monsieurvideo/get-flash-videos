@@ -50,6 +50,52 @@ sub find_video {
   }
 }
 
+sub handle_full_episode {
+  my($self, $items, $filename, $browser, $page_url, $uri) = @_;
+
+  my @rtmpdump_commands;
+
+  foreach (@$items) {
+    my $item = $_;
+    my $isepisodesegment = ref $item->{"media:group"}->{"media:category"} eq 'ARRAY' ?
+    (grep { $_->{scheme} eq "urn:mtvn:playlist_uri" } @{$item->{"media:group"}->{"media:category"}})[0]->{content}
+    : $item->{"media:group"}->{"media:category"}->{content} eq $uri;
+
+    my $affect_counters = (grep { $_->{scheme} eq "urn:mtvn:affect_counters" } @{$item->{"media:group"}->{"media:category"}})[0];
+    my $iscommercial = 0;
+    if (defined $affect_counters && $affect_counters->{content} eq 'false') {
+      $iscommercial = 1;
+    }
+
+    # I suppose we could add a setting to "enable" commercials, but for someone reason every rtmp download, they fail at 99%.
+    if ($isepisodesegment && !$iscommercial) {
+      my $mediagen_url = $item->{"media:group"}->{"media:content"}->{url};
+      die "Unable to find mediagen URL\n" unless $mediagen_url;
+
+      $browser->get($mediagen_url);
+      my $xml = from_xml($browser);
+
+      my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
+        ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};
+      $rendition = [ $rendition ] unless ref $rendition eq 'ARRAY';
+
+      my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
+
+      # I want to follow redirects now.
+      $browser->allow_redirects;
+
+      push @rtmpdump_commands, {
+        flv => title_to_filename($item->{"media:group"}->{"media:title"}),
+        rtmp => $url,
+        pageUrl => $item->{"link"},
+        swfhash($browser, "http://media.mtvnservices.com/player/release/")
+      };
+    }
+  }
+
+  return \@rtmpdump_commands;
+}
+
 sub handle_feed {
   my($self, $feed, $browser, $page_url, $uri) = @_;
 
@@ -58,6 +104,11 @@ sub handle_feed {
   my $filename = title_to_filename($xml->{channel}->{title});
 
   my $items = $xml->{channel}->{item};
+  my $categories = ref $items eq 'ARRAY' ? @$items[0]->{"media:group"}->{"media:category"} : @$items->{"media:group"}->{"media:category"};
+  if (ref $categories eq 'ARRAY' && (grep { $_->{scheme} eq "urn:mtvn:content_type" } @$categories)[0]->{content} eq "full_episode_segment") {
+    return $self->handle_full_episode($items, $filename, $browser, $page_url, $uri);
+  }
+
   my $item = ref $items eq 'ARRAY' ?
     (grep { $_->{guid}->{content} eq $uri } @$items)[0] :
     $items;

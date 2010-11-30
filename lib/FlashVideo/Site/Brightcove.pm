@@ -49,7 +49,7 @@ sub find_video {
 
   die "Unable to extract Brightcove IDs from page" unless $player_id;
 
-  $metadata->{videoId} = $video_id unless $metadata->{lineupId};
+  $metadata->{videoId} = $video_id;# unless $metadata->{lineupId};
   return $self->amfgateway($browser, $player_id, $metadata);
 }
 
