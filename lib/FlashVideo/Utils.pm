@@ -114,7 +114,7 @@ sub title_to_filename {
   # Extract the extension if we're passed a URL.
   if($title =~ s/(@{[EXTENSIONS]})$//) {
     $type = substr $1, 1;
-  } elsif ($type !~ /^\w+$/) {
+  } elsif ($type && $type !~ /^\w+$/) {
     $type = substr((URI->new($type)->path =~ /(@{[EXTENSIONS]})$/)[0], 1);
   }
 
@@ -344,7 +344,7 @@ sub convert_sami_subtitles_to_srt {
       # http://git.videolan.org/?p=vlc.git;a=blob;f=modules/codec/subtitles/subsdec.c
 
       # Leading/trailing spaces
-      $sub =~ s/^\s*(.*?)\s*$/\1/;
+      $sub =~ s/^\s*(.*?)\s*$/$1/;
 
       # strip multispaces
       $sub =~ s/\s{2,}/ /g;
