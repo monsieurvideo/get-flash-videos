@@ -355,6 +355,7 @@ sub download {
       $downloader = FlashVideo::Downloader->new;
     }
 
+    # XXX: Needs some thought, but this hack works for Youku for now it seems.
     if (ref $data eq 'ARRAY') {
       my ($url, $part_number, $part_count, $part_size) = @$data;
       $data = $url;
