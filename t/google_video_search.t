@@ -2,8 +2,16 @@
 use strict;
 no warnings;
 use lib qw(..);
-use Test::More tests => 2;
+use Test::More;
 use FlashVideo::Site::Googlevideosearch;
+
+{
+  my $mech = FlashVideo::Mechanize->new;
+  $mech->get("http://www.google.com");
+  plan skip_all => "We don't appear to have an internet connection" if $mech->response->is_error;
+}
+
+plan tests => 2;
 
 my @results = FlashVideo::Site::Googlevideosearch->search('Iron Man trailer');
 
