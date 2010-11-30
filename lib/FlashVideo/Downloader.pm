@@ -85,7 +85,7 @@ sub download {
   # Support resuming
   my $mode = (-e $file) ? '>>' : '>';
   my $offset;
-  if (-e $file) {
+  if ($file ne '-' && -e $file) {
     $offset = -s $file;
 
     my $response = $browser->head($url);
@@ -115,7 +115,13 @@ sub download {
     }
   }
 
-  open my $video_fh, $mode, $file or die $!;
+  my $video_fh;
+  if($file eq '-') {
+    $video_fh = \*STDOUT;
+  } else {
+    open $video_fh, $mode, $file or die $!;
+  }
+
   binmode $video_fh;
   $self->{fh} = $video_fh;
 

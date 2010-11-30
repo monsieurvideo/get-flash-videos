@@ -73,7 +73,7 @@ sub download {
     ($return, @errors) = $self->run($prog, $rtmp_data);
   }
 
-  if(-s $file < 100 || !$self->check_file($file)) {
+  if($file ne '-' && (-s $file < 100 || !$self->check_file($file))) {
     # This avoids trying to resume an invalid file
     error "Download failed, no valid file downloaded";
     unlink $rtmp_data->{flv};
