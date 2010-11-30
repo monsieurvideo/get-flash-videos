@@ -411,7 +411,7 @@ sub add_plugin {
 }
 
 sub update {
-  # SCRIPT_NAME is some magic set by combine-perl
+  # SCRIPT_NAME is some magic set by combine-perl or via MakeMaker
   if($::SCRIPT_NAME) {
     my $browser = FlashVideo::Mechanize->new;
 
@@ -428,7 +428,8 @@ sub update {
 
     die "Unable to parse version data" unless $version and $base;
 
-    # Split version on . and compare..
+    # Split version on . and compare... (can't yet use version, that is only
+    # core since 5.10).
     my @v = split /\./, $version;
     my @V = split /\./, $VERSION;
 
@@ -441,23 +442,11 @@ sub update {
     }
 
     if($newer) {
-      info "Newer version ($version) available, downloading..";
-      die "Cannot update -- unable to write to $0\n" unless -w $0;
+      info "Newer version ($version) available";
 
-      my $new_file = $0 . ".new";
-      $browser->mirror($url, $new_file);
-
-      if($browser->response->is_success && -f $new_file) {
-        rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
-        rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
-        chmod 0755, $0;
-
-        info "New version installed as $0";
-        info "(previous version backed up to $0.old).";
-        info $info;
-        exit 0;
+      if($::INSTALL_TYPE =~ /^cpan-/) {
       } else {
-        die "Download failed: " . $browser->response->status_line;
+        update_script($browser, $url, $info);
       }
     } else {
       print STDERR "You already have the latest version.\n";
@@ -467,6 +456,30 @@ sub update {
   }
 
   update_plugins();
+
+  return 0; # exit code
+}
+
+sub update_script {
+  my($browser, $url, $info) = @_;
+
+  info "Downloading new version...";
+  die "Cannot update -- unable to write to $0\n" unless -w $0;
+
+  my $new_file = $0 . ".new";
+  $browser->mirror($url, $new_file);
+
+  if($browser->response->is_success && -f $new_file) {
+    rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
+    rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
+    chmod 0755, $0;
+
+    info "New version installed as $0";
+    info "(previous version backed up to $0.old).";
+    info $info;
+  } else {
+    die "Download failed: " . $browser->response->status_line;
+  }
 }
 
 sub update_plugins {
