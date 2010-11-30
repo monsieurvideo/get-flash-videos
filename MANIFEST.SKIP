@@ -1,3 +1,4 @@
+App-get_flash_videos-.*/
 .*\.tar\.gz$
 \.sitemodules
 ..*sw[op]$
@@ -11,3 +12,4 @@ get_flash_videos-\d.*$
 mk/makemaker.mk
 t/test-\d+/
 .*\.{flv,mp4,mpg,mpeg,wmv,avi,mov}
+wiki\/
