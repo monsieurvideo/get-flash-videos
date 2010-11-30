@@ -5,8 +5,6 @@ use strict;
 use warnings;
 
 use FlashVideo::Utils;
-
-use Crypt::Rijndael;
 use MIME::Base64 qw(decode_base64);
 
 =pod
@@ -30,6 +28,9 @@ TODO:
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
+
+  die "Must have Crypt::Rijndael installed to download from PBS"
+    unless eval { require Crypt::Rijndael };
 
   my ($media_id) = $browser->uri->as_string =~ m[
     ^http://video\.pbs\.org/video/(\d+)
@@ -76,7 +77,7 @@ sub find_video {
     # From http://www-tc.pbs.org/video/media/swf/PBSPlayer.swf
     my $key = 'RPz~i4p*FQmx>t76';
 
-    my $cipher = Crypt::Rijndael->new($key, Crypt::Rijndael::MODE_CBC);
+    my $cipher = Crypt::Rijndael->new($key, Crypt::Rijndael->MODE_CBC);
     $iv = pack 'H*', $iv if 32 == length $iv;
     $cipher->set_iv($iv);
 
