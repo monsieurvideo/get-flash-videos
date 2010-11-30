@@ -355,6 +355,21 @@ sub download {
       $downloader = FlashVideo::Downloader->new;
     }
 
+    if (ref $data eq 'ARRAY') {
+      my ($url, $part_number, $part_count, $part_size) = @$data;
+      $data = $url;
+      if (defined $part_number && defined $part_count) {
+        my $part_suffix = sprintf('.part%02d_of_%02d', $part_number, $part_count);
+        substr $file, rindex($file, '.'), 0, $part_suffix
+          if $part_count > 1;
+      }
+
+      if (defined $part_size && -f $file && -s $file == $part_size) {
+        info "Already downloaded $file ($part_size bytes)";
+        next;
+      }
+    }
+
     my $size = $downloader->$action($data, $file, $browser) || return 0;
 
     info "\n" . ($remaining == 1 ? "Done. " : "")
