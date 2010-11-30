@@ -1,14 +1,16 @@
-Source: get-flash-videos
+Source: libapp-get-flash-videos-perl
 Section: utils
 Priority: optional
-Maintainer: MonsieurVideo <monsieurvideo@gmail.com>
 Build-Depends: debhelper (>= 7)
-Standards-Version: 3.8.0
-Homepage: http://code.google.com/p/get-flash-videos
+Build-Depends-Indep: perl, libwww-perl, liburi-perl, libtie-ixhash-perl,
+  libwww-mechanize-perl
+Maintainer: Monsieur Video <monsieurvideo@gmail.com>
+Standards-Version: 3.8.3
+Homepage: http://code.google.com/p/get-flash-videos/
 
 Package: get-flash-videos
 Architecture: all
-Depends: ${perl:Depends}, libwww-mechanize-perl
+Depends: ${perl:Depends}, libwww-perl, liburi-perl, libwww-mechanize-perl
 Recommends: libxml-simple-perl, libcompress-zlib-perl,
   rtmpdump | flvstreamer, libdigest-sha-perl, liblwp-protocol-socks-perl
 Description: Video downloader for various Flash-based video hosting sites
