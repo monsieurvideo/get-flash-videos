@@ -40,5 +40,5 @@ combined-$(BASEEXT): $(COMBINED_SOURCES)
 clean:: extraclean
 
 extraclean:
-	rm -f $(EXTRATARGETS) .sitemodules MANIFEST MANIFEST.bak $(DISTVNAME).tar$(SUFFIX)
+	rm -f $(EXTRATARGETS) .sitemodules mk/makemaker-wrap.mk MANIFEST MANIFEST.bak $(DISTVNAME).tar$(SUFFIX)
 

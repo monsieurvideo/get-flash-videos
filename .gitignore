@@ -1,3 +1,4 @@
+App-get_flash_videos-*
 bin/get_flash_videos
 combined-get_flash_videos*
 get_flash_videos-*
@@ -16,3 +17,4 @@ MANIFEST
 META.yml
 mk/makemaker.mk
 mk/makemaker.mk.old
+mk/makemaker-wrap.mk
