@@ -2,17 +2,28 @@
 use strict;
 use lib qw(..);
 use constant DEBUG => $ENV{DEBUG};
+use IPC::Open3;
 use Test::More;
 use File::Path;
 use FlashVideo::Downloader;
 
+my $script = $ENV{SCRIPT} ? "$ENV{SCRIPT}" : "blib/script/get_flash_videos";
+
 chdir "t";
 
-# We don't want to do this unless they really meant it, as it downloads a lot.
-unless($ENV{SITE}) {
+if($ENV{AUTOMATED_TESTING} && $ENV{PERL5_CPAN_IS_RUNNING}) {
+  $ENV{SITE} = "\\[cpan\\]"; # a subset of tests specially for CPAN testers
+} elsif(!$ENV{SITE}) {
+  # We don't want to do this unless they really meant it, as it downloads a lot.
   plan skip_all => "Not going online, set SITE to run these tests";
   exit;
 }
+
+require FlashVideo::Mechanize;
+my $mech = FlashVideo::Mechanize->new;
+$mech->get("http://www.google.com");
+plan skip_all => "We don't appear to have an internet connection"
+  if $mech->response->is_error;
 
 my @urls = assemble_urls();
 plan tests => 5 * scalar @urls;
@@ -20,6 +31,7 @@ plan tests => 5 * scalar @urls;
 my $i = 0;
 for my $url_info(@urls) {
   my($url, $note) = @$url_info;
+  $note =~ s/\[.*?\]//g; # metadata (e.g. if cpan testers should run this?)
 
   my $dir = "test-" . ++$i;
   mkpath $dir;
@@ -30,7 +42,8 @@ for my $url_info(@urls) {
   # Allow backticks for URLs that change
   $url =~ s/\`(.*)\`/`$1`/e;
 
-  my $pid = open my $out_fh, "-|", "../../$ENV{SCRIPT} --yes '$url' 2>&1";
+  my $pid = open3(my $in_fh, my $out_fh, 0,
+    $^X, "../../$script", "--yes", $url);
 
   while(<$out_fh>) {
     DEBUG && diag $_;
