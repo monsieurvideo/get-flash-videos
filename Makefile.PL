@@ -22,8 +22,6 @@ my %mm_vars = (
       'LWP::UserAgent' => 0,
       'WWW::Mechanize' => 0,
     },
-
-    FIRST_MAKEFILE   => "mk/makemaker.mk",
 );
 
 # Needed for reasonable UTF-8 support, also modules are used that are
@@ -51,5 +49,9 @@ if($ExtUtils::MakeMaker::VERSION >= 6.55) {
 
 # Needed for consistent order in t/rtmpdownloader.t
 $build_req->{"Tie::IxHash"} = 0;
+
+if($ENV{GFV_DEVEL_MODE}) {
+  $mm_vars{FIRST_MAKEFILE} = "mk/makemaker.mk";
+}
 
 WriteMakefile(%mm_vars);
