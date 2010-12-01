@@ -6,6 +6,7 @@ mk/
 wiki/
 \.sitemodules
 Makefile$
+pm_to_blib
 bin/get_flash_videos$
 combined-get_flash_videos(|-\d.*)$
 get_flash_videos-\d.*$
