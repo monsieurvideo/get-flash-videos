@@ -112,8 +112,9 @@ sub find_video {
   }
   else {
     # Extract URLs in a frail way.
-    while ($browser->content =~ m{(http://[^ "']+?\.swf)}ig) {
-      $swf_urls{$_[1]}++;
+    my $content = $browser->content;
+    while($content =~ m{(http://[^ "']+?\.swf)}ig) {
+      $swf_urls{$1}++;
     }
   }
 
