@@ -5,6 +5,7 @@ use ExtUtils::MakeMaker;
 my %mm_vars = (
     AUTHOR             => 'Monsieur Video <monsieurvideo@gmail.com>',
     NAME               => 'App::get_flash_videos',
+    ABSTRACT           => "Video downloader for various Flash-based video hosting sites",
     VERSION_FROM       => "get_flash_videos",
     EXE_FILES          => ["bin/get_flash_videos"],
     PL_FILES           => {
