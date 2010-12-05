@@ -1,6 +1,7 @@
 package FlashVideo::Site::Youku;
 
 use strict;
+use FlashVideo::JSON;
 use FlashVideo::Utils;
 
 # This was way too much work; breaking the encryption was a pain in the ass
@@ -42,15 +43,36 @@ sub find_video {
     $videoID, rand( 10000 ), 3 );
   $check_response->( "Couldn't grab video informaton from youku, server response was %s" );
 
-  # Response is a JSON data structure
-  return parse_video_info( $browser, $browser->content );  
+  return parse_video_info( $browser );
 }
 
-# The JSON video info hash has everything we need
-sub parse_video_info {
-  my ( $browser, $json ) = @_;
-  debug "Video data: $json";
+# Convenience function for getting and checking parsed JSON data
+# 'json' is a hashref as returned by from_json() (or a subhash)
+# 'key' is the string key to get
+# 'type' is an optional type string to check the data against,
+#        as returned by the perl ref() function
+sub extract {
+  my ($json, $key, $type) = @_;
+  die "Can't find '$key' key in the JSON data"
+    unless exists $json->{$key};
+  my $data = $json->{$key};
+  if (defined $type) {
+    my $dtype = ref $data || 'DATA';
+    die "JSON data under '$key' is not the right type"
+      . " (expecting $type, but got $dtype)"
+      unless $dtype eq $type;
+  }
+  return $data;
+}
 
+sub parse_video_info {
+  my ($browser) = @_;
+
+  # Response is a JSON data structure
+  my $jsonstr = $browser->content;
+  debug "Video data: $jsonstr";
+
+  # The JSON video info hash has everything we need
 =begin
 JSON structure:
 {
@@ -88,23 +110,46 @@ JSON structure:
     "controller": { "search_count": true }
 }
 =cut
+  my $json = from_json($jsonstr);
 
-  my ( $shuffle_seed ) = ( $json =~ /"seed":(\d+)/ );
-  die "Can't find the seed value in the video info JSON"
-    unless $shuffle_seed;
+  my $data_array = extract($json, data => 'ARRAY');
+  die "No elements found in 'data' array" unless @$data_array;
+  my $data = $data_array->[0];
 
-  # Sometimes, the video has a HQ version in mp4 format
-  my ( $streams ) = ( $json =~ /"streamtypes":\[([^\]]+)\]/ );
-  my $stream = ( index $streams, 'mp4' ) > 0 ? 'mp4' : 'flv';
+  my $shuffle_seed = extract($data, 'seed');
+
+  # Stream types, in order of preference
+  # XXX: How is 'flvhd' used?
+  my @streamtype_preferences = qw(mp4 flv);
+  my $streamtypes = extract($data, streamtypes => 'ARRAY');
+
+  # If none of the preferred types are found, just take
+  # the first one and hope for the best
+  my $stream = $streamtypes->[0];
+
+  for my $pref (@streamtype_preferences) {
+    if (grep { $_ eq $pref } @$streamtypes) {
+      $stream = $pref;
+      last;
+    }
+  }
+
+  my $streams = join ' ', @$streamtypes;
   debug "Choosing to use the $stream stream (available: $streams)";
 
-  # Use the file ID associate with the stream we choose when available
-  my $fileID = '';
-  if ($json =~ /"streamfileids":{([^}]+)}/) {
-    my $streamfileids = $1;
-    ( $fileID ) = ( $streamfileids =~ /"$stream":"([^"]+)"/ );
+  # Use the file ID associated with the stream we chose (when available)
+  my $fileID;
+  if (exists $data->{streamfileids}) {
+    my $streamfileids = extract($data, streamfileids => 'HASH');
+
+    $fileID = extract($streamfileids, $stream)
+      if exists $streamfileids->{$stream};
   }
-  ( $fileID ) = ( $json =~ /"fileid":"([^"]+)"/ ) if not $fileID;
+
+  # Fallback to the 'fileid' field if we did not find the ID for the stream
+  $fileID = extract($data, 'fileid')
+    if not $fileID and exists $data->{fileid};
+
   die "Can't find the encrypted file ID in the video info JSON"
     unless $fileID;
   debug "Encrypted file ID: $fileID";
@@ -120,26 +165,30 @@ JSON structure:
   my $sID = sprintf "%s1%07d_00", time, rand( 10000000 ) ;
 
   # Now these are funky
-  my ( $keyA ) = ( $json =~ /"key1":"([^"]+)"/ );
-  my ( $keyB ) = ( $json =~ /"key2":"([^"]+)"/ );
-  my $key = sprintf "%s%x", $keyB, hex( $keyA ) ^ hex( 'a55aa5a5' );
+  my $key1 = extract($data, 'key1');
+  my $key2 = extract($data, 'key2');
+  my $key = sprintf "%s%x", $key2, hex( $key1 ) ^ hex( 'a55aa5a5' );
 
   # Video title is in escaped unicode format
-  my ( $title ) = ( $json =~ /"title":"([^"]+)"/ );
+  my $title = extract($data, 'title');
   $title =~ s/\\u([a-f0-9]{4})/chr(hex $1)/egi;
 
   # Use the video title as the filename when available
   my $filename = get_video_filename( $stream );
   $filename = title_to_filename( $title, $stream ) if $title;
 
-  my ( $stream_info ) = ( $json =~ /"segs":{"$stream":\[([^\]]+)\]/ );
-  my @urls;
-  my $part_count = 0;
+  my $segmap = extract($data, segs => 'HASH');
+  die "Stream '$stream' not found in segment map 'segs'"
+    unless exists $segmap->{$stream};
+  my $segs = extract($segmap, $stream, 'ARRAY');
 
-  while ($stream_info =~ /\G{"no":"?(\d+)"?,([^}]+)},?/g) {
-    my ( $segment_number, $segment_info ) = ( $1, $2 );
-    my ( $segment_duration ) = ( $segment_info =~ /"seconds":"([^"]+)"/ );
-    my ( $segment_size ) = ( $segment_info =~ /"size":"([^"]+)"/ );
+  my @urls;
+  my $segment_count = 0;
+
+  for my $seg (@$segs) {
+    my $segment_number = extract($seg, 'no');
+    my $segment_size = extract($seg, 'size');
+    my $segment_seconds = extract($seg, 'seconds');
 
     # To download segments other than the first (00), we replace
     # the digits at position 8 in the file ID with the segment
@@ -163,15 +212,21 @@ JSON structure:
     debug "Video location for segment $segment_number is $url";
     $url = "$url.$stream" unless $url =~ /$stream$/;
 
-    debug sprintf
-      "%s, segment %d, %s seconds, %s bytes",
-      $title, $segment_number, $segment_duration, $segment_size
-        if ( $title and $segment_duration and $segment_size );
+    debug sprintf "%s, segment %d, %s seconds, %s bytes",
+      $title, $segment_number, $segment_seconds, $segment_size
+      if ( $title and $segment_seconds and $segment_size );
 
-    push @urls, [$url, ++$part_count, 0, $segment_size];
+    # The array record for this segment contains:
+    # 0: download url of the segment
+    # 1: index number of the segment (first is 1)
+    # 2: total number of segments (filled in after this loop)
+    # 3: size in bytes of the segment
+    push @urls, [$url, ++$segment_count, 0, $segment_size];
   }
 
-  $_->[2] = $part_count for @urls;
+  # Fill in the total number of segments in all of the
+  # segment array records
+  $_->[2] = $segment_count for @urls;
 
   return ( \@urls, $filename );
 }
