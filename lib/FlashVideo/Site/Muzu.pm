@@ -47,7 +47,19 @@ sub find_video {
   $url = decode_entities($url);
   die "Unable to find video URL" unless $url;
 
-  return $url, $filename;
+  if($url =~ /^rtmp:/) {
+    my($playpath) = $url =~ m{/([^/]+)$};
+
+    return {
+      flv => $filename,
+      rtmp => $url,
+      playpath => $playpath,
+      $url =~ /live/ ? (live => 1) : ()
+    };
+
+  } else {
+    return $url, $filename;
+  }
 }
 
 1;
