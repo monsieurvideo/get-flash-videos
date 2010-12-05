@@ -43,4 +43,10 @@ sub find_video {
   };
 }
 
+sub can_handle {
+  my($self, $browser, $url) = @_;
+  # Only trigger for tv.com (not all sites in the .tv TLD for example)
+  return $browser->uri->host =~ /(^|\.)tv\.com$/;
+}
+
 1;
