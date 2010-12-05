@@ -49,7 +49,7 @@ unshift @INC, \&plugin_loader;
 
 our $VERSION;
 BEGIN {
-  $VERSION = "1.24";
+  $VERSION = "1.25";
 }
 
 our %opt;
