@@ -20,7 +20,7 @@ sub find_video {
   # Get the video ID
   #  on cherche:	,"pid":"45Kr9K8SfwVF1Q5anv7TrRpWa6nMtkG4",
   my $video_id;
-  if ($browser->content =~ /,"pid":"(\w+)"/) {
+  if ($browser->content =~ /,"pid":"(\w+)"/i) {
     $video_id = $1;
   }
   debug "Video ID = " . $video_id;
@@ -29,7 +29,7 @@ sub find_video {
 
   # on cherche:		,"titleId":"2010-03-29_CA_0052"
   my $filename;
-  if ($browser->content =~ /,"titleId":"([^"]+)"/) {
+  if ($browser->content =~ /,"titleId":"([^"]+)"/i) {
     $filename =  $1 ;
   }
   debug "Filename = " . $filename;
@@ -43,28 +43,28 @@ sub find_video {
 
   # on cherche:  	rtmp://medias-flash.tou.tv/ondemand/?auth=daEdwc5 etc...52_hr.mov
   my $url;
-  if ($browser->content =~ /(rtmp:[^\<]+)/) {
+  if ($browser->content =~ /(rtmp:[^\<]+)/i) {
     $url = uri_unescape($1);
   }
   debug "URL = " . $url;
 
   # on cherche:		auth=daEdrbRdbbtcYbUb3bQbzacdOaIbNczbva9-blS.uA-cOW-9rqBvkLqxBB
   my $auth;
-  if ($url =~ /auth=([^&]+)/ ) {
+  if ($url =~ /auth=([^&]+)/i) {
     $auth = uri_unescape($1);
   }
   debug "AUTH = " . $auth;
 
   #	on decoupe a partir de 'ondemand/'
   my $app;
-  if ($url =~ /(ondemand\/.+)/ ) {
+  if ($url =~ /(ondemand\/.+)/i) {
     $app = uri_unescape($1);
   }
   debug "APP = " . $app;
 
   #  on decoupe apres <break>
   my $playpath;
-  if ($url =~ /&lt;break&gt;(.+)/ ) {
+  if ($url =~ /&lt;break&gt;(.+)/i) {
     $playpath = uri_unescape($1);
   }
   debug "PLAYPATH = " . $playpath;
