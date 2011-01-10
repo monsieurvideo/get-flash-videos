@@ -178,6 +178,8 @@ HD XML structure:
     = ( exists $streams{mp4} ? 'mp4'
       : exists $streams{m4v} ? 'm4v'
       : exists $streams{flv} ? 'flv'
+      : exists $streams{wwwFlv} ? 'wwwFlv'
+      : exists $streams{f4v} ? 'f4v'
       : exists $streams{phoneMp4} ? 'phoneMp4'
       : '' );
 
