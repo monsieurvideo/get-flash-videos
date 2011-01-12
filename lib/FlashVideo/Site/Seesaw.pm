@@ -30,7 +30,15 @@ sub find_video {
   # episode number.
   my %metadata = map { $_ => '' } qw(brandTitle seriesTitle programmeTitle);
  
-  my ($series, $episode) = ($browser->content =~ /Series (\d+) - Ep(?:isode)?\.? (\d+)/);
+  my ($series, $episode);
+
+  ($series, $episode) = ($browser->content =~ /Series (\d+) - Ep(?:isode)?\.? (\d+)/);
+
+  # Try to get the series and episode numbers differently if required.
+  if (!$series and !$episode) {
+    ($series, $episode) = ($browser->content =~ /series_number: ["']?(\d+)["']?,\s+ep_number: ['"]?(\d+)['"]/);
+  }
+
   if ($series and $episode) {
     $metadata{series_and_episode} = sprintf "S%02dE%02d", $series, $episode;
   }
@@ -49,9 +57,26 @@ sub find_video {
     }
   }
 
+  # If there's only a show title and series/episode details, make sure the
+  # SnnEnn part of the filename is at the end of the file name.
+  my @metadata_items;
+
+  if ( (grep length, values %metadata) == 2 and
+       $metadata{series_and_episode}) {
+    # SnnEnn at end of filename.
+    @metadata_items = ((grep { $_ ne 'series_and_episode' } keys %metadata), 'series_and_episode');
+  }
+  elsif (!$metadata{brandTitle}) {
+    # Programme name, SnnEnn, programme or episode title.
+    @metadata_items = qw(seriesTitle series_and_episode programmeTitle);
+  }
+  else {
+    @metadata_items = qw(brandTitle series_and_episode seriesTitle programmeTitle);
+  }
+
   my $title = join "-", map { trim($_) }
                         grep length,
-                        @metadata{qw(brandTitle series_and_episode seriesTitle programmeTitle)};
+                        @metadata{@metadata_items};
 
   # Grab player info
   $browser->get($player_info);
