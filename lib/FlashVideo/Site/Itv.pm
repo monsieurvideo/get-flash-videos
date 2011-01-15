@@ -33,8 +33,10 @@ sub find_video {
         <itv:RevenueScienceValue>scc=true; svisit=1; sc4=Other</itv:RevenueScienceValue>
       </tem:userInfo>
       <tem:siteInfo>
+        <itv:AdvertisingRestriction>None</itv:AdvertisingRestriction>
+        <itv:AdvertisingSite>ITV</itv:AdvertisingSite>
         <itv:Area>ITVPLAYER.VIDEO</itv:Area>
-        <itv:Platform>Web</itv:Platform>
+        <itv:Platform>DotCom</itv:Platform>
         <itv:Site>ItvCom</itv:Site>
       </tem:siteInfo>
     </tem:GetPlaylist>
