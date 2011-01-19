@@ -5,8 +5,21 @@ use strict;
 use FlashVideo::Utils;
 use HTML::Entities;
 
+my $resolutions = {
+  "16x9" => {
+    "400" => [412, 232],
+    "600" => [512, 288],
+    "800" => [640, 360],
+  },
+  "4x3" => {
+    "400" => [320, 240],
+    "600" => [384, 288],
+    "800" => [480, 360],
+  },
+};
+
 sub find_video {
-  my ($self, $browser, $page_url) = @_;
+  my ($self, $browser, $page_url, $prefs) = @_;
 
   my($id) = $browser->uri =~ /Filter=(\d+)/;
   die "No id (filter) found in URL\n" unless $id;
@@ -49,8 +62,17 @@ EOF
   die "Unable to find <Video> in XML" unless $browser->content =~ m{<Video timecode[^>]+>(.*?)</Video>}s;
   my $video = $1;
 
+  # Parse list of availible formats and lookup their resolutions
+  my(@formats);
+  while ($video =~ m/(mp4:[^\]]+([0-9]{3})_(16x9|4x3).mp4)/g)
+  {
+    push @formats, { playpath => $1, resolution => $resolutions->{$3}->{$2}};
+  }
+
+  my $format = $prefs->quality->choose(@formats);
+
   my $rtmp = decode_entities($video =~ /base="(rtmp[^"]+)/);
-  my($playpath) = $video =~ /(mp4:[^\]]+)/;
+  my($playpath) = $format->{"playpath"};
   my($flv) = $playpath =~ m{/([^/]+)$};
 
   return {
