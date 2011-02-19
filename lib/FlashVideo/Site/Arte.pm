@@ -5,8 +5,8 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser, $embed_url) = @_;
-  my ($lang, $xmlurl1, $xmlurl2, $filename, $videourl, $hash, $playerurl);
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  my ($lang, $xmlurl1, $xmlurl2, $filename, $videourl, $hash, $playerurl, $quality);
 
   debug "Arte::find_video called, embed_url = \"$embed_url\"\n";
 
@@ -42,8 +42,9 @@ sub find_video {
   }
 
   $browser->get($xmlurl2);
+  $quality = {high => 'hd', low => 'sd'}->{$prefs->{quality}};
 
-  if($browser->content =~ /<url quality="sd">([^<]+)<\/url>/) {
+  if($browser->content =~ /<url quality="$quality">([^<]+)<\/url>/) {
     $videourl = { rtmp => $1,
 		flv => $filename};
     if(defined $playerurl) {
