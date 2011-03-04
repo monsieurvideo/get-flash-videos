@@ -17,7 +17,7 @@ sub find_video {
   $embed_url = ($browser->content =~ /iframe src="(.*videoplayer.*?)"/i)[0];
   $browser->get($embed_url);
   my $url = ($browser->content =~ /file:.*"(.*?)"/i)[0];
-  my $filename = ($browser->content =~ /<title>(.*)<\/title>/i)[0];
+  my $filename = ($browser->content =~ /<title>.*?- (.*)<\/title>/i)[0];
   return $url, $filename;
 }
 
