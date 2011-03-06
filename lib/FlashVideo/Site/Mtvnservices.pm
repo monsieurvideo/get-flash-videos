@@ -1,4 +1,8 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
+# PATCH: this version attempts to distinguish feeds from full-episodes using guesswork based on
+#   - feed: http://www.thedailyshow.com/watch/wed-february-23-2011/exclusive---donald-rumsfeld-extended-interview-pt--1?xrs=rss_tdsvids
+#   - full_episode: http://www.thedailyshow.com/full-episodes/wed-february-16-2011-brian-williams
+#   and may or may not represent a full solution. 
 package FlashVideo::Site::Mtvnservices;
 
 use strict;
@@ -57,9 +61,10 @@ sub handle_full_episode {
 
   foreach (@$items) {
     my $item = $_;
-    my $isepisodesegment = ref $item->{"media:group"}->{"media:category"} eq 'ARRAY' ?
-    (grep { $_->{scheme} eq "urn:mtvn:playlist_uri" } @{$item->{"media:group"}->{"media:category"}})[0]->{content}
-    : $item->{"media:group"}->{"media:category"}->{content} eq $uri;
+# PATCH: this appears to be obsolete
+#    my $isepisodesegment = ref $item->{"media:group"}->{"media:category"} eq 'ARRAY' ?
+#    (grep { $_->{scheme} eq "urn:mtvn:playlist_uri" } @{$item->{"media:group"}->{"media:category"}})[0]->{content}
+#    : $item->{"media:group"}->{"media:category"}->{content} eq $uri;
 
     my $affect_counters = (grep { $_->{scheme} eq "urn:mtvn:affect_counters" } @{$item->{"media:group"}->{"media:category"}})[0];
     my $iscommercial = 0;
@@ -68,7 +73,8 @@ sub handle_full_episode {
     }
 
     # I suppose we could add a setting to "enable" commercials, but for someone reason every rtmp download, they fail at 99%.
-    if ($isepisodesegment && !$iscommercial) {
+#    if ($isepisodesegment && !$iscommercial) {
+    if (!$iscommercial) {
       my $mediagen_url = $item->{"media:group"}->{"media:content"}->{url};
       die "Unable to find mediagen URL\n" unless $mediagen_url;
 
@@ -104,8 +110,10 @@ sub handle_feed {
   my $filename = title_to_filename($xml->{channel}->{title});
 
   my $items = $xml->{channel}->{item};
-  my $categories = ref $items eq 'ARRAY' ? @$items[0]->{"media:group"}->{"media:category"} : @$items->{"media:group"}->{"media:category"};
-  if (ref $categories eq 'ARRAY' && (grep { $_->{scheme} eq "urn:mtvn:content_type" } @$categories)[0]->{content} eq "full_episode_segment") {
+  my $categories = ref $items eq 'ARRAY' ? @$items[0]->{"media:group"}->{"media:category"} : $items->{"media:group"}->{"media:category"};
+# PATCH: this appears to be obsolete
+#  if (ref $categories eq 'ARRAY' && (grep { $_->{scheme} eq "urn:mtvn:content_type" } @$categories)[0]->{content} eq "full_episode_segment") {
+  if (ref $categories eq 'ARRAY' && (grep { $_->{scheme} eq "urn:mtvn:display:seo" } @$categories)[0]->{content} eq "") {
     return $self->handle_full_episode($items, $filename, $browser, $page_url, $uri);
   }
 
