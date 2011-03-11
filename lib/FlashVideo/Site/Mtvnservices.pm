@@ -55,6 +55,8 @@ sub handle_full_episode {
 
   my @rtmpdump_commands;
 
+  debug "Handling full episode";
+
   foreach (@$items) {
     my $item = $_;
 
@@ -94,18 +96,10 @@ sub handle_full_episode {
   return \@rtmpdump_commands;
 }
 
-sub handle_feed {
-  my($self, $feed, $browser, $page_url, $uri) = @_;
+sub handle_clip {
+  my($self, $items, $filename, $browser, $page_url, $uri) = @_;
 
-  my $xml = ref $feed ? $feed : from_xml($feed);
-
-  my $filename = title_to_filename($xml->{channel}->{title});
-
-  my $items = $xml->{channel}->{item};
-  my $categories = ref $items eq 'ARRAY' ? @$items[0]->{"media:group"}->{"media:category"} : $items->{"media:group"}->{"media:category"};
-  if (ref $categories eq 'ARRAY' && (grep { $_->{scheme} eq "urn:mtvn:display:seo" } @$categories)[0]->{content} eq "") {
-    return $self->handle_full_episode($items, $filename, $browser, $page_url, $uri);
-  }
+  debug "Handling clip";
 
   my $item = ref $items eq 'ARRAY' ?
     (grep { $_->{guid}->{content} eq $uri } @$items)[0] :
@@ -115,7 +109,7 @@ sub handle_feed {
   die "Unable to find mediagen URL\n" unless $mediagen_url;
 
   $browser->get($mediagen_url);
-  $xml = from_xml($browser);
+  my $xml = from_xml($browser);
 
   my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
     ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};
@@ -136,6 +130,22 @@ sub handle_feed {
   }
 
   return $url, $filename;
+}
+
+sub handle_feed {
+  my($self, $feed, $browser, $page_url, $uri) = @_;
+
+  my $xml = ref $feed ? $feed : from_xml($feed);
+
+  my $filename = title_to_filename($xml->{channel}->{title});
+
+  my $items = $xml->{channel}->{item};
+
+  if (ref $items eq 'ARRAY' && @$items[0]->{guid}->{content} =~ /^mgid:cms:episode:/) {
+    return $self->handle_full_episode($items, $filename, $browser, $page_url, $uri);
+  } else {
+    return $self->handle_clip($items, $filename, $browser, $page_url, $uri);
+  }
 }
 
 sub can_handle {
