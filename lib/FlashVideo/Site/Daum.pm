@@ -10,12 +10,15 @@ sub find_video {
 
   # Step 1: Get video ID
   my $video_id = get_video_id($browser);
+  debug "Video ID: $video_id";
 
   # Step 2: Get video title
   my $video_title = get_video_title($browser, $video_id);
+  debug "Video title: $video_title";
 
   # Step 3: Get video URL
   my $video_url = get_video_url($browser, $video_id);
+  debug "Video URL: $video_url";
 
   return $video_url, title_to_filename($video_title);
 }
@@ -26,9 +29,8 @@ sub get_video_id {
   my $document = $browser->content();
 
   # "http://flvs.daum.net/flvPlayer.swf?vid=FlVGvam5dPM$"
-  my $flv_player_url = "\Qhttp://flvs.daum.net/flvPlayer.swf\E";
-  my $video_id_pattern
-    = qr{" $flv_player_url [?] vid = (.+?) ["&]}xmsi;
+  my $flv_player_url = quotemeta 'http://flvs.daum.net/flvPlayer.swf';
+  my $video_id_pattern = qr{" $flv_player_url [?] vid = (.+?) ["&]}xmsi;
   if ( $document !~ $video_id_pattern ) {
     die "Cannot find video ID from the document.\n";
   }
@@ -58,7 +60,7 @@ sub get_video_title {
   }
   my $video_title = $1;
 
-  # &nbps; => &
+  # &amp; => &
   $video_title = decode_entities($video_title);
 
   return $video_title;
