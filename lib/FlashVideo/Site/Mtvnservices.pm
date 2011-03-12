@@ -81,6 +81,13 @@ sub handle_full_episode {
 
       my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
 
+      my $mediagen_id;
+      if($mediagen_url =~ /mediaGenEntertainment\.jhtml\?uri=([^&]*)$/){
+        $mediagen_id = $1;
+      } else {
+        $mediagen_id = $mediagen_url;
+      }
+
       # I want to follow redirects now.
       $browser->allow_redirects;
 
@@ -88,7 +95,7 @@ sub handle_full_episode {
         flv => title_to_filename($item->{"media:group"}->{"media:title"}),
         rtmp => $url,
         pageUrl => $item->{"link"},
-        swfhash($browser, "http://media.mtvnservices.com/player/release/")
+        swfhash($browser, "http://media.mtvnservices.com/" . $mediagen_id)
       };
     }
   }
@@ -117,6 +124,13 @@ sub handle_clip {
 
   my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
 
+  my $mediagen_id;
+  if($mediagen_url =~ /mediaGenEntertainment\.jhtml\?uri=([^&]*)$/){
+    $mediagen_id = $1;
+  } else {
+    $mediagen_id = $mediagen_url;
+  }
+
   # I want to follow redirects now.
   $browser->allow_redirects;
 
@@ -125,11 +139,11 @@ sub handle_clip {
       flv => $filename,
       rtmp => $url,
       pageUrl => $page_url,
-      swfhash($browser, "http://media.mtvnservices.com/player/release/")
+      swfhash($browser, "http://media.mtvnservices.com/" . $mediagen_id)
     };
+  } else {
+    return $url, $filename;
   }
-
-  return $url, $filename;
 }
 
 sub handle_feed {
