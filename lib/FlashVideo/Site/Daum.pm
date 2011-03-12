@@ -10,12 +10,15 @@ sub find_video {
 
   # Step 1: Get video ID
   my $video_id = get_video_id($browser);
+  debug "Video ID: $video_id";
 
   # Step 2: Get video title
   my $video_title = get_video_title($browser, $video_id);
+  debug "Video title: $video_title";
 
   # Step 3: Get video URL
   my $video_url = get_video_url($browser, $video_id);
+  debug "Video URL: $video_url";
 
   return $video_url, title_to_filename($video_title);
 }
