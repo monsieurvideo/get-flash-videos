@@ -48,7 +48,12 @@ sub find_video {
   # If the page contains fmt_url_map, then process this. With this, we
   # don't require the 't' parameter.
   if ($browser->content =~ /["']fmt_url_map["']:\s{0,3}(["'][^"']+["'])/) {
-    my $fmt_map = uri_unescape($1);
+    my $fmt_map = $1;
+    if ($fmt_map !~ /\|/) {
+      # $fmt_map is double escaped. We should unescape it here just
+      # once.  Be careful not to unescape ',' in the URL.
+      $fmt_map = uri_unescape($fmt_map);
+    }
     debug "Using fmt_url_map method from page ($fmt_map)";
     return $self->download_fmt_map($prefs, $browser, $title, {}, @{from_json $fmt_map});
   }
