@@ -26,7 +26,7 @@ sub get_video_id {
   my $document = $browser->content();
 
   # "http://flvs.daum.net/flvPlayer.swf?vid=FlVGvam5dPM$"
-  my $flv_player_url = "\Qhttp://flvs.daum.net/flvPlayer.swf\E";
+  my $flv_player_url = quotemeta 'http://flvs.daum.net/flvPlayer.swf';
   my $video_id_pattern
     = qr{" $flv_player_url [?] vid = (.+?) ["&]}xmsi;
   if ( $document !~ $video_id_pattern ) {
@@ -58,7 +58,7 @@ sub get_video_title {
   }
   my $video_title = $1;
 
-  # &nbps; => &
+  # &amp; => &
   $video_title = decode_entities($video_title);
 
   return $video_title;
