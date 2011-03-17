@@ -1,6 +1,11 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Site::Mtvnservices;
 
+# The following should work: (excluding problems with RTMP_Connect1 on issue 243)
+# - feed: http://www.thedailyshow.com/watch/wed-february-23-2011/exclusive---donald-rumsfeld-extended-interview-pt--1
+# - full_episode: http://www.thedailyshow.com/full-episodes/wed-february-16-2011-brian-williams
+# - full_episode: http://www.colbertnation.com/full-episodes/tue-march-1-2011-evan-osnos
+
 use strict;
 use FlashVideo::Utils;
 use URI::Escape;
@@ -155,7 +160,10 @@ sub handle_feed {
 
   my $items = $xml->{channel}->{item};
 
-  if (ref $items eq 'ARRAY' && @$items[0]->{guid}->{content} =~ /^mgid:cms:episode:/) {
+  if (ref $categories eq 'ARRAY' && (
+      (grep { $_->{scheme} eq "urn:mtvn:display:seo" } @$categories)[0]->{content} eq "" ||
+      (grep { $_->{scheme} eq "urn:mtvn:content_type" } @$categories)[0]->{content} eq "Full Episode" ||
+      (grep { $_->{scheme} eq "urn:mtvn:content_type" } @$categories)[0]->{content} eq "full_episode_segment")) {
     return $self->handle_full_episode($items, $filename, $browser, $page_url, $uri);
   } else {
     return $self->handle_clip($items, $filename, $browser, $page_url, $uri);
