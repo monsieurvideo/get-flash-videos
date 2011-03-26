@@ -38,7 +38,7 @@ sub find_video {
   die "No config_url/id found\n" unless $param{CONFIG_URL};
 
   $browser->get($param{CONFIG_URL});
-  my $xml = from_xml($browser);
+  my $xml = from_xml_urlfix($browser);
 
   if($xml->{player}->{feed} && !ref $xml->{player}->{feed}) {
     my $feed = uri_unescape($xml->{player}->{feed});
@@ -78,7 +78,7 @@ sub handle_full_episode {
       die "Unable to find mediagen URL\n" unless $mediagen_url;
 
       $browser->get($mediagen_url);
-      my $xml = from_xml($browser);
+      my $xml = from_xml_urlfix($browser);
 
       my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
         ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};
@@ -121,7 +121,7 @@ sub handle_clip {
   die "Unable to find mediagen URL\n" unless $mediagen_url;
 
   $browser->get($mediagen_url);
-  my $xml = from_xml($browser);
+  my $xml = from_xml_urlfix($browser);
 
   my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
     ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};
@@ -154,11 +154,12 @@ sub handle_clip {
 sub handle_feed {
   my($self, $feed, $browser, $page_url, $uri) = @_;
 
-  my $xml = ref $feed ? $feed : from_xml($feed);
+  my $xml = ref $feed ? $feed : from_xml_urlfix($feed);
 
   my $filename = title_to_filename($xml->{channel}->{title});
 
   my $items = $xml->{channel}->{item};
+  my $categories = ref $items eq 'ARRAY' ? @$items[0]->{"media:group"}->{"media:category"} : $items->{"media:group"}->{"media:category"};
 
   if (ref $categories eq 'ARRAY' && (
       (grep { $_->{scheme} eq "urn:mtvn:display:seo" } @$categories)[0]->{content} eq "" ||
@@ -174,6 +175,15 @@ sub can_handle {
   my($self, $browser) = @_;
 
   return $browser->content =~ /mtvnservices\.com/i;
+}
+
+# Filter to avoid XML::Simple "not well-formed (invalid token)" error
+# caused by '&' instead of '&amp;' inside url="..." values.
+
+sub from_xml_urlfix {
+  my($xmltext) = @_;
+  $xmltext =~ s/&(?!amp;)/&amp;/g;  # too lax?
+  return from_xml($xmltext);
 }
 
 1;
