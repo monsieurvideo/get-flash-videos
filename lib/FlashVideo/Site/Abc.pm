@@ -16,37 +16,14 @@ sub find_video {
     return handle_abc_clip($browser, $show_id, $playlist_id, $video_id);
   }
 
-  # http://abc.go.com/watch/lost/93372/260004/the-candidate
-  my $video_id;
-  if ($browser->uri->as_string =~ /\/watch\/[^\/]*\/[0-9]*\/([0-9]*)/) {
-    $video_id = $1;
+  my $playpath;
+  if ($browser->content =~ /http:\/\/cdn\.video\.abc\.com\/abcvideo\/video_fep\/thumbnails\/220x124\/([^"]*)220x124\.jpg/) {
+    $playpath = "mp4:/abcvideo/video_fep/mov/" . lc($1) . "768x432_700.mov";
   }
-
-  # h is probably quality
-  my $quality="432";
-
-  $browser->get("http://ll.static.abc.com/s/videoplatform/services/1001/getflashvideo?video=$video_id&h=$quality");
-
-  my $xml = from_xml($browser, KeyAttr => []);
-
-  # find a host, we'll default to L3 for now
-  my $hosts = $xml->{resources}->{host};
-  my $host = ref $hosts eq 'ARRAY' ?
-    (grep { $_->{name} == 'L3' } @$hosts)[0] :
-    $hosts;
-
-  my $rtmpurl = $xml->{protocol} . "://" . $host->{url} . "/" . $host->{app};
-
-  my $videos = $xml->{videos}->{video};
-  my $video = ref $videos eq 'ARRAY' ?
-    (grep { $_->{src} =~ /^mp4:\// } @$videos)[0] :
-    $videos;
-
-  my $playpath = $video->{src};
-
-  $browser->get("http://ll.static.abc.com/s/videoplatform/services/1000/getVideoDetails?video=$video_id");
-  my $xml = from_xml($browser);
-  my $title = $xml->{metadata}->{title};
+  
+  $browser->content =~ /<h2 id="video_title">([^<]*)<\/h2>/;
+  my $title = $1;
+  my $rtmpurl = "rtmp://abcondemandfs.fplive.net:1935/abcondemand";
 
   return {
     rtmp => $rtmpurl,
