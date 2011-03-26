@@ -11,6 +11,7 @@ use FlashVideo::Utils;
 use URI::Escape;
 
 my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.\-_]+};
+my $MTVN_ALT_URL = qr{mgid:[a-z0-9:.\-_]+};
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
@@ -20,6 +21,8 @@ sub find_video {
   if($embed_url !~ $MTVN_URL) {
     if($browser->content =~ m!($MTVN_URL)!) {
       $embed_url = $1;
+    } elsif($browser->content =~ m!($MTVN_ALT_URL)!) {
+      $embed_url = "http://media.mtvnservices.com/$1";
     } else {
       die "Unable to find embedding URL";
     }
