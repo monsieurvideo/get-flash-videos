@@ -9,7 +9,7 @@ sub find_video {
 
   # Get playlist XML
   my $playlist_xml;
-  if ($browser->content =~ /<param name="playlist" value="(http:.+?\.xml)"/) {
+  if ($browser->content =~ /<param name="playlist" value="(http:.+?\.s?xml)"/) {
     $playlist_xml = $1;
   }
   elsif($browser->content =~ /empDivReady\s*\(([^)]+)/) {
