@@ -1,8 +1,9 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Site::Mtvnservices;
 
-# The following should work: (excluding problems with RTMP_Connect1 on issue 243)
-# - feed: http://www.thedailyshow.com/watch/wed-february-23-2011/exclusive---donald-rumsfeld-extended-interview-pt--1
+# The following should work:
+# - clip: http://www.thedailyshow.com/watch/wed-february-23-2011/exclusive---donald-rumsfeld-extended-interview-pt--1
+# - clip: http://www.colbertnation.com/the-colbert-report-videos/381484/april-12-2011/jon-kyl-tweets-not-intended-to-be-factual-statements
 # - full_episode: http://www.thedailyshow.com/full-episodes/wed-february-16-2011-brian-williams
 # - full_episode: http://www.colbertnation.com/full-episodes/tue-march-1-2011-evan-osnos
 
@@ -90,7 +91,7 @@ sub handle_full_episode {
       my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
 
       my $mediagen_id;
-      if($mediagen_url =~ /mediaGenEntertainment\.jhtml\?uri=([^&]*)$/){
+      if($mediagen_url =~ /mediaGenEntertainment\.jhtml\?uri=([^&]+).*$/){
         $mediagen_id = $1;
       } else {
         $mediagen_id = $mediagen_url;
@@ -133,7 +134,7 @@ sub handle_clip {
   my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
 
   my $mediagen_id;
-  if($mediagen_url =~ /mediaGenEntertainment\.jhtml\?uri=([^&]*)$/){
+  if($mediagen_url =~ /mediaGenEntertainment\.jhtml\?uri=([^&]+).*$/){
     $mediagen_id = $1;
   } else {
     $mediagen_id = $mediagen_url;
