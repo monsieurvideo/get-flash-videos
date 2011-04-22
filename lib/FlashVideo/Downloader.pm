@@ -313,6 +313,9 @@ sub check_magic {
   # Other QuickTime
   } elsif(substr($data, 4, 4) =~ /moov|mdat|wide|free|pnot|skip/) {
     return 1;
+  # Ogg
+  } elsif(substr($data, 0, 4) eq 'OggS') {
+    return 1;
   # AVI / WAV
   } elsif(substr($data, 0, 4) eq 'RIFF') {
     return 1;
