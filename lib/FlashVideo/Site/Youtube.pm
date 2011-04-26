@@ -26,6 +26,7 @@ sub find_video {
   if($embed_url !~ m!youtube\.com/watch!) {
     $browser->get($embed_url);
     if ($browser->response->header('Location') =~ m!/swf/.*video_id=([^&]+)!
+        || $browser->content =~ m!\<iframe[^\>]*src="http://www.youtube.com/embed/([^"]+)"!i
         || $embed_url =~ m!/v/([-_a-z0-9]+)!i
         || $browser->uri =~ m!v%3D([-_a-z0-9]+)!i) {
       # We ended up on a embedded SWF or other redirect page
@@ -60,6 +61,7 @@ sub find_video {
 
   my $video_id;
   if ($browser->content =~ /(?:var pageVideoId =|(?:CFG_)?VIDEO_ID'?\s*:)\s*'(.+?)'/
+      || $browser->content =~ /"video_id": "([^"]+)"/
       || $embed_url =~ /v=([^&]+)/) {
     $video_id = $1;
   } else {
