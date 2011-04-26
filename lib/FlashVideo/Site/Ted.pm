@@ -7,6 +7,10 @@ sub find_video {
   my ($self, $browser) = @_;
 
   my $url;
+  if($browser->content =~ m{<param name="flashvars" value="vu=http://video.ted.com/[^"]*talk=([^&;]+);}) {
+    my $embed_url = "http://www.ted.com/talks/$1.html";
+    $browser->get($embed_url);
+  }
   if($browser->content =~ m{<a href="(/talks[^"]+)">Watch high-res video}) {
     $url = URI->new_abs($1, $browser->uri);
     $browser->allow_redirects;
