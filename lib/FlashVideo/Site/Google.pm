@@ -8,6 +8,10 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser) = @_;
 
+  if ($browser->content =~ /googleplayer\.swf\?doc[iI]d=([^&;'"]+)/) {
+    $browser->get("http://video.google.com/videoplay?docid=$1");
+  }
+
   if (!$browser->success) {
     $browser->get($browser->response->header('Location'));
     die "Couldn't download URL: " . $browser->response->status_line
