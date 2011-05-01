@@ -22,7 +22,20 @@ sub find_video {
   my $video;
   if ($browser->content =~ /"video", "([^"]+)/) {
     $video = uri_unescape($1);
-  } else {
+  }
+  if (!$video && $browser->content =~ /"sequence", *"([^"]+)/) {
+    my $data = json_unescape(uri_unescape($1));
+    my ($low) = $data =~ /"sdURL" *: *"([^"]+)"/i;
+    my ($high) = $data =~ /"hqURL" *: *"([^"]+)"/i;
+    if($data =~ /"videoTitle" *: *"([^"]+)"/i){
+      my $title = uri_unescape($1);
+      $title =~ s/\+/ /g;
+      $filename = title_to_filename($title);
+    }
+    if( $prefs->{quality} == 'high' && $high ){ $video = $high; }
+    elsif( $low ){ $video = $low; }
+  }
+  if(!$video) {
     if ($embed_url !~ m!/swf/!) {
       $browser->uri =~ m!video(?:%2F|/)([^_]+)!;
       $embed_url = "http://www.dailymotion.com/swf/$1";
