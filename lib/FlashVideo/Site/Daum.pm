@@ -23,18 +23,81 @@ sub find_video {
   return $video_url, title_to_filename($video_title);
 }
 
+# Internal subroutines
+
+sub is_valid_video_id {
+  my ($video_id) = @_;
+
+  return if !defined $video_id;
+
+  return if length $video_id != 12;
+
+  return if $video_id !~ /\$$/xms;
+
+  return 1;
+}
+
 sub get_video_id {
   my ($browser) = @_;
+
+  my $singer_url
+    = quotemeta 'http://media.daum.net/entertain/showcase/singer/';
+  my $singer_url_pattern = qr{^ $singer_url .* [#] (\d+) $}xmsi;
+  if ( $browser->uri()->as_string() =~ $singer_url_pattern ) {
+    my $id = $1;
+    return get_video_id_for_singer($browser, $id);
+  }
+
+  # http://tvpot.daum.net/best/Top.do?from=gnb#clipid=31946003
+  if ( $browser->uri()->as_string() =~ /[#] clipid = (\d+)/xmsi ) {
+    my $url = 'http://tvpot.daum.net/clip/ClipView.do?clipid=' . $1;
+    $browser->get($url);
+    if ( !$browser->success() ) {
+      die "Cannot fetch the document identified by the given URL: $url\n";
+    }
+  }
 
   my $document = $browser->content();
 
   # "http://flvs.daum.net/flvPlayer.swf?vid=FlVGvam5dPM$"
   my $flv_player_url = quotemeta 'http://flvs.daum.net/flvPlayer.swf';
-  my $video_id_pattern = qr{" $flv_player_url [?] vid = (.+?) ["&]}xmsi;
+  my $video_id_pattern_1 = qr{['"] $flv_player_url [?] vid = ([^'"&]+)}xmsi;
+
+  # Story.UI.PlayerManager.createViewer('2oHFG_aR9uA$');
+  my $function_name      = quotemeta 'Story.UI.PlayerManager.createViewer';
+  my $video_id_pattern_2 = qr{$function_name [(] '(.+?)' [)]}xms;
+
+  if (    $document !~ $video_id_pattern_1
+       && $document !~ $video_id_pattern_2 )
+  {
+    die "Cannot find video ID from the document.\n";
+  }
+  my $video_id = $1;
+
+  # Remove white spaces in video ID.
+  $video_id =~ s/\s+//xmsg;
+
+  die "Invalid video ID: $video_id\n" if !is_valid_video_id($video_id);
+
+  return $video_id;
+}
+
+sub get_video_id_for_singer {
+  my ($browser, $id) = @_;
+
+  my $document = $browser->content();
+
+  # id:'16', vid:'HZYz4R8qUEU$'
+  my $video_id_pattern = qr{id:'$id', \s* vid:'(.+?)'}xms;
   if ( $document !~ $video_id_pattern ) {
     die "Cannot find video ID from the document.\n";
   }
   my $video_id = $1;
+
+  # Remove white spaces in video ID.
+  $video_id =~ s/\s+//xmsg;
+
+  die "Invalid video ID: $video_id\n" if !is_valid_video_id($video_id);
 
   return $video_id;
 }
@@ -46,8 +109,7 @@ sub get_video_title {
 
   $browser->get($query_url);
   if ( !$browser->success() ) {
-    die 'Cannot fetch the document identified by the given URL: '
-      . "$query_url\n";
+    die "Cannot fetch the document identified by the given URL: $query_url\n";
   }
 
   my $document = $browser->content();
@@ -76,8 +138,7 @@ sub get_video_url {
 
   $browser->get($query_url);
   if ( !$browser->success() ) {
-    die 'Cannot fetch the document identified by the given URL: '
-      . "$query_url\n";
+    die "Cannot fetch the document identified by the given URL: $query_url\n";
   }
 
   my $document = $browser->content();
