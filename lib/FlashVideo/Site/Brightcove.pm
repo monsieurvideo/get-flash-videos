@@ -24,6 +24,8 @@ sub find_video {
 
   # <object> params
   $player_id ||= ($browser->content =~ /<param name=["']?playerID["']? value=["'](\d+) ?["']/i)[0];
+  $metadata->{videoplayer} ||= ($browser->content =~ /param name=["']?\@videoPlayer["']? value=["']?(\d+)["']?/i)[0];
+  $metadata->{publisherId} ||= ($browser->content =~ /param name=["']?publisherID["']? value=["']?(\d+)["']?/i)[0];
 
   # flashVar params (e.g. <embed>)
   $player_id ||= ($browser->content =~ /flashVars.*playerID=(\d+)/i)[0];
@@ -129,6 +131,8 @@ EOF5
 
   die "Failed to post to Brightcove AMF gateway"
     unless $browser->response->is_success;
+
+  debug $browser->response->content;
 
   my $packet = Data::AMF::Packet->deserialize($browser->content);
 
