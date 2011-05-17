@@ -111,6 +111,11 @@ sub url_exists {
 sub title_to_filename {
   my($title, $type) = @_;
 
+  # no need to go any further if "--filename" option is passed
+  if($App::get_flash_videos::opt{filename} ne '') {
+    return $App::get_flash_videos::opt{filename};
+  }
+
   # Extract the extension if we're passed a URL.
   if($title =~ s/(@{[EXTENSIONS]})$//) {
     $type = substr $1, 1;
