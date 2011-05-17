@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Combine a perl program and modules it needs into one file
 
 use strict;

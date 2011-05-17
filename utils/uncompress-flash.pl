@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # http://board.flashkit.com/board/archive/index.php/t-283660.html
 use strict;
 use Compress::Zlib;
