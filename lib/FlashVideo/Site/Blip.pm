@@ -31,6 +31,10 @@ sub find_video {
     }
   }
 
+  if (!$id) { ($id) = ($browser->content =~ m{data-posts-id="(\d+)"}s); }
+  if (!$id) { ($id) = ($browser->content =~ m{data-disqus-id="(\d+)"}s); }
+  if (!$id) { ($id) = ($browser->content =~ m{content="http://[^"]-(\d+)"}s); }
+
   die "No ID found\n" unless $id;
 
   $browser->get("$base/rss/flash/$id");
