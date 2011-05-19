@@ -3,9 +3,10 @@ package FlashVideo::Site::Bbc;
 
 use strict;
 use FlashVideo::Utils;
+use URI;
 
 sub find_video {
-  my ($self, $browser, $page_url) = @_;
+  my ($self, $browser, $page_url, $prefs) = @_;
 
   # Get playlist XML
   my $playlist_xml;
@@ -85,6 +86,7 @@ sub find_video {
   #   http://news.bbc.co.uk/sport1/hi/motorsport/formula_one/8766344.stm
   if (!$info->{server}) {
     my $id = $playlist->{item}->{mediator}->{identifier};
+    if(!$id) { $id = $playlist->{item}->{programme}->{mediator}->{identifier}; }
 
     my $stream_info_url = sprintf
       "http://open.live.bbc.co.uk/mediaselector/4/mtis/stream/%s", $id;
@@ -99,9 +101,24 @@ sub find_video {
 
     my $stream_info = from_xml($browser->content);
 
-    $info = ref $stream_info->{media} eq 'ARRAY'
-      ? $stream_info->{media}->[0]->{connection}
-      : $stream_info->{media}->{connection};
+    if( ref $stream_info->{media} eq 'ARRAY' ){
+      my $q = $prefs->{quality};
+      my @media = sort { $a->{bitrate} <=> $b->{bitrate} } @{$stream_info->{media}};
+      my @q_media = grep { $_->{bitrate} == $q || "$_->{height}x$_->{width}x$_->{bitrate}" == $q || "$_->{height}x$_->{width}" == $q } @media;
+      if( @q_media ){ @media = @q_media; }
+      my $cnt = @media;
+      my $num = {high => int($cnt)-1, medium => int($cnt/2), low => 0}->{$q};
+      $info = $media[$num]->{connection};
+    } else {
+      $info = $stream_info->{media}->{connection};
+    }
+  }
+
+  # Some BBC videos seem to use plain HTTP
+  if( $info->{href} ){
+    my $url = $info->{href};
+    my @path = URI->new($url)->path_segments();
+    return $url, @path[-1];
   }
 
   my $data = {
