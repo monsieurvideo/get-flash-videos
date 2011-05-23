@@ -24,7 +24,7 @@ sub token {
 sub find_video {
   my ($self, $browser) = @_;
 
-  $browser->content =~ /iphoneId\s*:\s*["'](\d+)/i
+  $browser->content =~ /url\s*:\s*["'].*?nIc0K11(\d+)["']/i;
     || die "No video ID found";
   my $video_id = $1;
 
