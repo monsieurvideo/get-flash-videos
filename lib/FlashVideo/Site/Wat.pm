@@ -6,20 +6,38 @@ use FlashVideo::Utils;
 use HTML::Entities;
 use URI::Escape;
 
+die "Must have Digest::MD5 for this download\n" 
+  unless eval {
+    require Digest::MD5;
+  };
+
+sub token {
+  my $url = shift;
+  my $hexdate = sprintf("%x",time());
+  # fill up triling zeroes
+  $hexdate .= "0" x (length($hexdate) - 8);
+  my $key = "9b673b13fa4682ed14c3cfa5af5310274b514c4133e9b3a81e6e3aba00912564";
+  return Digest::MD5::md5_hex($key . $url . $hexdate)."/".$hexdate;
+}
+
+
 sub find_video {
   my ($self, $browser) = @_;
 
-  $browser->content =~ /videoid\s*:\s*["'](\d+)/i
+  $browser->content =~ /iphoneId\s*:\s*["'](\d+)/i
     || die "No video ID found";
   my $video_id = $1;
 
-  $browser->get("http://www.wat.tv/interface/contentv2/$video_id");
+  $browser->get("http://www.wat.tv/interface/contentv3/$video_id");
 
   my $title = json_unescape(($browser->content =~ /title":"(.*?)",/)[0]);
-  my $url   = json_unescape(($browser->content =~ /files.*?url":"(.*?)",/)[0]);
 
-  # Need to supply some other parameters
-  $url .= "?context=swf2&getURL=1&version=WIN%2010,0,45,2";
+  my $location = "/web/$video_id";
+  my $token = &token($location);
+
+  my $url = "http://www.wat.tv/get".$location.
+         "?token=".$token.
+         "&context=swf2&getURL=1&version=WIN%2010,3,181,14";
 
   my $file_type = 'flv';
 
