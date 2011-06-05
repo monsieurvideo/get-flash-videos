@@ -316,6 +316,9 @@ sub check_magic {
   # Ogg
   } elsif(substr($data, 0, 4) eq 'OggS') {
     return 1;
+  # WebM
+  } elsif(substr($data, 0x1F, 4) eq 'webm') {
+    return 1;
   # AVI / WAV
   } elsif(substr($data, 0, 4) eq 'RIFF') {
     return 1;
