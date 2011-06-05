@@ -9,6 +9,8 @@ wiki
 *.old
 *.mp4
 *.flv
+*.ogg
+*.webm
 *.gz
 .*sw[op]
 blib
