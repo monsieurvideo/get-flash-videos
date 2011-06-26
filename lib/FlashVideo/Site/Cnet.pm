@@ -36,21 +36,19 @@ sub get_video {
   my $video = $xml->{"Videos"}->{"Video"};
 
   my $medias = $video->{"VideoMedias"}->{"VideoMedia"};
-  my $media = @$medias[0];
+#  my $media = @$medias[0];
 
-#  my $max = 0;
-#  my $max = (grep { $max = ((int($_->{Width}) * int($_->{Height})) gt $max ? $_ : $max) } @$medias);
-#  foreach (@{$video->{VideoMedias}->{VideoMedia}}) {
-#    debug $_;
-#    debug int($_->{Width}) * int($_->{Height});
-#  }
-#  debug $max;
-#  my $media = (grep { (int($_->{Width}) * int($_->{Height})) eq $max } $medias)[0];
+  my $max = 0;
+#  my $max = (grep { $max = (( (int($_->{Width}) * int($_->{Height})) gt $max) ? $_ : $max) } @$medias);
+  foreach (@{$video->{VideoMedias}->{VideoMedia}}) {
+    if(int($_->{Width}) * int($_->{Height}) > $max){
+      $max = int($_->{Width}) * int($_->{Height});
+    }
+  }
+  my $media = (grep { (int($_->{Width}) * int($_->{Height})) eq $max and $_->{Player} eq 'RTMP'} @$medias)[0];
   my $delivery_url = $media->{DeliveryUrl};
-  debug $delivery_url;
 
   my $title = $video->{FranchiseName} . ' - ' . $video->{Title};
-  debug $title;
 
   return {
     rtmp => $delivery_url,
