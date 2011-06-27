@@ -17,8 +17,8 @@
 package FlashVideo::Site::Globaltv;
 
 use strict;
-
-BEGIN { FlashVideo::Utils->import(); no strict 'refs' }
+use FlashVideo::Utils;
+use strict 'refs';
 
 sub find_video {
 	my ($self, $browser, $embed_url, $prefs) = @_;

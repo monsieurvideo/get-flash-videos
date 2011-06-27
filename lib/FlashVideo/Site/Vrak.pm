@@ -1,8 +1,8 @@
 package FlashVideo::Site::Vrak;
 
 use strict;
-BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
-BEGIN { no strict 'refs';  *title_to_filename = \&FlashVideo::Utils::title_to_filename; *from_xml = \&FlashVideo::Utils::from_xml; }
+use FlashVideo::Utils;
+no strict 'refs';
 
 
 #sub xxcan_handle {
