@@ -7,7 +7,7 @@ use Test::More;
 use File::Path;
 use FlashVideo::Downloader;
 
-my $script = $ENV{SCRIPT} ? "$ENV{SCRIPT}" : "blib/script/get_flash_videos";
+my $script = $ENV{SCRIPT} ? "$ENV{SCRIPT}" : "../../blib/script/get_flash_videos";
 
 chdir "t";
 
@@ -43,7 +43,7 @@ for my $url_info(@urls) {
   $url =~ s/\`(.*)\`/`$1`/e;
 
   my $pid = open3(my $in_fh, my $out_fh, 0,
-    $^X, "../../$script", "--yes", $url);
+    $^X, "$script", "--yes", '--filename', 'cpan_testing_video', $url);
 
   while(<$out_fh>) {
     DEBUG && diag $_;
@@ -52,16 +52,17 @@ for my $url_info(@urls) {
   waitpid $pid, 0;
   ok $? == 0, $note;
 
-  DEBUG && diag "Files in directory: ", <*>;
+  #DEBUG && diag "Files in directory: ", <*>;
 
-  my @files = <*.{mp4,flv,mov}>;
-  ok @files == 1, "One file downloaded";
+  #my @files = <*.{mp4,flv,mov}>;
+  my $file = "cpan_testing_video";
+  #ok @files == 1, "One file downloaded";
 
-  ok($files[0] !~ /^video\d{14}\./, "Has good filename");
+  #ok($files[0] !~ /^video\d{14}\./, "Has good filename");
 
-  ok(FlashVideo::Downloader->check_file($files[0]), "File is a media file");
+  ok(FlashVideo::Downloader->check_file($file), "File is a media file");
 
-  ok -s $files[0] > (1024*200), "File looks big enough";
+  ok -s $file > (1024*200), "File looks big enough";
 
   chdir "..";
   rmtree $dir;
