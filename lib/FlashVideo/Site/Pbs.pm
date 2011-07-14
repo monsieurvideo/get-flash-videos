@@ -67,6 +67,7 @@ sub find_video {
   my $xml = $browser->content;
   $xml =~ s/&/&amp;/g;
   my $href = from_xml($xml);
+  my $file = $href->{videoInfo}->{title};
   my $release_url = $href->{releaseURL};
 
   unless ($release_url =~ m[^https?://]) {
@@ -93,13 +94,15 @@ sub find_video {
     || die "Couldn't find stream url\n";
   $rtmp_url =~ s/<break>//;
 
-  my ($file) = $rtmp_url =~ m{([^/]+)$};
+  if(!$file) {
+    ($file) = $rtmp_url =~ m{([^/\?]+)$};
+  }
 
   return {
     rtmp    => $rtmp_url,
     pageUrl => $embed_url,
     swfUrl  => 'http://www-tc.pbs.org/video/media/swf/PBSPlayer.swf?18809',
-    flv     => $file,
+    flv     => title_to_filename($file),
   };
 }
 
