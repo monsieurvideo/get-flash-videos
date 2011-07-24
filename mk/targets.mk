@@ -21,7 +21,7 @@ $(BASEEXT)-$(VERSION): bin/$(BASEEXT) pm_to_blib .sitemodules \
 # This makes sure to 'use' all the Site modules, so that the combiner can pick
 # them all up.
 .sitemodules: lib/FlashVideo/Site/*.pm
-	ls $< | sed -e 's!lib/!!' -e 's!/!::!g' -e 's/\.pm$$/ ();/' -e 's/^/use /' > $@
+	ls $^ | sed -e 's!lib/!!' -e 's!/!::!g' -e 's/\.pm$$/ ();/' -e 's/^/use /' > $@
 
 # Build a combined version which also includes our dependencies, this makes it
 # easier for people who cannot install Perl modules. (Note that it does still
