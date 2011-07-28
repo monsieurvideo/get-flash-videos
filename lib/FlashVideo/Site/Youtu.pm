@@ -2,6 +2,6 @@
 package FlashVideo::Site::Youtu;
 
 # youtu.be is just an alias for youtube; everything else is handled further up
-use base FlashVideo::Site::Youtube;
+use base 'FlashVideo::Site::Youtube';
 
 1;

@@ -83,6 +83,7 @@ BEGIN {
     quiet => 0,
     quality => "high",
     subtitles => 0,
+    info => 0
   );
 }
 
@@ -112,6 +113,7 @@ Options:
   -u --update     Update to latest version.
   -v --version    Print version.
   -y --yes        Say yes to any questions (don't prompt for any information).
+  -i --info       Print out info about video instead of downloading.
 
 EOF
 
@@ -151,6 +153,7 @@ GetOptions(
   "add-plugin=s" => \$opt{add_plugin},
   "quality|r=s"  => \$opt{quality},
   "subtitles"    => \$opt{subtitles},
+  "info|i"       => \$opt{info},
 ) or die "Try $0 --help for more information.\n";
 
 if($opt{version}) {
@@ -344,6 +347,26 @@ sub download {
   }
 
   my $save_as = $opt{filename} || $suggested_filename;
+
+  # Print info instead of downloading
+  if($opt{info}) {
+    print "Filename: " . ($save_as || $actual_url->{flv}) . "\n";
+    $_ = $suggested_filename || $actual_url->{flv};
+    s/_/ /g;
+    s/\.[^\.]*$//;
+    print "Title: " . $_ . "\n";
+    print "Content-Location: ";
+    if(ref($actual_url) eq 'HASH') {
+      print $actual_url->{rtmp} . "\n";
+    } else {
+      print $actual_url . "\n";
+      $browser->head($actual_url);
+      if($browser->response->header('Content-Length')) {
+        print "Content-Length: " . $browser->response->header('Content-Length') . "\n";
+      }
+    }
+    exit;
+  }
 
   my $action = $opt{play} ? "play" : "download";
 
