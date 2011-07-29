@@ -52,7 +52,7 @@ sub find_video {
 			$title = $sw->{ref}->{title};	
 			debug "TITLE = " . $title; # short title, not very useful
 		}
-		if ( ref($sw->{video}) eq ARRAY ) {
+		if ( ref($sw->{video}) eq "ARRAY" ) {
 			foreach $vid (@{ $sw->{video} }) {
 				my $t = $vid->{src};
 				if ( $t =~ /^rtmp\:\/\// ) {
