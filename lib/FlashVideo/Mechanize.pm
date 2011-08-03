@@ -13,13 +13,25 @@ sub new {
   $browser->agent_alias("Windows Mozilla");
 
   my $proxy = $App::get_flash_videos::opt{proxy};
-  if($proxy && $proxy !~ /^\w+:/) {
-    my $port = ($proxy =~ /:(\d+)/)[0] || 1080;
-    $proxy = "socks://$1:$port";
-  }
 
-  if($proxy) {
-    $browser->proxy([qw[http https]] => $proxy);
+  if ($proxy) {
+    if ($proxy =~ /^(\w+):?(\d+)?$/) {
+      # Proxy is in format:
+      #   localhost:1337
+      #   localhost
+      # Add a scheme so LWP can use it.
+      # Other formats are passed to LWP directly.
+      my ($host, $port) = ($1, $2);
+
+      $port ||= 1080; # socks by default
+
+      $proxy = "socks://$host:$port";
+
+      print STDERR "Using proxy server $proxy\n"
+        if $App::get_flash_videos::opt{debug};
+
+      $browser->proxy([qw[http https]] => $proxy);
+    }
   }
 
   if($browser->get_socks_proxy) {

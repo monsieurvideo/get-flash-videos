@@ -304,6 +304,13 @@ sub download {
   # (Redirect check is for Youtube which sometimes redirects to login page
   # for "mature" videos.)
   if (!$browser->success and !$browser->response->is_redirect) {
+    if ($opt{proxy}) {
+      if ($browser->response->header('Client-Warning') eq 'Internal response') {
+        info "Couldn't download $url - might not be able to contact " .
+             "your proxy server ($opt{proxy})";
+      }
+    }
+
     error "Couldn't download '$url': " . $browser->response->status_line;
   }
 
