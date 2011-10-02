@@ -135,6 +135,9 @@ sub find_video {
       return $self->download_fmt_map($prefs, $browser, $title, \%info, $info{fmt_url_map});
     } elsif($info{url_encoded_fmt_stream_map}) {
       debug "Using url_encoded_fmt_stream_map method from info";
+      if ($info{title}) {
+        $title=$info{title};
+      }
       return $self->download_url_encoded_fmt_stream_map($prefs, $browser, $title, \%info, $info{url_encoded_fmt_stream_map});
     }
   }
