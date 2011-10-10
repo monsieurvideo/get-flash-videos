@@ -70,7 +70,9 @@ sub search_site {
   if (my @site_results = eval { $search_site->search($search, $type) }) {
     debug "Found " . @site_results . " results for $search.";
 
-    trim_resultset(\@site_results, $max);
+    if ($max > 0) {
+      trim_resultset(\@site_results, $max);
+    }
     return @site_results;
   }
   elsif($@) {
@@ -87,7 +89,9 @@ sub trim_resultset {
   my ($results, $max) = @_;
 
   croak "Must be supplied a reference to resultset" unless ref($results) eq 'ARRAY';
-  croak "No max supplied" unless $max;
+  if ($max < 1) {
+    return;
+  }
 
   if (@$results > $max) {
     debug "Found " . @$results . " results, trimming to $max.";
