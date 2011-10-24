@@ -104,7 +104,6 @@ Options:
      --add-plugin Add a plugin from a URL.
   -d --debug      Print extra debugging information.
   -f --filename   Filename to save the video as.
-  -m --max        Maximum number of results to show; defaults to unlimited
   -p --play       Start playing the video once enough has been downloaded.
      --player     Player to use for the video (default: $opt{player}).
      --proxy      Proxy to use, use host:port for SOCKS, or URL for HTTP.
@@ -199,13 +198,7 @@ if ( ((@urls == 1) and $urls[0] !~ m'\.') or
 my @download_urls;
 
 if ($search) {
-  my $max;
-  if ($opt{max}) {
-    $max = $opt{max};
-  } else {
-    $max = 0;
-  }
-  if (my @results = FlashVideo::Search->search($search, $max, $max)) {
+  if (my @results = FlashVideo::Search->search($search, 10, 20)) {
     if ($opt{yes} or @results == 1) {
       my $message = (@results == 1) ?
         "Downloading only match for '$search': '$results[0]->{name}'" :
