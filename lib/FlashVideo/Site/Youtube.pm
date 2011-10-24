@@ -394,7 +394,7 @@ sub get_youtube_video_info {
       "http://www.youtube.com/get_video_info?&video_id=%s&el=$el&ps=default&eurl=%s&hl=en_US&t=%s";
 
     my $video_info_url = sprintf $video_info_url_template,
-      uri_escape($video_id), uri_escape($url), uri_escape($t);
+      uri_escape($video_id), uri_escape($url), uri_escape_utf8($t);
 
     debug "get_youtube_video_info: $video_info_url";
 
