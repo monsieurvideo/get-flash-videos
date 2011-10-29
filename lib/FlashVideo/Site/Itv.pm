@@ -10,11 +10,13 @@ my $resolutions = {
     "400" => [412, 232],
     "600" => [512, 288],
     "800" => [640, 360],
+    "1200" => [704, 396],
   },
   "4x3" => {
     "400" => [320, 240],
     "600" => [384, 288],
     "800" => [480, 360],
+    "1200" => [528, 396],
   },
 };
 
@@ -64,7 +66,7 @@ EOF
 
   # Parse list of availible formats and lookup their resolutions
   my(@formats);
-  while ($video =~ m/(mp4:[^\]]+([0-9]{3})_(16x9|4x3).mp4)/gi)
+  while ($video =~ m/(mp4:[^\]]+([0-9]{3})_(16[-x]9|4[-x]3).mp4)/gi)
   {
     push @formats, { playpath => $1, resolution => $resolutions->{$3}->{$2}};
   }
