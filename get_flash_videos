@@ -181,8 +181,8 @@ if($^O =~ /MSWin/i) {
   binmode STDOUT, ":encoding(" . get_win_codepage() . ")";
 } else {
   $opt{filename} = Encode::decode("utf-8", $opt{filename});
-  binmode STDERR, ":utf8";
-  binmode STDOUT, ":utf8";
+  binmode STDERR, '<:encoding(UTF-8)';
+  binmode STDOUT, '<:encoding(UTF-8)';
 }
 
 my (@urls) = @ARGV;
