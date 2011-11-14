@@ -47,10 +47,7 @@ use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-our $VERSION;
-BEGIN {
-  $VERSION = "1.25";
-}
+our $VERSION = "1.25";
 
 our %opt;
 BEGIN {
