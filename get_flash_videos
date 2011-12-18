@@ -297,8 +297,18 @@ sub download {
   # Might be downloading from a site that uses Brightcove or other similar
   # Flash RTMP streaming server. These are handled differently. Need to get
   # the page to determine this.
-  info "Downloading $url";
   my $browser = FlashVideo::Mechanize->new;
+
+  # Figure out what package we need to use to get either the HTTP URL or
+  # rtmpdump data for the video.
+  my($package, $possible_url) = FlashVideo::URLFinder->find_package($url, $browser);
+
+  # Before fetching the url, give the package a chance
+  if($package->can("pre_find")) {
+    $package->pre_find($browser);
+  }
+
+  info "Downloading $url";
   $browser->get($url);
 
   # (Redirect check is for Youtube which sometimes redirects to login page
@@ -313,10 +323,6 @@ sub download {
 
     error "Couldn't download '$url': " . $browser->response->status_line;
   }
-
-  # Figure out what package we need to use to get either the HTTP URL or
-  # rtmpdump data for the video.
-  my($package, $possible_url) = FlashVideo::URLFinder->find_package($url, $browser);
 
   my($actual_url, @suggested_fnames) = eval {
     $package->find_video($browser, $possible_url, $prefs);
