@@ -8,6 +8,11 @@ use URI;
 sub find_video {
   my ($self, $browser, $page_url, $prefs) = @_;
 
+  my $count = 0;
+  while((my $location = $browser->response->header("Location")) && $count++ < 5) {
+    $browser->get($location);
+  }
+
   # Get playlist XML
   my $playlist_xml;
   if ($browser->content =~ /<param name="playlist" value="(http:.+?\.s?xml)"/) {

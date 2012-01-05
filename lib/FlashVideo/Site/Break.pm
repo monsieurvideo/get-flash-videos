@@ -8,6 +8,20 @@ use URI::Escape;
 sub find_video {
   my($self, $browser, $embed_url) = @_;
 
+  # Need to get additional ID, otherwise video download returns 403
+  my $video_id;
+
+  if ($browser->content =~ /flashVars\.icon = ["'](\w+)["']/) {
+    $video_id = $1;
+  }
+  else {
+    die "Couldn't get Break video ID";
+  }
+
+  if($browser->content =~ /<meta name=['"]embed_video_url['"] content=["']([^'"]*)["']/) {
+    $browser->get($1);
+  }
+
   if(URI->new($embed_url)->host eq "embed.break.com") {
     $browser->get($embed_url);
   }
@@ -19,7 +33,7 @@ sub find_video {
     }
 
     if($browser->response->header("Location") =~ /sVidLoc=([^&]+)/) {
-      my $url = uri_unescape($1);
+      my $url = uri_unescape($1).'?'.$video_id;
       my $filename = title_to_filename((split /\//, $url)[-1]);
 
       return $url, $filename;
@@ -30,16 +44,6 @@ sub find_video {
   my $filename = ($browser->content =~ /sGlobalFileName='([^']+)'/)[0];
 
   die "Unable to extract path and filename" unless $path and $filename;
-
-  # Need to get additional ID, otherwise video download returns 403
-  my $video_id;
-
-  if ($browser->content =~ /flashVars\.icon = ["'](\w+)["']/) {
-    $video_id = $1;
-  }
-  else {
-    die "Couldn't get Break video ID";
-  }
 
   my $video_path = ($browser->content =~ /videoPath\s*(?:',|=)\s*['"]([^'"]+)/)[0];
 

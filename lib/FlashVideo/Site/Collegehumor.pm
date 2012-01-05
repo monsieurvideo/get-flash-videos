@@ -9,9 +9,11 @@ sub find_video {
   my $base = "http://www.collegehumor.com/moogaloop";
 
   my $id;
-  if($browser->content =~ /clip_id=(\d+)/) {
+  if($browser->content =~ /video:(\d+)/) {
     $id = $1;
   } elsif($embed_url =~ m![/:](\d+)!) {
+		# XXX: This is broken still...
+		# I don't know a good way to turn new IDs to old IDs, I may just load the page based on this id and then go back to the first case
     $id = $1;
   }
   die "No ID found\n" unless $id;
