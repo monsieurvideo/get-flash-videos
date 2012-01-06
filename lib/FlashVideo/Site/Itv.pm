@@ -66,13 +66,22 @@ EOF
 
   # Parse list of availible formats and lookup their resolutions
   my(@formats);
-  while ($video =~ m/(mp4:[^\]]+([0-9]{3})_(16[-x]9|4[-x]3).mp4)/gi)
+  while ($video =~ m/(mp4:[^\]]+_[A-Z]+([0-9]{3,4})_(16[-x]9|4[-x]3).mp4)/gi)
   {
-    push @formats, { playpath => $1, resolution => $resolutions->{$3}->{$2}};
+    push @formats, { video => $video, playpath => $1, resolution => $resolutions->{$3}->{$2}};
+  }
+  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4})kbps.mp4)/gi)
+  {
+    push @formats, { video => $video, playpath => $1, resolution => $resolutions->{"16x9"}->{$2}};
+  }
+  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4})kbps.\d+.mp4)/gi)
+  {
+    push @formats, { video => $video, playpath => $1, resolution => $resolutions->{"16x9"}->{$2}};
   }
 
   my $format = $prefs->quality->choose(@formats);
 
+  $video = $format->{"video"};
   my $rtmp = decode_entities($video =~ /base="(rtmp[^"]+)/);
   my($playpath) = $format->{"playpath"};
   my($flv) = $playpath =~ m{/([^/]+)$};
