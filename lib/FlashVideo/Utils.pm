@@ -125,6 +125,8 @@ sub title_to_filename {
 
   $type ||= "flv";
 
+  $title = decode_utf8($title);
+
   # We want \w below to match non-ASCII characters.
   utf8::upgrade($title);
 
@@ -137,7 +139,9 @@ sub title_to_filename {
   $title =~ s/\s+/_/g;
   $title =~ s/[^\w\-,()&]/_/g;
   $title =~ s/^_+|_+$//g;   # underscores at the start and end look bad
- 
+
+  $title = encode_utf8($title);
+
   # If we have nothing then return a filestamped filename.
   return get_video_filename($type) unless $title;
 
