@@ -9,39 +9,34 @@ sub find_video {
   my ($self, $browser) = @_;
 
   # Get the video ID
-  my $video_id;
-  if ($browser->content =~ /flashvars=(?:&quot;|'|")id=(.*?)[ &]/) {
-    $video_id = $1;
+  my $uri;
+  if ($browser->content =~ /source=(.*?)[ &]/) {
+    $uri = $1;
   }
   else {
-    die "Couldn't extract video ID from page";
+    die "Couldn't extract video location from page";
   }
 
   my $title;
-  if ($browser->content =~ /(?:<div\ class="DetailHeader">)?
-                            <h1\ class="(?:Heading1a|SubHeader)"[^>]*>(.*?)<\/h1>/x) {
+  if ($browser->content =~ /<h1[^>]* class="[^"]*articleTitle[^"]*"[^>]*>(.*?)<\/h1>/x) {
     $title = $1;
   }
 
-  if($video_id =~ /^http:/) {
-    return $video_id, title_to_filename($title);
+  if($uri =~ /^http:/) {
+    return $uri, title_to_filename($title);
   }
-  else {
-    # Get the embedding page
-    my $embed_url =
-      "http://www.ehow.com/embedvars.aspx?isEhow=true&show_related=true&" .
-      "from_url=" . uri_escape($browser->uri->as_string) .
-      "&id=" . $video_id;
-
-    $browser->get($embed_url);
-
-    if ($browser->content =~ /&source=(http.*?flv)&/) {
-      return uri_unescape($1), title_to_filename($title);
-    }
-    else {
-      die "Couldn't extract Flash video URL from embed page";
-    }
-  }
+	elsif($uri =~ /http:%3A/) {
+		# This is the embed, and it's the same but encoded.
+		$uri = uri_unescape($1);
+		# Title is also probably wrong
+		if ($browser->content =~ /<a[^>]*>(.*?)<\/a>/) {
+			$title = $1;
+		}
+		return $uri, title_to_filename($title);
+	}
+	else {
+		die "Couldn't extract Flash video URL from embed page";
+	}
 }
 
 
