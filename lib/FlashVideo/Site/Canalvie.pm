@@ -10,8 +10,7 @@
 package FlashVideo::Site::Canalvie;
 
 use strict;
-BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
-BEGIN { no strict 'refs';  *title_to_filename = \&FlashVideo::Utils::title_to_filename; *from_xml = \&FlashVideo::Utils::from_xml; }
+use FlashVideo::Utils;
 
 sub find_video {
   my($self, $browser, $embed_url, $prefs) = @_;
