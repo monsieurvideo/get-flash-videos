@@ -116,25 +116,25 @@ JSON structure:
   die "No elements found in 'data' array" unless @$data_array;
   my $data = $data_array->[0];
 
-  my $shuffle_seed = extract($data, 'seed');
+  my $segmap = extract($data, segs => 'HASH');
 
   # Stream types, in order of preference
   # XXX: How is 'flvhd' used?
   my @streamtype_preferences = qw(mp4 flv);
-  my $streamtypes = extract($data, streamtypes => 'ARRAY');
+  my @streamtypes = keys %$segmap;
 
   # If none of the preferred types are found, just take
   # the first one and hope for the best
-  my $stream = $streamtypes->[0];
+  my $stream = $streamtypes[0];
 
   for my $pref (@streamtype_preferences) {
-    if (grep { $_ eq $pref } @$streamtypes) {
+    if (grep { $_ eq $pref } @streamtypes) {
       $stream = $pref;
       last;
     }
   }
 
-  my $streams = join ' ', @$streamtypes;
+  my $streams = join ' ', @streamtypes;
   debug "Choosing to use the $stream stream (available: $streams)";
 
   # Use the file ID associated with the stream we chose (when available)
@@ -153,6 +153,8 @@ JSON structure:
   die "Can't find the encrypted file ID in the video info JSON"
     unless $fileID;
   debug "Encrypted file ID: $fileID";
+
+  my $shuffle_seed = extract($data, 'seed');
 
   # File ID is given in obfuscated form, each entry is an index in a lookup
   # table that is generated from the seed value
@@ -177,9 +179,6 @@ JSON structure:
   my $filename = get_video_filename( $stream );
   $filename = title_to_filename( $title, $stream ) if $title;
 
-  my $segmap = extract($data, segs => 'HASH');
-  die "Stream '$stream' not found in segment map 'segs'"
-    unless exists $segmap->{$stream};
   my $segs = extract($segmap, $stream, 'ARRAY');
 
   my @urls;
@@ -189,6 +188,7 @@ JSON structure:
     my $segment_number = extract($seg, 'no');
     my $segment_size = extract($seg, 'size');
     my $segment_seconds = extract($seg, 'seconds');
+    $key = extract($seg, 'k') if exists $seg->{'k'};
 
     # To download segments other than the first (00), we replace
     # the digits at position 8 in the file ID with the segment
@@ -199,8 +199,8 @@ JSON structure:
 
     # Combine it all for the request to grab the video link for this segment
     $browser->get(
-      sprintf "http://f.youku.com/player/getFlvPath/sid/%s/st/%s/fileid/%s?K=%s&myp=null",
-        $sID, $stream, $segment_fileID, $key );
+      sprintf "http://f.youku.com/player/getFlvPath/sid/%s/st/%s/fileid/%s?K=%s&myp=0&ts=%s",
+        $sID, $stream, $segment_fileID, $key, $segment_seconds );
 
     # If we're successful, we should get a 302 with the location of the segment
     my $url = $browser->response->header( 'Location' );
