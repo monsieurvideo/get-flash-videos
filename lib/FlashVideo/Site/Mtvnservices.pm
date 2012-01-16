@@ -178,7 +178,6 @@ sub handle_feed {
 sub can_handle {
   my($self, $browser, $url) = @_;
 
-  $browser->get($url);
   return $browser->content =~ /mtvnservices\.com/i;
 }
 

@@ -40,6 +40,8 @@ sub find_package {
     for(@extra_can_handle) {
       my $possible_package = _load($_);
 
+      $browser->get($url);
+
       my $r = $possible_package->can_handle($browser, $url);
       if($r) {
         $package = $possible_package;
