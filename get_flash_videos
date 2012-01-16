@@ -360,21 +360,31 @@ sub download {
 
   # Print info instead of downloading
   if($opt{info}) {
-    print "Filename: " . ($save_as || @$actual_url[0]->{flv} || $actual_url->{flv}) . "\n";
-    $_ = $suggested_filename || @$actual_url[0]->{flv} || @$actual_url->{flv};
-    s/_/ /g;
-    s/\.[^\.]*$//;
-    print "Title: " . $_ . "\n";
-    print "Content-Location: ";
-    if(ref($actual_url) eq 'HASH') {
-      print $actual_url->{rtmp} . "\n";
-    } elsif (ref($actual_url) eq 'ARRAY') {
-      print @$actual_url[0]->{rtmp} . "\n";
+    if(ref($actual_url) eq 'ARRAY') {
+      for my $data(@$actual_url) {
+        print "Filename: " . $data->{flv} . "\n";
+        $_ = $suggested_filename || $data->{flv};
+        s/_/ /g;
+        s/\.[^\.]*$//;
+        print "Title: " . $_ . "\n";
+        print "Content-Location: " . $data->{rtmp} . "\n";
+        print "\n";
+      }
     } else {
-      print $actual_url . "\n";
-      $browser->head($actual_url);
-      if($browser->response->header('Content-Length')) {
-        print "Content-Length: " . $browser->response->header('Content-Length') . "\n";
+      print "Filename: " . ($save_as || $actual_url->{flv}) . "\n";
+      $_ = $suggested_filename || @$actual_url->{flv};
+      s/_/ /g;
+      s/\.[^\.]*$//;
+      print "Title: " . $_ . "\n";
+      print "Content-Location: ";
+      if(ref($actual_url) eq 'HASH') {
+        print $actual_url->{rtmp} . "\n";
+      } else {
+        print $actual_url . "\n";
+        $browser->head($actual_url);
+        if($browser->response->header('Content-Length')) {
+          print "Content-Length: " . $browser->response->header('Content-Length') . "\n";
+        }
       }
     }
     exit;
