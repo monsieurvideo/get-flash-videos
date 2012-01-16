@@ -372,7 +372,7 @@ sub download {
       }
     } else {
       print "Filename: " . ($save_as || $actual_url->{flv}) . "\n";
-      $_ = $suggested_filename || @$actual_url->{flv};
+      $_ = $suggested_filename || $actual_url->{flv};
       s/_/ /g;
       s/\.[^\.]*$//;
       print "Title: " . $_ . "\n";
