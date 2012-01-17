@@ -17,6 +17,7 @@ blib
 pm_to_blib
 MANIFEST
 META.yml
+MYMETA.*
 mk/makemaker.mk
 mk/makemaker.mk.old
 mk/makemaker-wrap.mk
