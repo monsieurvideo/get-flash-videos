@@ -60,24 +60,35 @@ EOF
   }
 
 # alternative formats when download available immediately after shows
-  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4}kbp)s.mp4)/gi)
+  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4})kbps.mp4)/gi)
   {
     $formats{$2} = { video => $video, playpath => $1, ratio => "16x9" };
   }
-  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4}kbp)s.\d+.mp4)/gi)
+  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4})kbps.\d+.mp4)/gi)
   {
     $formats{$2} = { video => $video, playpath => $1, ratio => "16x9" };
   }
 
-  my $q = $prefs->{quality};
   my @rates = sort { $a <=> $b } keys(%formats);
   my $cnt = $#rates;
-  if ($q =~ /\D+/) {
-    my $num = {high =>int($cnt), medium => int(($cnt+1)/2), low => 0}->{$q};
-    $q = $rates[$num];
+
+  die "Unable to find video in XML" unless $cnt >= 0;
+
+  my $q = $prefs->{quality};
+  if ( $q =~ /^\s*\d+\s*$/) {
+     my $rate = $rates[0];
+     foreach (@rates) {
+        if ( $q >= $_ )
+        { $rate = $_;}
+     }
+     $q = $rate;
   }
-  unless ( defined($q) || ($q =~ /^\d+$/)) {
-    $q = $rates[int($cnt)-1];
+  else {
+    my $num = {high =>int($cnt), medium => int(($cnt+1)/2), low => 0}->{$q};
+    if (! defined $num ) { 
+      $num = int($cnt);
+    }
+    $q = $rates[$num];
   }
   
   my $format = $formats{$q};
