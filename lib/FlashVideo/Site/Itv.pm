@@ -5,21 +5,6 @@ use strict;
 use FlashVideo::Utils;
 use HTML::Entities;
 
-my $resolutions = {
-  "16x9" => {
-    "400" => [412, 232],
-    "600" => [512, 288],
-    "800" => [640, 360],
-    "1200" => [704, 396],
-  },
-  "4x3" => {
-    "400" => [320, 240],
-    "600" => [384, 288],
-    "800" => [480, 360],
-    "1200" => [528, 396],
-  },
-};
-
 sub find_video {
   my ($self, $browser, $page_url, $prefs) = @_;
 
@@ -65,21 +50,40 @@ EOF
   my $video = $1;
 
   # Parse list of availible formats and lookup their resolutions
-  my(@formats);
-  while ($video =~ m/(mp4:[^\]]+_[A-Z]+([0-9]{3,4})_(16[-x]9|4[-x]3).mp4)/gi)
+
+  my %formats;
+
+# Normal format for catchup service
+  while ($video =~ m/(mp4:[^\]]+_[A-Z]+([0-9]{3,4})_(16|4)[-x](9|3).mp4)/gi)
   {
-    push @formats, { video => $video, playpath => $1, resolution => $resolutions->{$3}->{$2}};
-  }
-  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4})kbps.mp4)/gi)
-  {
-    push @formats, { video => $video, playpath => $1, resolution => $resolutions->{"16x9"}->{$2}};
-  }
-  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4})kbps.\d+.mp4)/gi)
-  {
-    push @formats, { video => $video, playpath => $1, resolution => $resolutions->{"16x9"}->{$2}};
+    $formats{$2} = { video => $video, playpath => $1, ratio => "$3x$4" };
   }
 
-  my $format = $prefs->quality->choose(@formats);
+# alternative formats when download available immediately after shows
+  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4}kbp)s.mp4)/gi)
+  {
+    $formats{$2} = { video => $video, playpath => $1, ratio => "16x9" };
+  }
+  while ($video =~ m/(mp4:[^\]]+-([0-9]{3,4}kbp)s.\d+.mp4)/gi)
+  {
+    $formats{$2} = { video => $video, playpath => $1, ratio => "16x9" };
+  }
+
+  my $q = $prefs->{quality};
+  my @rates = sort { $a <=> $b } keys(%formats);
+  my $cnt = $#rates;
+  if ($q =~ /\D+/) {
+    my $num = {high =>int($cnt), medium => int(($cnt+1)/2), low => 0}->{$q};
+    $q = $rates[$num];
+  }
+  unless ( defined($q) || ($q =~ /^\d+$/)) {
+    $q = $rates[int($cnt)-1];
+  }
+  
+  my $format = $formats{$q};
+  if ( ! defined($format)) {
+    $format = $formats{$rates[int($cnt)]};
+  }
 
   $video = $format->{"video"};
   my $rtmp = decode_entities($video =~ /base="(rtmp[^"]+)/);
