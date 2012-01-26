@@ -123,8 +123,8 @@ sub find_video {
   return {
     flv      => $filename,
     rtmp     => $rtmp_url,
-    flashVer => '"WIN 10,3,183,7"',
-    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer-11.8.5.swf",
+    flashVer => '"WIN 11,0,1,152"',
+    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer-11.21.2.swf",
     conn     => 'Z:',
     playpath => $playpath,
     app      => $app,
@@ -134,7 +134,8 @@ sub find_video {
 sub decode_4od_token {
   my $encrypted_token = shift;
 
-  $encrypted_token = decode_base64($encrypted_token);
+# append null - broken!!
+  $encrypted_token = decode_base64($encrypted_token) . "\x{00}";
 
   my $blowfish = Crypt::Blowfish_PP->new(TOKEN_DECRYPT_KEY);
 
@@ -148,6 +149,8 @@ sub decode_4od_token {
     $position += 8;
   }
 
+# strip non printing..
+  $decrypted_token =~ s/[\x00-\x1f\x80-\xff]//g;
   return $decrypted_token;
 }
 
