@@ -23,7 +23,7 @@ sub find_video {
   #   http://www.channel4.com/programmes/dispatches/4od/player/3269465
   my $asset_id;
 
-  if ($page_url =~ m'(?:4od/player/|4od#)(\d+)') {
+  if ($page_url =~ m'(?:4od/player/|4od[^\/]*#)(\d+)') {
     $asset_id = $1;
   }
   else {
