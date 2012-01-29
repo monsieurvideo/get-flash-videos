@@ -134,8 +134,7 @@ sub find_video {
 sub decode_4od_token {
   my $encrypted_token = shift;
 
-# append null - broken!!
-  $encrypted_token = decode_base64($encrypted_token) . "\x{00}";
+  $encrypted_token = decode_base64($encrypted_token);
 
   my $blowfish = Crypt::Blowfish_PP->new(TOKEN_DECRYPT_KEY);
 
@@ -144,13 +143,16 @@ sub decode_4od_token {
   # Crypt::Blowfish_PP only decrypts 8 bytes at a time.
   my $position = 0;
 
-  while ( ($position + 8) < length $encrypted_token) {
+  while ( $position < length $encrypted_token) {
     $decrypted_token .= $blowfish->decrypt(substr $encrypted_token, $position, 8);
     $position += 8;
   }
 
-# strip non printing..
-  $decrypted_token =~ s/[\x00-\x1f\x80-\xff]//g;
+  # remove padding.. PKCS7/RFC5652..
+  my $npad = unpack("c", substr($decrypted_token, -1));
+  if ($npad > 0 && $npad < 9) {
+    $decrypted_token = substr($decrypted_token, 0, length($decrypted_token)-$npad);
+  }
   return $decrypted_token;
 }
 
