@@ -16,6 +16,15 @@ sub find_video {
 
   my $page_url = $browser->uri->as_string;
 
+  # Determine series and episode. Channel 4 sometimes have these backwards,
+  # but as long as they differ there's less risk of overwriting or
+  # incorrectly resuming previous episodes from the same series.
+  my $series_and_episode;
+  if ($browser->content =~ /<meta\ property="og:image"
+                            \ content="\S+series-(\d+)\/episode-(\d+)/x) {
+    $series_and_episode = sprintf "S%02dE%02d", $1, $2;
+  }
+
   # Get asset ID from 4od programme URL, which can be in two different
   # formats:
   #
@@ -66,10 +75,16 @@ sub find_video {
   }
 
   # Get filename to use.
+  my %seen;
   my $title;
   my @title_components = grep defined,
+                         grep { $seen{$_}++ }
                          map { $xml->{assetInfo}->{$_} }
                          qw(brandTitle episodeTitle);
+
+  if ($series_and_episode) {
+    push @title_components, $series_and_episode;
+  }
 
   if (@title_components) {
     $title = join " - ", @title_components;
