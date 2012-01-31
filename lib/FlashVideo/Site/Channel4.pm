@@ -23,7 +23,7 @@ sub find_video {
   #   http://www.channel4.com/programmes/dispatches/4od/player/3269465
   my $asset_id;
 
-  if ($page_url =~ m'(?:4od/player/|4od#)(\d+)') {
+  if ($page_url =~ m'(?:4od/player/|4od[^\/]*#)(\d+)') {
     $asset_id = $1;
   }
   else {
@@ -123,8 +123,8 @@ sub find_video {
   return {
     flv      => $filename,
     rtmp     => $rtmp_url,
-    flashVer => '"WIN 10,3,183,7"',
-    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer-11.8.5.swf",
+    flashVer => '"WIN 11,0,1,152"',
+    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer-11.21.2.swf",
     conn     => 'Z:',
     playpath => $playpath,
     app      => $app,
@@ -143,11 +143,16 @@ sub decode_4od_token {
   # Crypt::Blowfish_PP only decrypts 8 bytes at a time.
   my $position = 0;
 
-  while ( ($position + 8) < length $encrypted_token) {
+  while ( $position < length $encrypted_token) {
     $decrypted_token .= $blowfish->decrypt(substr $encrypted_token, $position, 8);
     $position += 8;
   }
 
+  # remove padding.. PKCS7/RFC5652..
+  my $npad = unpack("c", substr($decrypted_token, -1));
+  if ($npad > 0 && $npad < 9) {
+    $decrypted_token = substr($decrypted_token, 0, length($decrypted_token)-$npad);
+  }
   return $decrypted_token;
 }
 

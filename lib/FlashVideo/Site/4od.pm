@@ -11,7 +11,7 @@ use URI::Escape;
 sub search {
   my ($self, $search, $type) = @_;
 
-  unless(eval { from_xml("<foo/") }) {
+  unless(eval { from_xml("<foo/>") }) {
     if($type eq 'site') {
       die $@;
     } else {
