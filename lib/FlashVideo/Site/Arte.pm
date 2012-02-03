@@ -27,14 +27,14 @@ sub find_video {
     die "Unable to find 'videorefFileUrl' in page\n";
   }
 
-  if($browser->content =~ /<param name="movie" value="(http:\/\/videos\.arte\.tv\/[^\?]+)\?/) {
+  if($browser->content =~ /<param name="movie" value="(http:\/\/videos\.arte\.tv\/[^\?]+)\?/) { #"
     $playerurl = $1;
     debug "found playerurl \"$playerurl\"\n";
   }
 
   $browser->get($xmlurl1);
 
-  if($browser->content =~ /<video lang="$lang" ref="(.*)"\/>/) {
+  if($browser->content =~ /<video lang="$lang" ref="(.*)" \/>/) {
     $xmlurl2 = $1;
     debug "found <video ref=\"$xmlurl2\">\n";
   } else {
