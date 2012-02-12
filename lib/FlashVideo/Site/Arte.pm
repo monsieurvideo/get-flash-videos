@@ -27,7 +27,7 @@ sub find_video {
     die "Unable to find 'videorefFileUrl' in page\n";
   }
 
-  if($browser->content =~ /<param name="movie" value="(http:\/\/videos\.arte\.tv\/[^\?]+)\?/) {
+  if($browser->content =~ /<param name="movie" value="(http:\/\/videos\.arte\.tv\/[^\?]+)\?/) { #"
     $playerurl = $1;
     debug "found playerurl \"$playerurl\"\n";
   }
