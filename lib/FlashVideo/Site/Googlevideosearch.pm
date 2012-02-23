@@ -4,13 +4,14 @@ package FlashVideo::Site::Googlevideosearch;
 use strict;
 no warnings 'uninitialized';
 use FlashVideo::Mechanize;
+use URI::Escape;
 
 sub search {
   my($self, $search, $type) = @_;
 
   my $browser = FlashVideo::Mechanize->new;
   
-  $browser->get('http://video.google.com/');
+  $browser->get('http://video.google.com/videoadvancedsearch');
 
   $browser->submit_form(
     with_fields => {
@@ -22,14 +23,12 @@ sub search {
 
   my @links = map  { 
                      chomp(my $name = $_->text);
-                     { name => $name, url => $_->url_abs->as_string }
+                     my $url = $_->url_abs->as_string;
+                     $url =~ /q=([^&]*)/;
+                     $url = uri_unescape($1);
+                     { name => $name, url => $url }
               }
-              grep { 
-                $_->attrs->{onclick} =~ /return resultClick/
-                || $_->attrs->{onmousedown} =~ /video_result/
-                || $_->attrs->{class} eq 'l'
-              }
-              $browser->find_all_links(text_regex => qr/.+/);
+              $browser->find_all_links(text_regex => qr/.+/, url_regex => qr/\/url/);
 
   return @links;
 }
