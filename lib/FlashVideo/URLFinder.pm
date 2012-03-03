@@ -15,7 +15,7 @@ use URI;
 
 # In some cases there isn't an obvious URL to find, so the following will be loaded and their 'can_handle'
 # method called.
-my @extra_can_handle = qw(Brightcove Mtvnservices Gawker);
+my @extra_can_handle = qw(Brightcove Mtvnservices Gawker Ooyala);
 
 sub find_package {
   my($class, $url, $browser) = @_;
