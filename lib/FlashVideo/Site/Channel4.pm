@@ -25,6 +25,15 @@ sub find_video {
     $series_and_episode = sprintf "S%02dE%02d", $1, $2;
   }
 
+  # get SWF player file
+  my $swf_player;
+  if ($browser->content =~ /fourodPlayerFile\s+=\s+\'(4od\S+\.swf)\'/i) {
+    $swf_player = $1;
+  }
+  else {
+     $swf_player ='4odplayer-11.21.2.swf';
+  }
+
   # Get asset ID from 4od programme URL, which can be in two different
   # formats:
   #
@@ -63,7 +72,12 @@ sub find_video {
     my $ip = $xml->{assetInfo}->{uriData}->{ip};
     my $e  = $xml->{assetInfo}->{uriData}->{e};
 
-    $auth = sprintf "e=%s&ip=%s&h=%s", $e, $ip, $decoded_token;
+    if ($ip eq '') {
+      $auth = sprintf "e=%s&h=%s", $e, $decoded_token;
+    }
+    else {
+      $auth = sprintf "e=%s&ip=%s&h=%s", $e, $ip, $decoded_token;
+    }
   }
   else {
     # Akamai presumably
@@ -139,9 +153,10 @@ sub find_video {
     flv      => $filename,
     rtmp     => $rtmp_url,
     flashVer => '"WIN 11,0,1,152"',
-    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/4odplayer-11.21.2.swf",
+    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/$swf_player",
     conn     => 'Z:',
     playpath => $playpath,
+    pageUrl => $page_url,
     app      => $app,
   };
 }
