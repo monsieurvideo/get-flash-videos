@@ -89,10 +89,8 @@ sub find_video {
   }
 
   # Get filename to use.
-  my %seen;
   my $title;
   my @title_components = grep defined,
-                         grep { $seen{$_}++ }
                          map { $xml->{assetInfo}->{$_} }
                          qw(brandTitle episodeTitle);
 
