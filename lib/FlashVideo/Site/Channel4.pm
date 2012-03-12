@@ -31,7 +31,7 @@ sub find_video {
     $swf_player = $1;
   }
   else {
-     $swf_player ='4odplayer-11.21.2.swf';
+     $swf_player = '4odplayer-11.21.2.swf';
   }
 
   # Get asset ID from 4od programme URL, which can be in two different
@@ -72,7 +72,7 @@ sub find_video {
     my $ip = $xml->{assetInfo}->{uriData}->{ip};
     my $e  = $xml->{assetInfo}->{uriData}->{e};
 
-    if ($ip eq '') {
+    if ($ip) {
       $auth = sprintf "e=%s&h=%s", $e, $decoded_token;
     }
     else {
@@ -154,7 +154,7 @@ sub find_video {
     swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/$swf_player",
     conn     => 'Z:',
     playpath => $playpath,
-    pageUrl => $page_url,
+    pageUrl  => $page_url,
     app      => $app,
   };
 }
