@@ -14,11 +14,11 @@ sub find_video {
   $path = $path . "vmixVideoLanding2.js"; # specify the javascript src
   
   # extract the site's action and media_id from the url
-  my ($action, $media_id) = $uri->query() =~ m/^([^=]+)=(\d+)/;
-  debug "Nasa query is " . $action . " = " . $media_id;
+  debug "Nasa videogallery query is " . $uri->query();
+  my ($media_id) = $uri->query() =~ m/media_id=(\d+)/;
   
   # Site support for NASA videogallery specifying video by media_id (at this time).
-  die "Nasa support requires 'media_id' in the query" unless $action == "media_id";
+  die "Nasa support requires 'media_id=nnnnnnnn' in the query" unless $media_id;
   
   $uri->path($path);                      # Change path to javascript src
   $uri->query(undef());                   # Remove the query
