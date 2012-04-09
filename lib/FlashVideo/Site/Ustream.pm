@@ -18,7 +18,7 @@ GHJwaW4uMC4xODM2MDk4NTkzMTY0Njg5OAAHdmlkZW9JZAIABzIzNTU3MzYAB3BhZ2VVcmwCACZo
 dHRwOi8vd3d3LnVzdHJlYW0udHYvcmVjb3JkZWQvMjM1NTczNgAHYnJhbmRJZAIAATEAAAkK
 EOF
 
-  my($title) = $browser->content =~ /<h2[^>]*>([^<]+)/;
+  my $title = extract_info($browser)->{meta_title};
 
   # http://www.ustream.tv/recorded/\d+
   my($video_id) = $browser->uri =~ m{recorded/(\d+)};
@@ -31,7 +31,7 @@ EOF
   $browser->post(
     # This is hidden as gwUrl inside the second loaded SWF
     # (viewer.rsl.VER.swf), too much effort to extract properly.
-    "http://216.52.240.138/gateway.php",
+    "http://rgw.ustream.tv/gateway.php",
     Content_Type => "application/x-amf",
     Content => $data
   );
