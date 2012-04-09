@@ -17,7 +17,7 @@ sub find_video {
   }
 
   $browser->get($embed_url);
-  my $playkey = ($browser->content =~ /thumbPlayKey: '([^']+)/)[0];
+  my $playkey = ($browser->content =~ /'thumbPlayKey': '([^']+)/)[0];
   die "No playkey found\n" unless $playkey;
 
   my $title = ($browser->content =~ /title: '([^']+)'/)[0];
