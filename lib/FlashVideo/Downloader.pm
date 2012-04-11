@@ -304,6 +304,9 @@ sub check_magic {
   # MP3
   } elsif(substr($data, 0, 3) eq 'ID3') {
     return 1;
+  # MP3 without ID3 tags
+  } elsif (substr($data, 0, 2) eq "\xff\xfb") {
+    return 1;
   # ASF
   } elsif(substr($data, 0, 4) eq "\x30\x26\xb2\x75") {
     return 1;
