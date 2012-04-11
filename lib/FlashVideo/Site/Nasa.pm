@@ -3,6 +3,7 @@ package FlashVideo::Site::Nasa;
 
 use strict;
 use FlashVideo::Utils;
+use FlashVideo::JSON;
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
@@ -45,16 +46,16 @@ sub find_video {
   die "Could not get video details" unless $browser->success();
   
   # Content is JSON fomatted
+  my $result = from_json($browser->content());
+  
   # Get the video's url
-  my ($url) = $browser->content() =~ m{\"url\"\:\"([^"]*)\"};
+  my $url = $result->{url};
   die "Could not extract video url" unless $url;
-  # unescape the JSON
-  $url =~ s/\\//g;
   # Hack: not sure why/where the "core" in the url is mutated to "core-dl" so just hacking it here
   $url =~ s/\/core\//\/core-dl\//;
   
   # Get the video's title from the JSON
-  my ($filename) = $browser->content() =~ m{\"title\"\:\"([^"]*)\"};
+  my $filename = $result->{title};
   $filename = title_to_filename($filename, "mp4");
 
   return $url, $filename;
