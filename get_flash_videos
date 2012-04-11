@@ -338,9 +338,12 @@ sub download {
   }
 
   my $suggested_filename = $suggested_fnames[-1];
+  if (ref($actual_url) eq 'ARRAY') {
+      $suggested_filename ||= $actual_url->{flv};
+  }
 
   if (!$opt{play}) {
-    if (!$opt{yes} && @suggested_fnames > 1) {
+    if (!$opt{yes} && !$opt{filename} && @suggested_fnames > 1) {
       print "There are different suggested filenames, please choose:\n";
       my $count;
       foreach my $filename (@suggested_fnames) {
