@@ -67,14 +67,13 @@ sub find_video_viasat {
     }
   };
 
-  my @rtmpdump_commands;
-  my $args = {
+
+  return{
       rtmp => $rtmp,
       swfVfy => "http://flvplayer-viastream-viasat-tv.origin.vss.viasat.tv/play/swf/player110420.swf",
       flv => $flv_filename
   };
-  push @rtmpdump_commands, $args;
-  return \@rtmpdump_commands;
+
 
 }
 

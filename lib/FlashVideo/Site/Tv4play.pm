@@ -46,15 +46,15 @@ sub find_video {
   #   }
   # }
 
-  my @rtmpdump_commands; 
-  my $args = {
+
+  
+  return {
       rtmp => $dump[0]->{rtmp},
       swfVfy => "http://www.tv4play.se/flash/tv4playflashlets.swf",
       playpath =>  $dump[0]->{mp4},
       flv => $flv_filename
   };
-  push @rtmpdump_commands, $args;
-  return \@rtmpdump_commands;
+  
 }
 
 1;
