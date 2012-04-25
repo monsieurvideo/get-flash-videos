@@ -81,12 +81,11 @@ sub find_video {
       info "No subtitles found!";
     }
   }
-  my $args = {
+  return{
       rtmp => "$url",
       flv => "$flv_filename",
   };
-  push @rtmpdump_commands, $args;
-  return \@rtmpdump_commands;
+
 
 }
 
