@@ -4,29 +4,51 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
-  my $url;
-  if($browser->content =~ m{<param name="flashvars" value="vu=http://video.ted.com/[^"]*talk=([^&;]+);}) {
-    my $embed_url = "http://www.ted.com/talks/$1.html";
-    $browser->get($embed_url);
-  }
-  if($browser->content =~ m{<a href="(/talks[^"]+)">Watch high-res video}) {
-    $url = URI->new_abs($1, $browser->uri);
-    $browser->allow_redirects;
+  my $filename;
+  if ($browser->content =~ m{<noscript.*download.ted.com/talks/([^.]+)\.mp4.*noscript>}s) {
+    $filename = $1;
   } else {
     die "Unable to find download link";
   }
 
-  # TODO - support subtitles. Available in JSON (urgh):
-  #   http://www.ted.com/talks/subtitles/id/453/lang/eng
-  # The ID can be pulled out of flashvars:
-  #   ti:"453"
+  # Get subtitles if requested
+  my $lang = "";
+  my $quality = $prefs->{quality};
+  if ($prefs->subtitles) {
+    if ($quality eq "low") {
+      $quality = "-low";
+    } elsif ($quality eq "high") {
+      $quality = "-480p";
+    } else {
+      die "subtitles aren't available for this quality level, only high or low";
+    }
+    $ENV{"LANG"} =~ /^([^_]*)/;
+    $lang = $1;
+    if ($lang eq "") {
+      info "Unable to determine your language, using English";
+      $lang = "en";
+    }
+    $lang = "-" . $lang;
+  } else {
+    if ($quality eq "low") {
+      $quality = "-light";
+    } elsif ($quality eq "medium") {
+      $quality = "";
+    } elsif ($quality eq "high") {
+      $quality = "-480p";
+    } else {
+      die "Unknown quality setting";
+    }
+  }
+  $filename .= $quality . $lang . ".mp4";
 
-  my $title = extract_title($browser);
-  $title =~ s/\s*\|.*//;
-  my $filename = title_to_filename($title, "mp4");
 
+  my $url = "http://download.ted.com/talks/$filename";
+
+  # the url will be redirected to the real one
+  $browser->allow_redirects;
   return $url, $filename;
 }
 
