@@ -2,89 +2,56 @@
 # Except the CCR bits, thanks to Fogerty for those.
 package FlashVideo::Site::Nfb;
 
-# According to Ohloh code without comments is bad, so as Zakflashvideo is
-# currently playing on Guitar Hero..
-
-# There's a place up ahead and I'm goin' just as fast as my feet can fly
 use strict;
 use FlashVideo::Utils;
-use MIME::Base64;
 
-# Come away, come away if you're goin'
 sub find_video {
   my ($self, $browser) = @_;
-  # leave the sinkin' ship behind.
 
-  my($mid) = $browser->content =~ /mID=(\w+)/;
+  # get the flash player url to use as the referer and the url of the config file
+  my($refer, $cURL) = $browser->content =~ /<link rel="video_src" href="([^?]+)\?configURL=([^&]+)&/;
 
-  # Come on the risin' wind, we're goin' up around the bend.
-  if (!eval { require Data::AMF::Packet; }) {
-    die "Must have Data::AMF installed to download NFB videos";
-  }
-
-  my $packet = decode_base64(<<EOF);
-AAAAAAADABFnZXRfbW92aWVfcGFja2FnZQACLzEAAAAiCgAAAAMCAAVBREFBUwIACElET0JKMjYw
-AgAHZGVmYXVsdAAJc2V0X3N0YXRzAAIvMgAAAEkKAAAAAwIAC3Rlc3RfZmxpZ2h0AgAISURPQkoy
-NjACAChpbmZvczogZmxhc2hQbGF5ZXJWZXJzaW9uPUxOWCAxMCwwLDMyLDE4AAlzZXRfc3RhdHMA
-Ai8zAAAASQoAAAADAgALdGVzdF9mbGlnaHQCAAhJRE9CSjI2MAIAKGluZm9zIDpzY3JlZW5SZXNv
-bHV0aW9uPTEwMjQsNzY4LCBkcGk9OTY=
-EOF
-
-  # Now MonsieurVideo is playing Guitar Hero
-  # Bring a song and a smile for the banjo
-  my $data = Data::AMF::Packet->new->deserialize($packet);
-   
-  $data->messages->[0]->{value}->[1] = $data->messages->[1]->{value}->[1] = $mid;
-
-  $data = $data->serialize;
-
-  # Better get while the gettin's good
+  # get the config file with the stream info
   $browser->post(
-    "http://www.nfb.ca/gwplayer/",
-    Content_Type => "application/x-amf",
-    Content => $data,
+    $cURL,
+    "X-NFB-Referer" => $refer,
+    Content_Type => "application/x-www-form-urlencoded",
+    Content => "getConfig=true",
   );
 
   if (!$browser->success) {
-    die "Posting AMF to NFB failed: " . $browser->response->status_line();
+    die "Getting config info failed: " . $browser->response->status_line();
   }
 
-  $data = $browser->content;
+  my $xml = from_xml($browser->content);
 
-  # Data::AMF can't deserialize this, and helpfully dies with a Moose-related error
-  # message, so just hackily look for RTMP URLs in it directly. MOOOOOSE!
- 
-  my($title) = $data =~ m'title.{3}([^\0]+)';
+  # find the video stream info
+  my $media;
+  foreach (@{$xml->{player}->{stream}->{media}}) {
+    if ($_->{"type"} eq "video") {
+      $media = $_;
+      last;
+    }
+  }
+
+  my $title = $media->{title};
 
   # The video might be available in different qualities. Try to download the 
   # highest quality by default. Qualities in descending order: M1M, M415K, M48K.
 
-  my @rtmp_urls = sort { _get_quality_from_url($b) <=> _get_quality_from_url($a) }
-                  ($data =~ m'(rtmp://.*?)\0'g);
+  my @assets = sort { _get_quality_from_url($b->{default}->{url}) <=> _get_quality_from_url($a->{default}->{url}) }
+                    (@{$media->{assets}->{asset}});
 
-  if (!@rtmp_urls) {
-    die "Didn't find any rtmp URLs in the packet, our hacky 'parsing' " .
-        "code has probably broken";
+  if (!@assets) {
+    die "Couldn't find any streams in the config file";
   }
 
-  # Hitch a ride to the end of the highway where the neons turn to wood.
-  my $rtmp_url = $rtmp_urls[0];
-  my($host, $app, $playpath) = $rtmp_url =~ m'rtmp://([^/]+)/(\w+)(/[^?]+)';
+  my $rtmp_url = $assets[0]->{default}->{streamerURI};
+  my($host, $app) = $rtmp_url =~ m'rtmp://([^/]+)/(\w+)';
+  my $playpath = $assets[0]->{default}->{url};
 
-  if($host eq 'flash.onf.ca') {
-    # Special case, clips served from here need two parts of the path for the app.
-    $playpath =~ s{^(/[^/]+)/}{};
-    $app .= $1;
-    # And no file extension
-    $playpath =~ s{\.\w+$}{};
-  } else {
-    # Anything else needs mp4: prefixed
-    $playpath = "mp4:$playpath";
-  }
-
-  # Oooh!
   return {
-    flv => title_to_filename($title),
+    flv => "NFB-" . title_to_filename($title),
     rtmp => $rtmp_url,
     app => $app,
     playpath => $playpath
