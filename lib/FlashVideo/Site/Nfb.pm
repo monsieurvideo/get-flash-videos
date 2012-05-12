@@ -6,7 +6,7 @@ use strict;
 use FlashVideo::Utils;
 
 sub find_video {
-  my ($self, $browser) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   # get the flash player url to use as the referer and the url of the config file
   my($refer, $cURL) = $browser->content =~ /<link rel="video_src" href="([^?]+)\?configURL=([^&]+)&/;
@@ -46,9 +46,25 @@ sub find_video {
     die "Couldn't find any streams in the config file";
   }
 
-  my $rtmp_url = $assets[0]->{default}->{streamerURI};
+  my $quality = $prefs->{quality};
+  my $asset;
+  if ($quality eq "high") {
+    $asset = $assets[0];
+  } elsif ($quality eq "low") {
+    $asset = $assets[-1];
+  } elsif ($quality eq "medium") {
+    if (scalar(@assets) > 1) {
+      $asset = $assets[1];
+    } else {
+      $asset = $assets[0];
+    }
+  } else {
+    die "Unknown quality setting";
+  }
+
+  my $rtmp_url = $asset->{default}->{streamerURI};
   my($host, $app) = $rtmp_url =~ m'rtmp://([^/]+)/(\w+)';
-  my $playpath = $assets[0]->{default}->{url};
+  my $playpath = $asset->{default}->{url};
 
   return {
     flv => "NFB-" . title_to_filename($title),
