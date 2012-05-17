@@ -67,7 +67,7 @@ sub find_video {
   my $playpath = $asset->{default}->{url};
 
   return {
-    flv => "NFB-" . title_to_filename($title),
+    flv => title_to_filename($title),
     rtmp => $rtmp_url,
     app => $app,
     playpath => $playpath
