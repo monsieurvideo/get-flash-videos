@@ -149,9 +149,9 @@ sub find_video {
 
   # swf url could be relocated, url_exists returns relocated url.
   my $swf_player_url = url_exists($browser, "http://www.channel4.com/static/programmes/asset/flash/swf/$swf_player");
-  if ($swf_player_url == '') {
-     die "swf url not found";
 
+  if (!$swf_player_url) {
+     die "swf url not found";
   }
   
   return {
