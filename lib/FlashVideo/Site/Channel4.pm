@@ -72,11 +72,11 @@ sub find_video {
     my $ip = $xml->{assetInfo}->{uriData}->{ip};
     my $e  = $xml->{assetInfo}->{uriData}->{e};
 
-    if ($ip) {
-      $auth = sprintf "e=%s&h=%s", $e, $decoded_token;
+    if (defined $ip) {
+      $auth = sprintf "e=%s&ip=%s&h=%s", $e, $ip, $decoded_token;
     }
     else {
-      $auth = sprintf "e=%s&ip=%s&h=%s", $e, $ip, $decoded_token;
+      $auth = sprintf "e=%s&h=%s", $e, $decoded_token;
     }
   }
   else {
@@ -147,11 +147,18 @@ sub find_video {
     $playpath .= "?$auth";
   }
 
+  # swf url could be relocated, url_exists returns relocated url.
+  my $swf_player_url = url_exists($browser, "http://www.channel4.com/static/programmes/asset/flash/swf/$swf_player");
+  if ($swf_player_url == '') {
+     die "swf url not found";
+
+  }
+  
   return {
     flv      => $filename,
     rtmp     => $rtmp_url,
     flashVer => '"WIN 11,0,1,152"',
-    swfVfy   => "http://www.channel4.com/static/programmes/asset/flash/swf/$swf_player",
+    swfVfy   => "$swf_player_url",
     conn     => 'Z:',
     playpath => $playpath,
     pageUrl  => $page_url,
