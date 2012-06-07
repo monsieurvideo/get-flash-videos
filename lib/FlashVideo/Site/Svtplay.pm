@@ -32,7 +32,7 @@ sub find_video {
   foreach my $video (@{ $video_data->{video}->{videoReferences} }) {
     my $rate = int $video->{bitrate};
 
-    if ($bitrate < $rate) {
+    if ($bitrate < $rate && $video->{playerType} eq "flash") {
       $rtmp_url = $video->{url};
       $bitrate = $rate;
     }
