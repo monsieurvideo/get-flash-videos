@@ -24,9 +24,9 @@ sub find_video {
 
   $browser->get($player_js);
 
-  my ($mobile_player_js) = uri_unescape(
-    $browser->content =~ m{mobile_player_url *= *['"]([^'"]*)["']}
-  ).'unknown';
+  my ($mobile_player_js) =
+    $browser->content =~ m{mobile_player_url *= *['"]([^'"]*)["']};
+  $mobile_player_js .= 'unknown&domain=unknown';
 
   die 'Could not find mobile_player.js URL' unless $mobile_player_js;
 
