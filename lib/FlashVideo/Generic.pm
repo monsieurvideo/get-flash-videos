@@ -4,6 +4,7 @@ package FlashVideo::Generic;
 use strict;
 use FlashVideo::Utils;
 use URI;
+use FlashVideo::URLFinder;
 use URI::Escape qw(uri_unescape);
 
 my $video_re = qr!http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
@@ -73,7 +74,21 @@ sub find_video {
         debug "Found iframe: $iframe";
         my $sub_browser = $browser->clone;
         $sub_browser->get($iframe);
-        ($actual_url) = eval { $self->find_video($sub_browser, undef, $prefs) };
+        # Recurse!
+        my($package, $possible_url) = FlashVideo::URLFinder->find_package($iframe, $sub_browser);
+
+        # Before fetching the url, give the package a chance
+        if($package->can("pre_find")) {
+          $package->pre_find($sub_browser);
+        }
+
+        info "Downloading $iframe";
+        $sub_browser->get($iframe);
+
+        my($actual_url, @suggested_fnames) = eval {
+          $package->find_video($sub_browser, $possible_url, $prefs);
+        };
+        return $actual_url, @suggested_fnames if $actual_url;
       }
     }
   }
