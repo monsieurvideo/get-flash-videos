@@ -9,16 +9,16 @@ use FlashVideo::Utils;
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
+  my $filename;
 
-  #the form that needs to be submitted to get the video page is the 
-  #second one (first is a search)
-  $browser->form_number('2');
-  
-  #extract the filename from the form
-  my $filename = $browser->value( 'fname' );
-  
-  info 'Submitting form to get real video page';
-  $browser->submit(); #submit to get the real page
+  for my $form ($browser->forms) {
+    if ($form->find_input('#btn_download')){
+      $filename = $form->value('fname'); #extract the filename from the form
+      
+      info 'Submitting form to get real video page.';
+      $browser->request($form->click()); #submit to get the real page
+    }
+  }
   
   my ($url) = ($browser->content =~ /file: *"(https?:\/\/.*?)"/);
   
