@@ -53,7 +53,7 @@ sub find_video {
 
     # Video ID is in the URL if we are either at the redirected URL
     # or at the embedded link that sends the redirect
-    ( $videoID ) = ( $embed_url =~ m`tudou.com/player/outside/player_outside.swf\?iid=(\d+)` );
+    ( $videoID ) = ( $embed_url =~ m`\.swf\?iid=(\d+)` );
   }
 
   die "Couldn't extract video ID, we are out probably out of date" unless $videoID;
