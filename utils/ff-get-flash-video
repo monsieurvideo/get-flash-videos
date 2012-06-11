@@ -1,0 +1,310 @@
+#!/bin/bash
+#
+# Try to download a flash movie from current ff window.
+#
+# Downloads are kept in a cache directory of fixed size, oldest
+# files are removed as required. Last download is kept with a
+# fixed name such as 'svtplay.flv' or 'youtube.flv'. Older downloads
+# are stored with names retrieved from source.
+#
+# Prerequisites:
+#  - One firefox window with a page containing a flash video on
+#    current DISPLAY.
+#
+#  - The CACHE_DIR directory should exist or be possible to create.
+#
+# Multiple invocations:
+#  - A running instance initially blocks other instances from
+#    running to not mess with the ff state. Invocations during
+#    this time are logged but otherwise silently ignored.
+#
+#  - Later attempts to start downloading to same location will kill
+#    running process and overwrite dl location.
+#
+#  - Later attempts to start downloading to other locations runs in
+#    parallel.
+#
+# Dependencies:
+#    xdotool, xsel, get_flash_videos, zenity, xorg-x11-utils
+#
+# Bugs:
+#    Fragile, does not use stable API:s, just happens to  work
+#    occasionally.
+
+readonly FF_WINDOW_NAME='Mozilla Firefox'
+readonly DEFAULTS_FILE='/etc/sysconfig/ff-get-flash-video'
+readonly DEFAULT_CACHE_SIZE=5
+
+
+function get_cachedir()
+{
+    local xdg_setup_dirs="${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
+    test -r "$xdg_setup_dirs" && source "$xdg_setup_dirs"
+    dir=${XDG_DOWNLOAD_DIR:-$HOME}/flash
+    test -d $dir || mkdir $dir || echo "Cannot create $dir" >&2
+    echo $dir
+}
+
+
+[ -r $DEFAULTS_FILE ] && source $DEFAULTS_FILE
+CACHE_DIR=${CACHE_DIR:-$( get_cachedir )}
+CACHE_SIZE=${CACHE_SIZE:-$DEFAULT_CACHE_SIZE}
+
+
+function usage()
+{
+    cat <<EOF
+
+Find out what flash video Firefox is running and download it.
+
+Usage: $(basename $0) [options]
+
+Options
+  -d <dir>   Download directory, defaults to $CACHE_DIR.
+  -s <size>  Cache size i.e., number of downloaded files kept.
+             Defaults to $CACHE_SIZE.
+
+Assumes a single firefox window opened with a flash movie running.
+EOF
+}
+
+
+function get_options()
+{
+    while getopts 'd:s:h' opt; do
+	case $opt in
+	    s) CACHE_SIZE=$OPTARG;;
+	    d) CACHE_DIR=$OPTARG;;
+	    h) usage; exit 0;;
+	    *) usage; exit 1;;
+	esac
+    done
+
+    LOGFILE="$CACHE_DIR/flash-download.trace"
+    LOCK_FILE="$CACHE_DIR/.lock"
+    readonly CACHE_SIZE CACHE_DIR LOGFILE LOCK_FILE
+}
+
+
+function error_msg()   { zenity --error --timeout=4 --text="$1"; }
+
+function warning_msg() { zenity --warning --timeout=4 --text="$1"; }
+
+function info_msg()    { zenity --info --timeout=4 --text="$1"; }
+
+
+function get_size()
+# Return size of single file argument on stdout, no file returns "0".
+{
+    if [ -f $1 ]; then
+        ls -l $1 | awk '{print $5}'
+    else
+        echo "0"
+    fi
+}
+
+
+function get_ff_window()
+# Return current ff window id, bailing out on missing or multiple
+# ff window(s).
+{
+    local win
+
+    win=$( xdotool search --name "$FF_WINDOW_NAME" ) || win=""
+    if [ -z "$win" ]; then
+        error_msg "No Firefox window!"
+        exit 1
+    fi
+    if [ "$win" != "${win%% *}" ]; then
+       error_msg "Two (or more) Firefox windows"
+       exit 1
+    fi
+    echo $win
+}
+
+
+function get_ff_window_width_height()
+# Echo shell line like 'width=xxx height=yyy' for window argument.
+{
+    local win=$1
+    xwininfo -id "$win" |
+            awk '/Width:/  { w = $2 }
+                 /Height:/ { h = $2 }
+                 END       { printf "width=%s height=%s\n", w, h }'
+}
+
+
+function get_fullscreen()
+# Echo 'yes' or 'no' reflecting whether ff is running in fullscreen.
+{
+    local win=$1
+    local width height
+    eval $( get_ff_window_width_height $win )
+    local window_dim="${width}x${height}"
+
+    screen_dim=$( xdpyinfo | awk ' /dimensions:/ { print $2}')
+
+    if [ "$window_dim" = "$screen_dim" ]; then
+        echo "yes"
+    else
+        echo "no"
+    fi
+}
+
+
+function get_ff_url()
+# Select and copy url from ff (current window) to X clipboard.
+{
+    fullscreen=$1
+    if [[ $fullscreen == *n* ]]; then
+        xdotool key alt+d ctrl+c
+    else
+        xdotool key F11 alt+d ctrl+c F11
+    fi
+}
+
+
+function get_ff_location()
+# Get location from current ff window
+# Arg: ff window id.
+{
+    local win="$1"
+    local fullscreen="$2"
+
+    local width height
+    eval $( get_ff_window_width_height $win )
+
+    local X Y SCREEN WINDOW
+    eval $(xdotool getmouselocation --shell)
+    echo "No-url" | xsel -ib
+
+    xdotool windowactivate "$win"
+
+    # Try to click outside video widget, it doesn't pass alt-d,ctrl-c.
+    # alt+d, ctrl+c = "select location bar", "copy" keyboard shortcuts.
+    xdotool mousemove --sync $(( $width/2 )) $(( $height - 1 ))
+    get_ff_url $fullscreen
+
+    for delay in 0.1 0.2 0.3 0.5 0.8; do
+        sleep $delay
+        url=$( xsel -ob )
+        [[ "$url" != *No-url* ]] && break
+        get_ff_url $fullscreen
+    done
+
+    if [[ "$url" == *No-url* ]]; then
+        error_msg "Can\'t copy url from firefox (!)"
+        exit 2
+    fi
+
+    xdotool mousemove $X $Y
+    echo $url
+}
+
+
+function rotate_cache()
+# Ensure there are at most CACHE_SIZE - 1 downloads in cache,
+# remove old log files. Rename newest file to it's "native"
+# name as hinted by flash-download.
+{
+    (
+        cd $CACHE_DIR
+        [ -f ".rename-head" ] && \
+            eval "$( cat .rename-head)" && rm ".rename-head"
+        rm $( ls -t --hide '*.log' | awk "NR > $((CACHE_SIZE - 1))" ) \
+              &>/dev/null || :
+        rm $( find . -mtime +1  -name '*.log' ) &>/dev/null || :
+    )
+}
+
+
+function check_running_process()
+# Exit if there is a running process messing w ff, else accquire lock.
+{
+    if [ -f $LOCK_FILE ]; then
+       local pid=$( cat $LOCK_FILE )
+       if [ "$( ps --pid "$pid" -o uid --no-headers )" = '' ]; then
+           logger "$0: Removing stale lock file, pid: $pid"
+           echo "Removing stale lock file" >&2
+           rm -f $LOCK_FILE
+       fi
+    fi
+    local tmp_pid=$( mktemp )
+    echo $$ > $tmp_pid
+    mv --no-clobber $tmp_pid $LOCK_FILE
+    local lock_pid=$(cat $LOCK_FILE)
+    rm -f "$tmp_pid"
+    if [ "$lock_pid" != "$$" ]; then
+        logger "$0: Another instance is messing with FF, exiting"
+        exit 3
+    fi
+}
+
+
+function get_dl_path
+{
+    local location=$1
+    local key value
+    get_flash_videos --info $location | while read key value; do
+	[ "$key" = 'Filename:' ] && echo "$value"
+    done
+}
+
+
+function setup_nickname()
+{
+    local location=$1
+
+    local dl_path=$( get_dl_path $location )
+    if [ "$dl_path" = "" ] ; then
+        error_msg "Can't download from Firefox"
+        exit 1
+    fi
+    local nickname=${location%.*}
+    nickname=${nickname#*://}
+    nickname=${nickname#www.}.flv
+    echo "mv '$nickname' '$dl_path'" > "$CACHE_DIR/.rename-head"
+    echo $nickname
+}
+
+
+get_options $@
+
+exec 1>$LOGFILE 2>&1
+set -x
+
+check_running_process
+
+wid=$( get_ff_window )
+fullscreen=$( get_fullscreen $wid )
+location=$( get_ff_location $wid $fullscreen ) || exit 1
+nickname=$( setup_nickname $location ) || exit 2
+
+dl_file="$CACHE_DIR/$nickname"
+logfile=${dl_file/.flv/.log}
+rotate_cache
+
+pkill -f "get_flash_videos.*$dl_file" && sleep 1
+get_flash_videos -q -f $dl_file $location  &>$logfile &
+dl_pid=$!
+rm -f $LOCK_FILE
+
+info_msg "Download started" &
+
+sleep 1; size_1=$( get_size $dl_file)
+sleep 10; size_2=$( get_size $dl_file)
+
+if (( "$size_1" == "$size_2" || "$size_2" == '0' ));  then
+    msg="Warning: Download seem to have stalled, $size_2 bytes downloaded"
+    warning_msg "$msg" &
+fi
+
+if wait $dl_pid; then
+    info_msg "Download complete"
+else
+    result=$?
+    test $result -gt 127 && echo "Interrupted!" >> $logfile
+    echo "Result: $result"  >> $logfile
+fi
+
+exit  0
