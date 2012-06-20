@@ -27,11 +27,20 @@ sub find_video {
   debug "Video ID = " . $video_id;
 
   die "Couldn't find TOU.TV video ID" unless $video_id;
+print $browser->content;
 
-  # on cherche:		,"titleId":"2010-03-29_CA_0052"
   my $filename;
-  if ($browser->content =~ /,"titleId":"([^"]+)"/i) {
+  # on cherche:		<meta content="les-chefs" name="src.emission" />
+  if ($browser->content =~ /<meta\s+content="(\S+)"\s+name="\w+.emission"/i) {
     $filename =  $1 ;
+  }
+  # on cherche:		<meta content="1513429386.S03E02" name="ProfilingEmisodeToken"
+  if ($browser->content =~ /<meta\s+content="(\S+)"\s+name="ProfilingEmisodeToken"/i) {
+    my $episode = $1;
+    if($episode =~ /\S+\.(\S+)/) {
+        $episode = $1;
+    }
+    $filename =  $filename . "." . $episode ;
   }
   debug "Filename = " . $filename;
 
