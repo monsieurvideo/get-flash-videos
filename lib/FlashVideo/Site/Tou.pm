@@ -27,7 +27,6 @@ sub find_video {
   debug "Video ID = " . $video_id;
 
   die "Couldn't find TOU.TV video ID" unless $video_id;
-print $browser->content;
 
   my $filename;
   # on cherche:		<meta content="les-chefs" name="src.emission" />
