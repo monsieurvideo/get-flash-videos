@@ -17,10 +17,11 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser) = @_;
 
+
   # Get the video ID
-  #  on cherche:	,"pid":"45Kr9K8SfwVF1Q5anv7TrRpWa6nMtkG4",
+  #  on cherche:	"idMedia":"T7AYXvq2l5DZy578Zj_c0LGWurfWkQs_"
   my $video_id;
-  if ($browser->content =~ /,"pid":"(\w+)"/i) {
+  if ($browser->content =~ /"idMedia":"(\w+)"/i) {
     $video_id = $1;
   }
   debug "Video ID = " . $video_id;
