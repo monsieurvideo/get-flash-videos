@@ -17,20 +17,29 @@ use URI::Escape;
 sub find_video {
   my ($self, $browser) = @_;
 
+
   # Get the video ID
-  #  on cherche:	,"pid":"45Kr9K8SfwVF1Q5anv7TrRpWa6nMtkG4",
+  #  on cherche:	"idMedia":"T7AYXvq2l5DZy578Zj_c0LGWurfWkQs_"
   my $video_id;
-  if ($browser->content =~ /,"pid":"(\w+)"/i) {
+  if ($browser->content =~ /"idMedia":"(\w+)"/i) {
     $video_id = $1;
   }
   debug "Video ID = " . $video_id;
 
   die "Couldn't find TOU.TV video ID" unless $video_id;
 
-  # on cherche:		,"titleId":"2010-03-29_CA_0052"
   my $filename;
-  if ($browser->content =~ /,"titleId":"([^"]+)"/i) {
+  # on cherche:		<meta content="les-chefs" name="src.emission" />
+  if ($browser->content =~ /<meta\s+content="(\S+)"\s+name="\w+.emission"/i) {
     $filename =  $1 ;
+  }
+  # on cherche:		<meta content="1513429386.S03E02" name="ProfilingEmisodeToken"
+  if ($browser->content =~ /<meta\s+content="(\S+)"\s+name="ProfilingEmisodeToken"/i) {
+    my $episode = $1;
+    if($episode =~ /\S+\.(\S+)/) {
+        $episode = $1;
+    }
+    $filename =  $filename . "." . $episode ;
   }
   debug "Filename = " . $filename;
 
