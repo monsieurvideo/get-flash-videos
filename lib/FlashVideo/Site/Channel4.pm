@@ -52,7 +52,7 @@ sub find_video {
   my $raw_xml = $browser->get("http://ais.channel4.com/asset/$asset_id");
 
   if (!$browser->success) {
-    die "Couldn't get asset XML: " . $browser->status_line;
+    die "Couldn't get asset XML: " . $browser->response->status_line;
   }
 
   my $xml = from_xml($raw_xml);
@@ -112,7 +112,7 @@ sub find_video {
       $browser->get($subtitles_url);
 
       if (!$browser->success) {
-        info "Couldn't download 4od subtitles: " . $browser->status_line;
+        info "Couldn't download 4od subtitles: " . $browser->response->status_line;
       }
 
       my $subtitles_file = title_to_filename($title, "srt");
