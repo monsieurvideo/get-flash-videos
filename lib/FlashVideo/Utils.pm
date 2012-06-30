@@ -342,7 +342,7 @@ sub convert_sami_subtitles_to_srt {
     
     decode_entities($sub); # in void context, this works in place
 
-    if ($sub and ($begin or $begin == 0)) {
+    if ($begin >= 0) {
       # Convert milliseconds into HH:MM:ss,mmm format
       my $seconds = int( $begin / 1000.0 );
       my $ms = $begin - ( $seconds * 1000.0 );
