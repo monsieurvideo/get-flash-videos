@@ -20,7 +20,10 @@ sub find_video {
   my $video_url = get_video_url($browser, $video_id);
   debug "Video URL: ${video_url}";
 
-  return $video_url, title_to_filename($video_title);
+  # Step 4: Get video type
+  my $video_type = ( $video_url =~ /[.]mp4/xms ) ? 'mp4' : 'flv';
+
+  return $video_url, title_to_filename($video_title, $video_type);
 }
 
 # Internal subroutines
