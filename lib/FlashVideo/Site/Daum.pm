@@ -10,15 +10,15 @@ sub find_video {
 
   # Step 1: Get video ID
   my $video_id = get_video_id($browser);
-  debug "Video ID: ${video_id}";
+  debug "Video ID: $video_id";
 
   # Step 2: Get video title
   my $video_title = get_video_title($browser, $video_id);
-  debug "Video title: ${video_title}";
+  debug "Video title: $video_title";
 
   # Step 3: Get video URL
   my $video_url = get_video_url($browser, $video_id);
-  debug "Video URL: ${video_url}";
+  debug "Video URL: $video_url";
 
   # Step 4: Get video type
   my $video_type = ( $video_url =~ /[.]mp4/xms ) ? 'mp4' : 'flv';
@@ -47,25 +47,25 @@ sub get_video_id {
   if ( $browser->uri()->as_string() =~ /[#?&] clipid = (\d+)/xmsi ) {
     my $url = 'http://tvpot.daum.net/clip/ClipView.do?clipid=' . $1;
     $browser->get($url);
-    die "Cannot fetch '${url}'\n" if !$browser->success();
+    die "Cannot fetch '$url'\n" if !$browser->success();
   }
 
   my $document = $browser->content();
 
   # "http://flvs.daum.net/flvPlayer.swf?vid=FlVGvam5dPM$"
   my $flv_player_url = quotemeta 'http://flvs.daum.net/flvPlayer.swf';
-  my $video_id_pattern_1 = qr{['"] ${flv_player_url} [?] vid = ([^'"&]+)}xmsi;
+  my $video_id_pattern_1 = qr{['"] $flv_player_url [?] vid = ([^'"&]+)}xmsi;
 
   my $func_name;
 
   # Story.UI.PlayerManager.createViewer('2oHFG_aR9uA$');
   $func_name = quotemeta 'Story.UI.PlayerManager.createViewer';
-  my $video_id_pattern_2 = qr{${func_name} [(] ' (.+?) ' [)]}xms;
+  my $video_id_pattern_2 = qr{$func_name [(] ' (.+?) ' [)]}xms;
 
   # daum.Music.VideoPlayer.add("body_mv_player", "_nACjJ65nKg$",
   $func_name = quotemeta 'daum.Music.VideoPlayer.add';
   my $video_id_pattern_3
-      = qr{${func_name} [(] "body_mv_player", \s* " (.+?) " ,}xms;
+      = qr{$func_name [(] "body_mv_player", \s* " (.+?) " ,}xms;
 
   # controller/video/viewer/VideoView.html?vid=90-m2tl87zM$&play_loc=...
   my $video_id_pattern_4
@@ -83,7 +83,7 @@ sub get_video_id {
   # Remove white spaces in video ID.
   $video_id =~ s/\s+//xmsg;
 
-  die "Invalid video ID: ${video_id}\n" if !is_valid_video_id($video_id);
+  die "Invalid video ID: $video_id\n" if !is_valid_video_id($video_id);
 
   return $video_id;
 }
@@ -91,9 +91,9 @@ sub get_video_id {
 sub get_video_title {
   my ($browser, $video_id) = @_;
 
-  my $query_url = "http://tvpot.daum.net/clip/ClipInfoXml.do?vid=${video_id}";
+  my $query_url = "http://tvpot.daum.net/clip/ClipInfoXml.do?vid=$video_id";
   $browser->get($query_url);
-  die "Cannot fetch '${query_url}'.\n" if !$browser->success();
+  die "Cannot fetch '$query_url'.\n" if !$browser->success();
   my $document = $browser->content();
 
   # <TITLE><![CDATA[Just The Way You Are]]></TITLE>
@@ -114,9 +114,9 @@ sub get_video_url {
   my $query_url
       = 'http://videofarm.daum.net/controller/api/open/v1_2/'
       . 'MovieLocation.apixml'
-      . "?vid=${video_id}&preset=main";
+      . "?vid=$video_id&preset=main";
   $browser->get($query_url);
-  die "Cannot fetch '${query_url}'.\n" if !$browser->success();
+  die "Cannot fetch '$query_url'.\n" if !$browser->success();
   my $document = $browser->content();
 
   # <![CDATA[
@@ -131,7 +131,7 @@ sub get_video_url {
   # http://cdn.flvs.daum.net/fms/pos_query2.php?service_id=1001&protocol=...
   if ( $url =~ /pos_query2[.]php/xms ) {
       $browser->get($url);
-      die "Cannot fetch '${url}'.\n" if !$browser->success();
+      die "Cannot fetch '$url'.\n" if !$browser->success();
       $document = $browser->content();
 
       # movieURL="http://stream.tvpot.daum.net/swxwT-/InNM6w/JgEM-E/..."
