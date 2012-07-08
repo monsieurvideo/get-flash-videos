@@ -71,10 +71,15 @@ sub get_video_id {
   my $video_id_pattern_4
       = qr{/video/viewer/VideoView.html [?] vid = (.+?) &}xms;
 
+  # DaumVodPlayer.swf?vid=vd247EUCULRUVVUQSVytEDS&...
+  my $video_id_pattern_5
+      = qr{DaumVodPlayer[.]swf [?] vid = (.+?) &}xmsi;
+
   if (    $document !~ $video_id_pattern_1
        && $document !~ $video_id_pattern_2
        && $document !~ $video_id_pattern_3
-       && $document !~ $video_id_pattern_4 )
+       && $document !~ $video_id_pattern_4
+       && $document !~ $video_id_pattern_5 )
   {
     die "Cannot find video ID.\n";
   }
