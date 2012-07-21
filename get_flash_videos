@@ -129,9 +129,10 @@ check that the URL really works(!).
 
 Check for updates by running: $0 --update
 
-If the latest version does not support this please open a bug (or
-contribute a patch!) at http://code.google.com/p/get-flash-videos/
-make sure you include the output with --debug enabled.
+If the latest version does not support this please open a bug
+at http://code.google.com/p/get-flash-videos/ making sure you include
+the output with --debug enabled. Alternatively, fix it yourself and send us
+a pull request on Github: https://github.com/monsieurvideo/get-flash-videos
 EOF
 
 read_conf();
