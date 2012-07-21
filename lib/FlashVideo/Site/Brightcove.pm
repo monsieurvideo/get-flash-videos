@@ -125,10 +125,23 @@ EOF
   for my $d (@found) {
     next if $metadata->{videoId} && $d->{id} != $metadata->{videoId};
 
-    my $host = ($d->{FLVFullLengthURL} =~ m!rtmp://(.*?)/!)[0];
-    my $file = ($d->{FLVFullLengthURL} =~ m!&([a-z0-9:]+/.*?)(?:&|$)!)[0];
-    my $app = ($d->{FLVFullLengthURL} =~ m!//.*?/(.*?)/&!)[0];
-    my $filename = ($d->{FLVFullLengthURL} =~ m!&.*?/([^/&]+)(?:&|$)!)[0];
+    # There might be different versions (aka "renditions") of this video -
+    # if so, choose the highest quality.
+    #
+    # TODO: support quality settings
+    my $rtmp_url = $d->{FLVFullLengthURL};
+
+    if ($d->{renditions} and ref($d->{renditions}) eq 'ARRAY') {
+      my @renditions = sort { $a->{encodingRate} <=> $b->{encodingRate} }
+                       @{ $d->{renditions} };
+
+      $rtmp_url = $renditions[-1]->{defaultURL};
+    }
+
+    my $host = ($rtmp_url =~ m!rtmp://(.*?)/!)[0];
+    my $file = ($rtmp_url =~ m!&([a-z0-9:]+/.*?)(?:&|$)!)[0];
+    my $app = ($rtmp_url =~ m!//.*?/(.*?)/&!)[0];
+    my $filename = ($rtmp_url =~ m!&.*?/([^/&]+)(?:&|$)!)[0];
 
     $app .= "?videoId=$d->{id}&lineUpId=$d->{lineupId}&pubId=$d->{publisherId}&playerId=$player_id&playerTag=&affiliateId=";
 
@@ -137,7 +150,7 @@ EOF
       pageUrl => $page_url,
       swfUrl => "http://admin.brightcove.com/viewer/federated/f_012.swf?bn=590&pubId=$d->{publisherId}",
       tcUrl => "rtmp://$host:1935/$app",
-      auth => ($d->{FLVFullLengthURL} =~ /^[^&]+&(.*)$/)[0],
+      auth => ($rtmp_url =~ /^[^&]+&(.*)$/)[0],
       rtmp => "rtmp://$host/$app",
       playpath => $file,
       flv => "$filename.flv",
