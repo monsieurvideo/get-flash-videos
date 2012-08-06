@@ -45,6 +45,12 @@ sub find_video {
     }
   }
 
+# from script
+# <script src="http//wwwcdn.channel5.com/javascript/all.js?"
+# playerID is set to 1707001746001 by default or 1707001743001 for firefox
+# 138489951601 for MSIE.
+  $player_id ||= "1707001743001";
+
   debug "Extracted playerId: $player_id, sessionId: $metadata->{sessionId} videoplayer: $metadata->{videoplayer} publisherId: $metadata->{publisherId} "
     if $player_id or $video_id;
 
