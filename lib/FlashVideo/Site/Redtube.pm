@@ -10,11 +10,11 @@ sub find_video {
 
   my($title) = $browser->content =~ /<h1 class="videoTitle">([^<]+)</;
 
-  my($url) = $browser->content =~ /hashlink=([^&"]+)/;
+  my($url) = $browser->content =~ /mp4_url=([^&"]+)/;
   $url = uri_unescape($url);
 
   $browser->allow_redirects;
-  return $url, title_to_filename($title);
+  return $url, title_to_filename($title, "mp4");
 }
 
 1;
