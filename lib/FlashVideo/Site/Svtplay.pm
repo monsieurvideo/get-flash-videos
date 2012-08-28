@@ -6,6 +6,7 @@ use warnings;
 
 use FlashVideo::Utils;
 use FlashVideo::JSON;
+use HTML::Entities;
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
@@ -14,10 +15,10 @@ sub find_video {
   if ($browser->uri->as_string !~ m/video\/([0-9]*)/) {
     die "No video id found in url";
   }
-
   my $video_id = $1;
+  $browser->content =~ m/<title>(.+)<\/title>/;
+  my $name = decode_entities($1);
   my $info_url = "http://www.svtplay.se/video/$video_id?output=json";
-
   $browser->get($info_url);
     
   if (!$browser->success) {
@@ -25,7 +26,6 @@ sub find_video {
   }
 
   my $video_data = from_json($browser->content);
-  my $name = $video_data->{context}->{title};
   my $bitrate = 0;
   my $rtmp_url;
 
