@@ -178,6 +178,7 @@ sub parse_youtube_url_encoded_fmt_stream_map {
     
     my $format = "";
     my $url = "";
+    my $sig = "";
     
     foreach my $pair (split /&/, $params) {
       my ($name, $value) = split /=/, $pair;
@@ -185,10 +186,12 @@ sub parse_youtube_url_encoded_fmt_stream_map {
         $format = $value;
       } elsif ($name eq "url") {
         $url = uri_unescape($value);
+      } elsif ($name eq "sig") {
+        $sig = $value;
       }
     }
-    
-    $map->{$format} = $url;
+
+    $map->{$format} = "$url&signature=$sig";
   }
   
   return $map;
