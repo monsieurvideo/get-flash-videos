@@ -61,8 +61,8 @@ sub find_video {
 
   my $video_id;
   if ($browser->content =~ /(?:var pageVideoId =|(?:CFG_)?VIDEO_ID'?\s*:)\s*'(.+?)'/
-      || $browser->content =~ /"video_id": "([^"]+)"/
-      || $embed_url =~ /v=([^&]+)/
+      || $browser->content =~ /video_id=([^&]+)/) {
+      || $embed_url =~ /v=([^&]+)/) {
       || $browser->content =~ /&amp;video_id=([^&]+)&amp;/) {
     $video_id = $1;
   } else {
@@ -178,7 +178,7 @@ sub parse_youtube_url_encoded_fmt_stream_map {
     
     my $format = "";
     my $url = "";
-    my $sig = "";
+    my $signature = "";
     
     foreach my $pair (split /&/, $params) {
       my ($name, $value) = split /=/, $pair;
@@ -187,11 +187,11 @@ sub parse_youtube_url_encoded_fmt_stream_map {
       } elsif ($name eq "url") {
         $url = uri_unescape($value);
       } elsif ($name eq "sig") {
-        $sig = $value;
+        $signature = $value;
       }
     }
-
-    $map->{$format} = "$url&signature=$sig";
+    
+    $map->{$format} = $url."&signature=".$signature;
   }
   
   return $map;
