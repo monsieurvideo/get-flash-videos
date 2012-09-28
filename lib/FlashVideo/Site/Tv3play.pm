@@ -68,13 +68,11 @@ sub find_video_viasat {
   };
 
 
-  return{
-      rtmp => $rtmp,
-      swfVfy => "http://flvplayer-viastream-viasat-tv.origin.vss.viasat.tv/play/swf/player110420.swf",
-      flv => $flv_filename
-  };
-
-
+  return {
+	  rtmp => $rtmp,
+	  swfVfy => "http://flvplayer.viastream.viasat.tv/play/swf/player120328.swf",
+	  flv => $flv_filename
+	 };
 }
 
 1;
