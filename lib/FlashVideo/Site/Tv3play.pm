@@ -70,7 +70,7 @@ sub find_video_viasat {
 
   return {
 	  rtmp => $rtmp,
-	  swfVfy => "http://flvplayer.viastream.viasat.tv/play/swf/player120328.swf?rnd=1345036352",
+	  swfVfy => "http://flvplayer.viastream.viasat.tv/play/swf/player120328.swf",
 	  flv => $flv_filename
 	 };
 }
