@@ -167,9 +167,9 @@ EOF5
   my $episodenumber = $packet->messages->[0]->{value}->{programmedContent}->{videoPlayer}->{mediaDTO}->{customFields}->{episodenumber};
   my $show = ($page_url =~ m!/shows/([^/]+)/!i)[0];
   my $episode = ($page_url =~ m!/episodes/([^/]+)!i)[0];
-  my $filehead = $show . "_Series" . $seasonnumber;
+  my $filehead = sprintf("%s_S%02d", $show, $seasonnumber);
   if ( $show ne $episode ) {
-    $filehead = $filehead . "_Episode" . $episodenumber . "_" . $episode;
+    $filehead = sprintf("%s_S%02dE%02d_%s", $show, $seasonnumber, $episodenumber, $episode);
   }
   my $encode_rate = $encode_rates->{$prefs->{quality}};
   if (! defined $encode_rate ) {
