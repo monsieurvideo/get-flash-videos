@@ -23,6 +23,12 @@ my @formats = (
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
+  # There are a few different kinds of URLs that end up on the same page
+  # So, let's canonicalize to the "real" one
+  if ($browser->content =~ m!<link *rel=['"]canonical['"] *href=['"]([^'"]*)!) {
+    $embed_url = "http://www.youtube.com$1"
+  }
+
   if($embed_url !~ m!youtube\.com/watch!) {
     $browser->get($embed_url);
     if ($browser->response->header('Location') =~ m!/swf/.*video_id=([^&]+)!
@@ -61,7 +67,7 @@ sub find_video {
 
   my $video_id;
   if ($browser->content =~ /(?:var pageVideoId =|(?:CFG_)?VIDEO_ID'?\s*:)\s*'(.+?)'/
-      || $browser->content =~ /"video_id": "([^"]+)"/
+      || $browser->content =~ /video_id=([^&]+)/
       || $embed_url =~ /v=([^&]+)/
       || $browser->content =~ /&amp;video_id=([^&]+)&amp;/) {
     $video_id = $1;
@@ -178,6 +184,7 @@ sub parse_youtube_url_encoded_fmt_stream_map {
     
     my $format = "";
     my $url = "";
+    my $signature = "";
     
     foreach my $pair (split /&/, $params) {
       my ($name, $value) = split /=/, $pair;
@@ -185,10 +192,12 @@ sub parse_youtube_url_encoded_fmt_stream_map {
         $format = $value;
       } elsif ($name eq "url") {
         $url = uri_unescape($value);
+      } elsif ($name eq "sig") {
+        $signature = $value;
       }
     }
     
-    $map->{$format} = $url;
+    $map->{$format} = $url."&signature=".$signature;
   }
   
   return $map;
