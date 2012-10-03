@@ -23,6 +23,12 @@ my @formats = (
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
+  # There are a few different kinds of URLs that end up on the same page
+  # So, let's canonicalize to the "real" one
+  if ($browser->content =~ m!<link *rel=['"]canonical['"] *href=['"]([^'"]*)!) {
+    $embed_url = "http://www.youtube.com$1"
+  }
+
   if($embed_url !~ m!youtube\.com/watch!) {
     $browser->get($embed_url);
     if ($browser->response->header('Location') =~ m!/swf/.*video_id=([^&]+)!
