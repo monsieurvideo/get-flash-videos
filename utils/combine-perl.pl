@@ -79,6 +79,7 @@ sub process_file {
       } else {
         if(/^\s*use [^ ;(]+((?: |\()[^;]*)?;/) {
           my $params = defined $1 ? $1 : "";
+          $params =~ s/^(\s*[0-9.]+)\s*\(\s*\)\s*$/\1/;
           if($params !~ /^\s*\(\s*\)\s*$/) {
             my @items = eval $params;
             $output .= "BEGIN { $module->import($params); } # (added by $0)\n";
