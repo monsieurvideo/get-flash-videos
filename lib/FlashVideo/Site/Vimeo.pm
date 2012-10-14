@@ -39,6 +39,9 @@ sub find_video {
             "&codecs=H264,VP8,VP6&type=moogaloop_local&embed_location=";
   my $filename = title_to_filename($title, "flv");
 
+  $browser->get($url, Referer => $embed_url);
+  $url = $browser->response->header('Location');
+
   $browser->allow_redirects;
 
   return $url, $filename;
