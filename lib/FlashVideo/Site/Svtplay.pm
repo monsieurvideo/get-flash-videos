@@ -26,8 +26,9 @@ sub find_video {
   }
 
   my $video_data = from_json($browser->content);
-  my $bitrate = 0;
+  my $bitrate = -1;
   my $rtmp_url;
+  my $m3u8 = "";
 
   foreach my $video (@{ $video_data->{video}->{videoReferences} }) {
     my $rate = int $video->{bitrate};
@@ -36,6 +37,45 @@ sub find_video {
       $rtmp_url = $video->{url};
       $bitrate = $rate;
     }
+    if ($video->{url} =~ /.*\.m3u8/) {
+      $m3u8 = $video->{url};
+    }
+  }
+
+  
+  # If we found an m3u8 file we generate the ffmpeg download command
+  if (!($m3u8 eq "")) {
+      
+      $browser->get($m3u8);
+      
+      if (!$browser->success) {
+	  die "Couldn't download $m3u8: " . $browser->response->status_line;
+      }
+      my @lines = split(/\r?\n/, $browser->content);
+      
+      $bitrate = -1;
+      my $video_url = "";
+      my $i = 0;
+      
+      # Select highest bitrate available
+      foreach my $line (@lines) {
+	if ($line =~ /BANDWIDTH/) {
+	  $line =~ /BANDWIDTH=([0-9]*),/;
+	  my $this_rate = $1;
+
+	  if($bitrate < $this_rate) {
+	    $video_url = $lines[$i + 1];
+	    $bitrate = $this_rate;
+	  }
+	}
+	$i++;
+      }
+
+      my $flv_filename = title_to_filename($name, "mp4");
+      die "Not yet supported, use ffmpeg (http://ffmpeg.org/):\n\n"
+	  . "ffmpeg -i '" . $video_url . "' -acodec copy -vcodec copy "
+	  . "-absf aac_adtstoasc -f mp4 '" . $flv_filename . "'\n";
+
   }
 
   if ($prefs->{subtitles}) {
