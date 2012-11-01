@@ -27,11 +27,11 @@ sub new {
 
       $proxy = "socks://$host:$port";
 
-      print STDERR "Using proxy server $proxy\n"
-        if $App::get_flash_videos::opt{debug};
-
-      $browser->proxy([qw[http https]] => $proxy);
     }
+    print STDERR "Using proxy server $proxy\n"
+      if $App::get_flash_videos::opt{debug};
+
+    $browser->proxy([qw[http https]] => $proxy);
   }
 
   if($browser->get_socks_proxy) {
