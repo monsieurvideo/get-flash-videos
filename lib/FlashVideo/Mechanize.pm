@@ -2,6 +2,7 @@
 package FlashVideo::Mechanize;
 use WWW::Mechanize;
 use LWP::Protocol::https;
+use Encode::Locale;
 use FlashVideo::Downloader;
 use Encode ();
 
