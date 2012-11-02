@@ -2,8 +2,6 @@
 package FlashVideo::Mechanize;
 use WWW::Mechanize;
 use LWP::Protocol::https;
-use Mozilla::CA;
-use IO::Socket::SSL;
 use FlashVideo::Downloader;
 use Encode ();
 
