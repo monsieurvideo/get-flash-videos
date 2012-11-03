@@ -17,17 +17,21 @@ sub new {
   my $proxy = $App::get_flash_videos::opt{proxy};
 
   if ($proxy) {
-    if ($proxy =~ /^(\w+):?(\d+)?$/) {
+    if ($proxy =~ m%^(\w+://)?([.\w-]+)(:\d+)?$%) {
       # Proxy is in format:
       #   localhost:1337
       #   localhost
+      #   [socks|http|...]://localhost:8080
       # Add a scheme so LWP can use it.
       # Other formats are passed to LWP directly.
-      my ($host, $port) = ($1, $2);
+      my ($scheme, $host, $port) = ($1, $2, $3);
 
-      $port ||= 1080; # socks by default
+      $scheme ||= "socks://";
+      my $sndport = ":8080";
+      $sndport = ":1080" if ($scheme =~ /socks/);
+      $port ||= $sndport; # socks by default
 
-      $proxy = "socks://$host:$port";
+      $proxy = $scheme.$host.$port;
 
     }
     print STDERR "Using proxy server $proxy\n"
