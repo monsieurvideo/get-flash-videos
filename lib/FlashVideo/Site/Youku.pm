@@ -254,4 +254,12 @@ sub shuffle_table {
   return @shuffled;
 }
 
+sub can_handle {
+  my($self, $browser, $url) = @_;
+
+  return 1 if $url && URI->new($url)->host =~ /\.youku\.com$/;
+
+  return $browser->content =~ m{<param[^>]+name=['"]src['"][^>]+value=["']http://player\.youku\.com/player\.php/sid/[^/]+/v\.swf};
+}
+
 1;
