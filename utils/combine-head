@@ -13,6 +13,8 @@ use HTTP::Cookies ();
 use HTTP::Config ();
 use HTTP::Request::Common ();
 use LWP::Protocol::http ();
+use LWP::Protocol::https ();
+use Encode::Locale ();
 use XML::Simple ();
 use WWW::Mechanize::Link ();
 
