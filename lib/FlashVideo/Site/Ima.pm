@@ -24,9 +24,10 @@ sub find_video {
 }
 
 sub can_handle {
-  my($self, $browser) = @_;
+  my($self, $browser, $url) = @_;
 
-  return $browser->uri->host =~ /ima\.umn\.edu/i;
+  my $host = URI->new($url)->host;
+  return $host =~ /ima\.umn\.edu/i;
 }
 
 1;
