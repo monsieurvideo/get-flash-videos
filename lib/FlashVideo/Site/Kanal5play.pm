@@ -36,7 +36,7 @@ sub find_video {
   my ($playpath) = $json->{streams}[0]->{source};
 
   my  $i;
-  foreach $i (keys @{ $json->{streams} }) {
+  foreach $i (keys %{ $json->{streams} }) {
       my ($rate) = int($json->{streams}[$i]->{bitrate});
       if($bitrates->{$prefs->{quality}} == $rate){
 	  $playpath = $json->{streams}[$i]->{source};

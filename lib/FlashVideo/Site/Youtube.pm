@@ -67,7 +67,7 @@ sub find_video {
 
   my $video_id;
   if ($browser->content =~ /(?:var pageVideoId =|(?:CFG_)?VIDEO_ID'?\s*:)\s*'(.+?)'/
-      || $browser->content =~ /video_id=([^&]+)/
+      || $browser->content =~ /[&?]video_id=([^&"]+)/
       || $embed_url =~ /v=([^&]+)/
       || $browser->content =~ /&amp;video_id=([^&]+)&amp;/) {
     $video_id = $1;
