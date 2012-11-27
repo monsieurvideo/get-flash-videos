@@ -4,36 +4,26 @@ package FlashVideo::Site::Tv3;
 use strict;
 use FlashVideo::Utils;
 
-sub find_video {
-  my ($self, $browser, $embed_url) = @_;
+my $encode_rates = {
+  "low" => {
+    speed => 300,
+    flag => undef,
+    downgrade => undef
+   },
+  "medium" => {
+    speed => 700,
+    flag => "sevenHundred",
+    downgrade => "low"
+   },
+  "high" => {
+    speed => 1500,
+    flag => "fifteenHundred",
+    downgrade => "medium"
+   }
+ };
 
-  #
-  # Decompile of player gives the code:
-  #
-  # "rtmpe://nzcontent.mediaworks.co.nz:80/" + this.sloc + this.h264 +
-  # flv + "_" + this.conSpeed + "K"
-  #
-  # For TV3, sloc = "tv3".  conSpeed can be 300, 700 or 1500.
-  #
-  # Looks like h264 is always "/_definst_/mp4:" now.
-  #
-  # flv is set in JavaScript to "video", with the first "*" removed,
-  # and all other "*" translated to "/".
-  #
-  # var video ="*transfer*09112012*HX044752";
-  # video = video.substring(1);
-  #
-  # rtmpe://nzcontent.mediaworks.co.nz:80/tv3/_definst_/mp4:transfer/09112012/HX044752_700K
-  #
-  # The SWF URL is: http://static.mediaworks.co.nz/video/6.9/videoPlayer6.9.83.swf?rnd=1932311212
-  #
-  # ... where the random number appears hard coded in the JavaScript
-  # and isn't affected by source IP.
-  #
-  # So, a reasonable command is:
-  #
-  # rtmpdump -o file.flv -r rtmpe://nzcontent.mediaworks.co.nz:80/tv3/_definst_/mp4:transfer/09112012/HX044752_700K -s 'http://static.mediaworks.co.nz/video/6.9/videoPlayer6.9.83.swf?rnd=1932311212'
-  #
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   if ($browser->content !~ m/var\s+video\s*=\"\*([^"]+)\"\s*;/s) {
     die "Unable to extract file";
@@ -41,13 +31,49 @@ sub find_video {
   my $replace = $1;
   $replace =~ s/\*/\//sg;
 
-  #
-  # The player supports 1500, but it isn't clear that any content is
-  # available at 1500.
-  #
-  my $conSpeed = 700;
+  my $quality = $prefs->{quality};
+  my $encodeRate = $encode_rates->{$quality};
+  if (!defined($encodeRate)) {
+    foreach my $rate (values(%$encode_rates)) {
+      if ($rate->{speed} eq $quality) {
+        $encodeRate = $rate;
+        last;
+      }
+    }
+  }
 
-  my $rtmp = "rtmpe://nzcontent.mediaworks.co.nz:80/tv3/_definst_/mp4:" . $replace . "_" . $conSpeed . "K";
+  my $content = undef;
+  while (defined($encodeRate)) {
+    debug "Trying to use encoding rate " . $encodeRate->{speed};
+
+    my $flag = $encodeRate->{flag};
+    if (defined($flag)) {
+      $content = $browser->content if !defined($content);
+      if ($content !~ m/flashvars\.$flag\s*=\s*"yes"/s) {
+        my $downgrade = $encodeRate->{downgrade};
+        if (!defined($downgrade)) {
+          $encodeRate = undef;
+          last;
+        }
+
+        debug "Rate " . $encodeRate->{speed} .
+          " isn't available, dowgrading to " . $downgrade;
+
+        $encodeRate = $encode_rates->{$downgrade};
+        next;
+      }
+    }
+    last;
+  }
+
+  if (!defined($encodeRate)) {
+    die "Couldn't match the requested quality";
+  }
+
+  my $conSpeed = $encodeRate->{speed};
+
+  my $rtmp = "rtmpe://nzcontent.mediaworks.co.nz:80/tv3/_definst_/mp4:" .
+    $replace . "_" . $conSpeed . "K";
 
   # Default title is perfect.
   my $filename = title_to_filename(extract_title($browser));
