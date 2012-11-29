@@ -41,10 +41,6 @@ sub find_video {
 sub amfrequest($$$$) {
   my($self, $base_url, $player_id, $metadata) = @_;
 
-  if ($player_id ne "1029272630001") {
-    die "Player ID looks botched";
-  }
-
   my $has_amf_packet = eval { require Data::AMF::Packet };
   if (!$has_amf_packet) {
     die "Must have Data::AMF::Packet installed to download Brightcove videos";
@@ -105,19 +101,10 @@ sub amfresponse($$$$$$) {
   #require Data::Dumper;
   #print Data::Dumper::Dumper($packet);
 
-  my @found = ();
-  {
-    # renditions Array contains the rtmpe URL.
-    my $renditions = $packet->messages->[0]->{value}->{programmedContent}->{videoPlayer}->{mediaDTO}->{renditions};
-    if (ref($renditions) ne 'ARRAY') {
-      die "Unexpected data from AMF gateway";
-    }
-
-    foreach my $rendition (@{$renditions}) {
-      if ($rendition->{defaultURL}) {
-        push(@found, $rendition);
-      }
-    }
+  # renditions Array contains the rtmpe URL.
+  my $renditions = $packet->messages->[0]->{value}->{programmedContent}->{videoPlayer}->{mediaDTO}->{renditions};
+  if (ref($renditions) ne 'ARRAY') {
+    die "Unexpected data from AMF gateway";
   }
 
   # other information returned in message.
@@ -125,36 +112,44 @@ sub amfresponse($$$$$$) {
 
   my $mediaId = $detail->{mediaId};
 
-  my $publisherId = $detail->{mediaDTO}->{publisherId};
+  my $mediaDTO = $detail->{mediaDTO};
+
+  my $publisherId = $mediaDTO->{publisherId};
   die "Publisher ID not determined" if !defined($publisherId);
 
-  my $customFields = $detail->{mediaDTO}->{customFields};
+  my $customFields = $mediaDTO->{customFields};
 
   my $programme = $customFields->{programme};
-  die "Programme number not determined" if !defined($programme);
+  if (!defined($programme)) {
+    # Fall back onto the display name if the video doesn't have
+    # programme/series/episode details (For example, a clip).
+    $programme = $mediaDTO->{displayName};
+  }
+  die "Programme name not determined" if !defined($programme);
 
   my $seriesnumber = $customFields->{seriesnumber};
-  die "Series number not determined" if !defined($seriesnumber);
-
   my $episodenumber = $customFields->{episodenumber};
-  die "Episode number not determined" if !defined($episodenumber);
+
+  if (defined($seriesnumber) || defined($episodenumber)) {
+    $programme .= "_";
+    $programme .= sprintf("S\%02d", $seriesnumber) if defined($seriesnumber);
+    $programme .= sprintf("E\%02d", $episodenumber) if defined($episodenumber);
+  }
 
   my $episodename = $customFields->{episodename};
-  die "Episode name not determined" if !defined($episodename);
-
-  my $filehead = $programme .
-    sprintf("_S\%02dE\%02d_", $seriesnumber, $episodenumber) .
-      $episodename;
+  $programme .= "_" . $episodename if defined($episodename);
 
   my $encode_rate = $encode_rates->{$prefs->{quality}};
   if (!defined($encode_rate)) {
     $encode_rate = $prefs->{quality};
   }
 
-  my @rtmpdump_commands = ();
+  my $bestMatch = undef;
+  foreach my $rendition (@{$renditions}) {
+    my $defaultURL = $rendition->{defaultURL};
+    next if !defined($defaultURL);
 
-  for my $d (@found) {
-    my $rate = $d->{encodingRate};
+    my $rate = $rendition->{encodingRate};
 
     # The service returns encoding rates that are close to, but not
     # exactly, the published rates of 250k, 700k, 1500k etc.  For
@@ -165,36 +160,72 @@ sub amfresponse($$$$$$) {
       $rate = (($rate + 500) / 1000) * 1000;
     }
 
-    #print "Saw: " . $d->{defaultURL} . " @ " . $rate . "\n";
+    #print "Saw: " . $rendition->{defaultURL} . " @ " . $rate . "\n";
 
-    next if $encode_rate != $rate;
+    # If the selected rate is lower than this option's rate, discard
+    # this option.
+    next if $encode_rate < $rate;
 
-    my $host = ($d->{defaultURL} =~ m!rtmpe://(.*?)/!)[0];
-    my $file = ($d->{defaultURL} =~ /^[^&]+&(.*)$/)[0];
-    my $app = ($d->{defaultURL} =~ m!//.*?/(.*?)/&!)[0];
-    my $filenamePrefix = $filehead . "_" . $rate;
+    # If we have already found an option that is lower than the
+    # selected encoding rate, but higher than this rate, then discard
+    # this option.
+    next if (defined($bestMatch) && $bestMatch->{rate} > $rate);
 
-    my $filename = title_to_filename($filenamePrefix);
-    $filename ||= get_video_filename();
-
-    $app .= "?videoId=" . $mediaId .
-      "&lineUpId=&pubId=" . $publisherId .
-        "&playerId=" . $player_id . "&affiliateId=";
-
-    my $args = {
-      app => $app,
-      pageUrl => $page_url,
-      swfVfy => "http://admin.brightcove.com/viewer/us1.24.04.08.2011-01-14072625/connection/ExternalConnection_2.swf",
-      tcUrl => "rtmpe://$host:1935/$app",
-      rtmp => "$d->{defaultURL}",
-      playpath => $file,
-      flv => $filename,
-    };
-
-    push @rtmpdump_commands, $args;
+    $bestMatch = {
+      rate => $rate,
+      rendition => $rendition
+     }
   }
 
-  return \@rtmpdump_commands;
+  return undef if !defined($bestMatch);
+
+  my $d = $bestMatch->{rendition};
+  my $rate = $bestMatch->{rate};
+
+  my $defaultURL = $d->{defaultURL};
+
+  if ($defaultURL !~ m!^(rtmpe?)://([^/]+)/([^&]+)/&(.*)$!s) {
+    die "Failed to parse URL: " . $defaultURL;
+  }
+  my $protocol = $1;
+  my $host = $2;
+  my $rtmpApp = $3;
+  my $file = $4;
+
+  my $filenamePrefix = $programme . "_" . $rate;
+
+  my $filename = title_to_filename($filenamePrefix);
+  $filename ||= get_video_filename();
+
+  my $app = $rtmpApp . "?videoId=" . $mediaId .
+    "&lineUpId=&pubId=" . $publisherId .
+      "&playerId=" . $player_id . "&affiliateId=";
+
+  my $port = 1935;
+
+  #
+  # Content reported with the "rtmp" protocol are actually delivered
+  # on port 80 via "rtmpt".
+  #
+  if ($protocol eq "rtmp") {
+    $port = 80;
+    $protocol = "rtmpt";
+  }
+
+  my $tcUrl = $protocol . "://" . $host . ":" . $port . "/" . $rtmpApp;
+  my $rtmpUrl = $protocol . "://" . $host . "/" . $rtmpApp . "/&" . $file;
+
+  my $args = {
+    app => $app,
+    pageUrl => $page_url,
+    swfVfy => "http://admin.brightcove.com/viewer/us1.24.04.08.2011-01-14072625/connection/ExternalConnection_2.swf",
+    tcUrl => $tcUrl,
+    rtmp => $rtmpUrl,
+    playpath => $file,
+    flv => $filename,
+  };
+
+  return [ $args ];
 }
 
 sub amfgateway {
