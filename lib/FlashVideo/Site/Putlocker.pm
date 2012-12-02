@@ -4,6 +4,7 @@ package FlashVideo::Site::Putlocker;
 use strict;
 use FlashVideo::Utils;
 use HTML::Tree;
+use HTML::Entities qw(decode_entities);
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
@@ -29,15 +30,13 @@ sub find_video {
       'hash'=>$hash
       ]);
 
-  #we will get a redirect, this is the cue to re-request the same page - die if not
-  die 'Response code was ' . $response->code . '. Should be 302.' unless ($response->code == '302');
+  # request is successful - die if not
+  die 'Response code was ' . $response->code . '. Should be 200.' unless ($response->code == '200');
   
-  info "Re-fetching page, which will now have the video embedded.";
-  $browser->delete_header( 'Content-Type');
-  my $page_html = $browser->get($embed_url)->content;
+  my $page_html = $response->content;
   
   #the stream ID is now embedded in the page.
-  my ($streamID) = ($page_html =~ /get_file\.php\?stream=([A-Za-z0-9]+)/);
+  my ($streamID) = ($page_html =~ /get_file\.php\?stream=([A-Za-z0-9=]+)/);
   info "Found the stream ID: " . $streamID;
   
   #request the url of the actual file
@@ -45,8 +44,10 @@ sub find_video {
   $uri->query_form((stream=>$streamID));
 
   #parse the url and title out of the response - much easier to regex it out, as the XML has dodgy &'s.
+  $browser->allow_redirects;
   my $contents = $browser->get($uri)->content;
   my ($url) = ($contents =~ /url="(.*?)"/);
+  $url = decode_entities($url);
 
   info "Got the video URL: " . $url;
 
