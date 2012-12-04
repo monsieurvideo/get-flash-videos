@@ -9,6 +9,8 @@ use HTML::Entities qw(decode_entities);
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
+  die 'Could not retrieve video' unless ($browser->success);
+
   my ($filename) = title_to_filename(extract_title($browser));
   $filename =~ s/[\s\|_]*PutLocker[\s_]*//;
   
@@ -31,7 +33,7 @@ sub find_video {
       ]);
 
   # request is successful - die if not
-  die 'Response code was ' . $response->code . '. Should be 200.' unless ($response->code == '200');
+  die 'Request not successful' unless ($browser->success);
   
   my $page_html = $response->content;
   
@@ -46,6 +48,7 @@ sub find_video {
   #parse the url and title out of the response - much easier to regex it out, as the XML has dodgy &'s.
   $browser->allow_redirects;
   my $contents = $browser->get($uri)->content;
+  die 'Unable to download video information' unless ($browser->success);
   my ($url) = ($contents =~ /url="(.*?)"/);
   $url = decode_entities($url);
 
