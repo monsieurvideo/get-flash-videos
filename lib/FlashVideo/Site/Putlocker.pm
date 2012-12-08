@@ -57,20 +57,19 @@ sub find_video {
   my ($stream_url) = ($contents =~ /url="(.*?)"/);
   $stream_url = decode_entities($stream_url);
 
-  if($prefs->{quality} eq 'high') {
+  if($stream_url =~ /expired_link/) {
+    # if link is unavailable
+    if( $page_html =~ m,"/(get_file\.php\?id=[^"]*)", ) {
+      # download original file if link available
+      my $download_page = $1;
+      $url = URI->new( "http://www.putlocker.com/$1" );
+      # this URL should be equivalent to what is returned by get_high_quality()
+    }
+  } elsif($prefs->{quality} eq 'high') {
     $url = get_high_quality($id, $streamID);
   } else {
     # get streaming version
     $url = $stream_url;
-
-    if($url =~ /expired_link/) {
-      if( $page_html =~ m,"/(get_file\.php\?id=[^"]*)", ) {
-        # download original file if link available
-        my $download_page = $1;
-        $url = URI->new( "http://www.putlocker.com/$1" );
-        # this URL should be equivalent to what is returned by get_high_quality()
-      }
-    }
   }
   info "Got the video URL: " . $url;
 
