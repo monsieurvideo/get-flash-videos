@@ -5,6 +5,7 @@ use strict;
 use FlashVideo::Utils;
 use HTML::Tree;
 use HTML::Entities qw(decode_entities);
+use URI;
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
@@ -12,10 +13,11 @@ sub find_video {
   die 'Could not retrieve video' unless ($browser->success);
 
   my ($id) = ($embed_url =~ m,file/([^/]*),);
-  print $id,"\n";
 
   my ($filename) = title_to_filename(extract_title($browser));
-  $filename =~ s/[\s\|_]*PutLocker[\s_]*//;
+  my $host = URI->new($embed_url)->host; # www.putlocker.com or www.sockshare.com
+  my $sitename = _host_to_sitename($host);
+  $filename =~ s/[\s\|_]*$sitename[\s_]*//;
   my $url; # the final URL
   
   #get the "hash" value from the HTML
@@ -25,7 +27,7 @@ sub find_video {
   info 'Found hash: ' . $hash;
   
   #Construct a POST request to get the tell the server to serve real page content
-  info "Confirming request to PutLocker.";
+  info "Confirming request to $sitename.";
   
   $browser->add_header( 'Content-Type' => 'application/x-www-form-urlencoded' );
   $browser->add_header( 'Accept-Encoding' => 'text/html' );
@@ -46,7 +48,7 @@ sub find_video {
   info "Found the stream ID: " . $streamID;
   
   #request the url of the actual file
-  my $uri = URI->new( "http://www.putlocker.com/get_file.php" );
+  my $uri = URI->new( "http://$host/get_file.php" );
   $uri->query_form((stream=>$streamID));
 
   #parse the url and title out of the response - much easier to regex it out, as the XML has dodgy &'s.
@@ -62,11 +64,12 @@ sub find_video {
     if( $page_html =~ m,"/(get_file\.php\?id=[^"]*)", ) {
       # download original file if link available
       my $download_page = $1;
-      $url = URI->new( "http://www.putlocker.com/$1" );
-      # this URL should be equivalent to what is returned by get_high_quality()
+      $url = URI->new( "http://$host/$1" );
+      # this URL should be equivalent to what is returned by _get_high_quality()
     }
-  } elsif($prefs->{quality} eq 'high') {
-    $url = get_high_quality($id, $streamID);
+  } elsif($prefs->{quality} eq 'high' and $host eq 'www.putlocker.com') {
+    # only works on PutLocker
+    $url = _get_high_quality($host, $id, $streamID);
   } else {
     # get streaming version
     $url = $stream_url;
@@ -76,9 +79,18 @@ sub find_video {
   return $url, $filename;
 }
 
-sub get_high_quality {
-  my ( $id, $key ) = @_;
-  return "http://www.putlocker.com/get_file.php?id=$id&key=$key&original=1";
+sub _get_high_quality {
+  my ( $host, $id, $key ) = @_;
+  return "http://$host/get_file.php?id=$id&key=$key&original=1";
+}
+
+sub _host_to_sitename {
+  my ($host) = @_;
+  if($host eq 'www.putlocker.com') {
+    return "PutLocker";
+  } elsif($host eq 'www.sockshare.com') {
+    return "SockShare";
+  }
 }
 
 1;
