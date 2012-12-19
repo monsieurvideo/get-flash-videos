@@ -10,7 +10,14 @@ use URI;
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
+  # change from /embed/video_id to /file/video_id
+  if($embed_url =~ s,/embed/,/file/,) {
+	  info "Retrieving file page: $embed_url";
+	  $browser->get($embed_url);
+  }
+
   die 'Could not retrieve video' unless ($browser->success);
+
 
   my ($id) = ($embed_url =~ m,file/([^/]*),);
 
