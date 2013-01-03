@@ -9,13 +9,15 @@ sub find_video {
   my ($self, $browser, $page_url, $prefs) = @_;
 
   my($id) = $browser->uri =~ /Filter=(\d+)/;
-  die "No id (filter) found in URL\n" unless $id;
+  my $productionid;
+  if ( $id )
+  {
 
-  $browser->post("http://mercury.itv.com/PlaylistService.svc",
-    Content_Type => "text/xml; charset=utf-8",
-    Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
-    SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
-    Content      => <<EOF);
+    $browser->post("http://mercury.itv.com/PlaylistService.svc",
+      Content_Type => "text/xml; charset=utf-8",
+      Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
+      SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
+      Content      => <<EOF);
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <SOAP-ENV:Body>
     <tem:GetPlaylist xmlns:tem="http://tempuri.org/" xmlns:itv="http://schemas.datacontract.org/2004/07/Itv.BB.Mercury.Common.Types" xmlns:com="http://schemas.itv.com/2009/05/Common">
@@ -44,6 +46,59 @@ sub find_video {
 </SOAP-ENV:Envelope>
 EOF
 
+  }
+  else {
+    ($productionid) = $browser->content =~ /\"productionId\":\"([^\"]+)\"/i;
+    print "Production ID $productionid\n";
+    die "No id (filter) found in URL or production id\n" unless $productionid;
+    $browser->post("http://mercury.itv.com/PlaylistService.svc",
+      Content_Type => "text/xml; charset=utf-8",
+      Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
+      SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
+      Content      => <<EOF);
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/" xmlns:itv="http://schemas.datacontract.org/2004/07/Itv.BB.Mercury.Common.Types" xmlns:com="http://schemas.itv.com/2009/05/Common">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <tem:GetPlaylist>
+      <tem:request>
+        <itv:ProductionId>$productionid</itv:ProductionId>
+        <itv:RequestGuid>FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF</itv:RequestGuid>
+        <itv:Vodcrid>
+          <com:Id/>
+          <com:Partition>itv.com</com:Partition>
+        </itv:Vodcrid>
+      </tem:request>
+      <tem:userInfo>
+        <itv:Broadcaster>Itv</itv:Broadcaster>
+        <itv:GeoLocationToken>
+          <itv:Token/>
+        </itv:GeoLocationToken>
+        <itv:RevenueScienceValue>ITVPLAYER.12.18.4</itv:RevenueScienceValue>
+        <itv:SessionId/>
+        <itv:SsoToken/>
+        <itv:UserToken/>
+      </tem:userInfo>
+      <tem:siteInfo>
+        <itv:AdvertisingRestriction>None</itv:AdvertisingRestriction>
+        <itv:AdvertisingSite>ITV</itv:AdvertisingSite>
+        <itv:AdvertisingType>Any</itv:AdvertisingType>
+        <itv:Area>ITVPLAYER.VIDEO</itv:Area>
+        <itv:Category/>
+        <itv:Platform>DotCom</itv:Platform>
+        <itv:Site>ItvCom</itv:Site>
+      </tem:siteInfo>
+      <tem:deviceInfo>
+        <itv:ScreenSize>Big</itv:ScreenSize>
+      </tem:deviceInfo>
+      <tem:playerInfo>
+        <itv:Version>2</itv:Version>
+      </tem:playerInfo>
+    </tem:GetPlaylist>
+  </soapenv:Body>
+</soapenv:Envelope>
+EOF
+
+  }
   # We want the RTMP url within a <Video timecode=...> </Video> section.
   debug $browser->content;
   die "Unable to find <Video> in XML" unless $browser->content =~ m{<Video timecode[^>]+>(.*?)</Video>}s;
