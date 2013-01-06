@@ -47,8 +47,9 @@ use FlashVideo::VideoPreferences;
 
 unshift @INC, \&plugin_loader;
 
-our $VERSION = "1.25";
-
+use constant CVERSION => "1.25";
+our $VERSION = CVERSION;
+ 
 our %opt;
 BEGIN {
   my $player = "mplayer -really-quiet";
@@ -84,9 +85,9 @@ BEGIN {
   );
 }
 
-use constant VER_INFO => <<EOF;
-get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
-EOF
+# constant evaluated at compile time, can't use runtime variables.
+use constant VER_INFO => 
+    "get_flash_videos version " . CVERSION . " (http://code.google.com/p/get-flash-videos/)\n";
 
 use constant USAGE => VER_INFO . <<EOF;
 
