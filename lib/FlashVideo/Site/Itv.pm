@@ -5,6 +5,9 @@ use strict;
 use FlashVideo::Utils;
 use HTML::Entities;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
+
 sub find_video {
   my ($self, $browser, $page_url, $prefs) = @_;
 
@@ -49,7 +52,7 @@ EOF
   }
   else {
     ($productionid) = $browser->content =~ /\"productionId\":\"([^\"]+)\"/i;
-    print "Production ID $productionid\n";
+    debug "Production ID $productionid\n";
     die "No id (filter) found in URL or production id\n" unless $productionid;
     $browser->post("http://mercury.itv.com/PlaylistService.svc",
       Content_Type => "text/xml; charset=utf-8",
