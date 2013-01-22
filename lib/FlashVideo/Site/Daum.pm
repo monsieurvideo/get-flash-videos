@@ -50,17 +50,22 @@ sub get_video_id {
     die "Cannot fetch '$url'\n" if !$browser->success();
   }
 
+  if ($browser->response->is_redirect()) {
+      my $url = $browser->response->header('Location');
+      $browser->get($url);
+      die "Cannot fetch '$url'\n" if !$browser->success();
+  }
+
   my $document = $browser->content();
 
-  # "http://flvs.daum.net/flvPlayer.swf?vid=FlVGvam5dPM$"
-  my $flv_player_url = quotemeta 'http://flvs.daum.net/flvPlayer.swf';
-  my $video_id_pattern_1 = qr{['"] $flv_player_url [?] vid = ([^'"&]+)}xmsi;
+  # VodPlayer.swf?vid=3i5f_JquGsk$
+  my $video_id_pattern_1 = qr{VodPlayer[.]swf [?] vid = (.+?) ["'&]}xmsi;
 
   my $func_name;
 
   # Story.UI.PlayerManager.createViewer('2oHFG_aR9uA$');
   $func_name = quotemeta 'Story.UI.PlayerManager.createViewer';
-  my $video_id_pattern_2 = qr{$func_name [(] ' (.+?) ' [)]}xms;
+  my $video_id_pattern_2 = qr{$func_name [(] ' (.+?) '}xms;
 
   # daum.Music.VideoPlayer.add("body_mv_player", "_nACjJ65nKg$",
   $func_name = quotemeta 'daum.Music.VideoPlayer.add';
@@ -69,17 +74,12 @@ sub get_video_id {
 
   # controller/video/viewer/VideoView.html?vid=90-m2tl87zM$&play_loc=...
   my $video_id_pattern_4
-      = qr{/video/viewer/VideoView.html [?] vid = (.+?) &}xms;
-
-  # DaumVodPlayer.swf?vid=vd247EUCULRUVVUQSVytEDS&...
-  my $video_id_pattern_5
-      = qr{DaumVodPlayer[.]swf [?] vid = (.+?) &}xmsi;
+      = qr{/video/viewer/VideoView.html [?] vid = (.+?) &}xmsi;
 
   if (    $document !~ $video_id_pattern_1
        && $document !~ $video_id_pattern_2
        && $document !~ $video_id_pattern_3
-       && $document !~ $video_id_pattern_4
-       && $document !~ $video_id_pattern_5 )
+       && $document !~ $video_id_pattern_4 )
   {
     die "Cannot find video ID.\n";
   }
