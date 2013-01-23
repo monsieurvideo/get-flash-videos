@@ -8,7 +8,7 @@ use URI::Escape;
 sub find_video {
   my($self, $browser, $embed_url) = @_;
 
-  my($title) = $browser->content =~ /<h1 class="videoTitle">([^<]+)</;
+  my($title) = extract_title($browser) =~ /(.*) \|/;
 
   my($url) = $browser->content =~ /mp4_url=([^&"]+)/;
   $url = uri_unescape($url);
