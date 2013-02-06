@@ -24,7 +24,8 @@ sub find_video {
     # Not quite the URL we expect, maybe it's the embedded one?
     die "Don't recognise the youku link"
       unless $embed_url =~ m`player.php/sid/(.+)/v\.swf`
-      or $embed_url =~ m`qplayer\.swf\?VideoIDS=([^&]+)`;
+      or $embed_url =~ m`qplayer\.swf\?VideoIDS=([^&]+)`
+      or $browser->content =~ m`player.php/sid/([^/]+)/v\.swf`;
 
     $embed_url = sprintf "http://v.youku.com/v_show/id_%s.html", $1;
     $browser->get( $embed_url );
@@ -251,6 +252,14 @@ sub shuffle_table {
     push @shuffled, splice( @lookup, $x, 1 );
   }
   return @shuffled;
+}
+
+sub can_handle {
+  my($self, $browser, $url) = @_;
+
+  return 1 if $url && URI->new($url)->host =~ /\.youku\.com$/;
+
+  return $browser->content =~ m{<param[^>]+name=['"]src['"][^>]+value=["']http://player\.youku\.com/player\.php/sid/[^/]+/v\.swf};
 }
 
 1;
