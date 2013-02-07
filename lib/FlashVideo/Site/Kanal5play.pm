@@ -18,7 +18,7 @@ sub find_video {
   if (!($browser->uri->as_string =~ m/video\/([0-9]*)/)) {
     die "No video id found in url";
   }
-  my ($video_id) = $1;
+  my $video_id = $1;
   my $info_url = "http://www.kanal5play.se/api/getVideo?format=FLASH&videoId=$video_id";
   $browser->get($info_url);
 
@@ -33,12 +33,12 @@ sub find_video {
   my $episode = $json->{episodeNumber};
   my $season = $json->{seasonNumber};
   my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
-  my ($rtmp) = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
-  my ($playpath) = $json->{streams}[0]->{source};
+  my $rtmp = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
+  my $playpath = $json->{streams}[0]->{source};
 
-  foreach my $stream ($json->{streams}[0]) {
-    my ($rate) = int($stream->{bitrate});
-    if ($bitrates->{$prefs->{quality}} eq $rate) {
+  while (my ($key, $stream) = each($json->{streams})) {
+    my $rate = int($stream->{bitrate});
+    if ($bitrates->{$prefs->{quality}} == $rate) {
       $playpath = $stream->{source};
       last;
     }
@@ -48,7 +48,7 @@ sub find_video {
     flv      => title_to_filename($filename, "flv"),
     rtmp     => $rtmp,
     playpath => $playpath,
-    swfVfy   => "http://www.kanal5play.se/flash/StandardPlayer.swf"
+    swfVfy   => "http://www.kanal5play.se/flash/K5StandardPlayer.swf"
   };
 }
 1;
