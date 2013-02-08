@@ -36,7 +36,7 @@ sub find_video {
   my $rtmp = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
   my $playpath = $json->{streams}[0]->{source};
 
-  while (my ($key, $stream) = each($json->{streams})) {
+  while (my ($key, $stream) = each(@{ $json->{streams} })) {
     my $rate = int($stream->{bitrate});
     if ($bitrates->{$prefs->{quality}} == $rate) {
       $playpath = $stream->{source};
