@@ -6,6 +6,8 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
 
 my $bitrates = {
   low    => 250000,
@@ -26,17 +28,17 @@ sub find_video {
     die "Couldn't download $info_url: " . $browser->response->status_line;
   }
 
-  my $jsonstr = $browser->content;
-  my $json = from_json($jsonstr);
+  my $jsonstr  = $browser->content;
+  my $json     = from_json($jsonstr);
 
-  my $name = $json->{program}->{name};
-  my $episode = $json->{episodeNumber};
-  my $season = $json->{seasonNumber};
+  my $name     = $json->{program}->{name};
+  my $episode  = $json->{episodeNumber};
+  my $season   = $json->{seasonNumber};
   my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
-  my $rtmp = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
+  my $rtmp     = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
   my $playpath = $json->{streams}[0]->{source};
 
-  while (my ($key, $stream) = each(@{ $json->{streams} })) {
+  foreach my $stream (@{$json->{streams}}) {
     my $rate = int($stream->{bitrate});
     if ($bitrates->{$prefs->{quality}} == $rate) {
       $playpath = $stream->{source};
