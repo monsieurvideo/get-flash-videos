@@ -31,9 +31,9 @@ sub find_video {
     }
   }
 
-  if (!$id) { ($id) = ($browser->content =~ m{data-posts-id="(\d+)"}s); }
-  if (!$id) { ($id) = ($browser->content =~ m{data-disqus-id="(\d+)"}s); }
-  if (!$id) { ($id) = ($browser->content =~ m{content="http://[^"]-(\d+)"}s); }
+  if (!$id) { ($id) = ($browser->content =~ m/data-posts-id="(\d+)"/); }
+  if (!$id) { ($id) = ($browser->content =~ m/data-disqus-id="(\d+)"/); }
+  if (!$id) { ($id) = ($embed_url =~ m/.*?(\d+)/); }
 
   die "No ID found\n" unless $id;
 
