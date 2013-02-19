@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 use HTML::Entities;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -158,6 +158,7 @@ EOF
   my $rtmp = decode_entities($video =~ /base="(rtmp[^"]+)/);
   my($playpath) = $format->{"playpath"};
   my($flv) = $playpath =~ m{/([^/]+)$};
+  $flv =~ s/\.mp4$/.flv/;
 
   return {
     rtmp => $rtmp,
