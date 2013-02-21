@@ -4,6 +4,7 @@ package FlashVideo::Site::Itv;
 use strict;
 use FlashVideo::Utils;
 use HTML::Entities;
+use Encode;
 
 our $VERSION = '0.02';
 sub Version() { $VERSION;}
@@ -160,6 +161,40 @@ EOF
   my($flv) = $playpath =~ m{/([^/]+)$};
   $flv =~ s/\.mp4$/.flv/;
 
+  # Get subtitles if necessary.
+  if ($prefs->{subtitles}) {
+    info "Subtitle Fetching";
+    if ($video =~ m%<URL><!\[CDATA\[(http://subtitles\.[^\]]*)\]\]></URL>%) {
+      my $subtitles_url  = $1;
+      info "Subtitle URL $subtitles_url";
+      $browser->get($subtitles_url);
+
+      if (!$browser->success) {
+        info "Couldn't download Itv subtitles: " . $browser->response->status_line;
+      }
+      my $subtitles_ttml = $flv;
+      my $subtext = $browser->content;
+      my $istart = index $subtext, "<";
+      $subtext = substr($subtext, $istart) unless ($istart < 0);
+      $subtext =~ s/UTF-16/utf8/;
+
+      $subtitles_ttml =~ s/\.flv$/\.ttml/;
+      
+      unlink($subtitles_ttml);
+      open my $fh, ">", $subtitles_ttml;
+      binmode $fh;
+      print $fh $subtext;
+      close $fh;
+
+      my $subtitles_file = $flv;
+      $subtitles_file =~ s/\.flv$/\.srt/;
+
+      convert_ttml_subtitles_to_srt($browser->content, $subtitles_file);
+
+      info "Saved subtitles to $subtitles_file";
+    }
+  }
+
   return {
     rtmp => $rtmp,
     playpath => $playpath,
@@ -167,5 +202,7 @@ EOF
     swfhash($browser, "http://www.itv.com/mercury/Mercury_VideoPlayer.swf")
   };
 }
+
+
 
 1;
