@@ -147,7 +147,7 @@ sub find_video {
     $title = join " - ", @title_components;
   }
   
-  my $filename = title_to_filename($title, "mp4");
+  my $filename = title_to_filename($title, "flv");
 
   # Get subtitles if necessary.
   if ($prefs->subtitles) {
