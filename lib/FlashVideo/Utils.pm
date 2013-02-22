@@ -16,7 +16,8 @@ our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
   is_program_on_path get_terminal_width json_unescape
-  convert_sami_subtitles_to_srt from_xml);
+  convert_sami_subtitles_to_srt from_xml
+  convert_ttml_subtitles_to_srt);
 
 sub debug(@) {
   # Remove some sensitive data
@@ -287,6 +288,90 @@ sub json_unescape {
   $s =~ s{(\\[\\/rnt"])}{"\"$1\""}gee;
   return $s;
 }
+
+sub convert_ttml_subtitles_to_srt {
+  my ($ttml_subtitles, $filename) = @_;
+
+  die "TTML subtitles must be provided\n" unless  $ttml_subtitles;
+  die "Output filename must be provided\n" unless $filename;
+  if ( -f $filename ) {
+    info "Subtitles already saved";
+    return;
+  }
+
+  my %ccodes = ( 
+    'black',   '#000000',
+    'blue',    '#0000ff',
+    'aqua',    '#00ffff',
+    'lime',    '#00ff00',
+    'fuchsia', '#ff00ff', 
+    'fuscia',  '#ff00ff',
+    'red',     '#ff0000',
+    'yellow',  '#ffff00',
+    'white',   '#ffffff',
+    'navy',    '#000080',
+    'teal',    '#008080',
+    'green',   '#008000',
+    'purple',  '#800080',
+    'maroon',  '#800000',
+    'olive',   '#808000',
+    'gray',    '#808080',
+    'silver',  '#c0c0c0');
+
+  unlink($filename);
+  open( my $fh, "> $filename");
+  binmode $fh;
+
+  my $st_count = 1;
+  my @lines = grep /<p\s.*begin=/, split /\n/, $ttml_subtitles;
+  for ( @lines ) {
+    my ( $start_time, $end_time, $st_text );
+    # Remove >1 spaces if not preserved
+    s|\s{2,}| |g unless (m%space\s=\s"preserve"%);
+    ( $start_time, $end_time, $st_text ) = ( $1, $2, $3 ) if m{<p\s+.*begin="(.+?)".+end="(.+?)".*?>(.+?)<\/p>};
+    if ($start_time && $end_time && $st_text ) {
+      # Format numerical field widths
+      $start_time = sprintf( '%02d:%02d:%02d,%02d', split /[:\.,]/, $start_time );
+      $end_time = sprintf( '%02d:%02d:%02d,%02d', split /[:\.,]/, $end_time );
+      # Add trailing zero if ttxt format only uses hundreths of a second
+      $start_time .= '0' if $start_time =~ m{,\d\d$};
+      $end_time .= '0' if $end_time =~ m{,\d\d$};
+      # Separate individual lines based on <span>s
+      my $i = index $st_text, "<span";
+      while ($i >= 0) {
+        my $j = index $st_text, "</span>", $i;
+        if ($j > 0) {
+          my $span = substr($st_text, $i, $j-$i+7);
+          my $k = index $span, ">";
+          my ( $span_ctl, $span_text ) = ($span =~ m|<span ([^>]+)>(.*)</span>|);
+          my ($span_color) =  ($span_ctl =~ m|tts:color="(\w+)"|);
+          $span = '<font color="'. $ccodes{$span_color} . '">' . $span_text . "</font>\n";
+          $st_text = substr($st_text, 0, $i) . "\n" . $span . substr($st_text, $j+7) . "\n"; 
+        }
+        $i = index $st_text, "<span";
+      }
+      $st_text =~ s|<span.*?>(.*?)</span>|\n$1\n|g;
+      $st_text =~ s|<br.*?>|\n|g;
+      if ($st_text =~ m{\n}) {
+        chomp($st_text);
+        $st_text =~ s|^\n?||;
+        $st_text =~ s|\n?$||;
+        $st_text =~ s|\n+|\n|g;
+      }
+      decode_entities($st_text);
+      # Write to file
+      print $fh "$st_count\n";
+      print $fh "$start_time --> $end_time\n";
+      print $fh "$st_text\n\n";
+      $st_count++;
+    }
+  }       
+  close $fh;
+
+  return;
+}
+
+
 
 sub convert_sami_subtitles_to_srt {
   my ($sami_subtitles, $filename, $decrypt_callback) = @_;
