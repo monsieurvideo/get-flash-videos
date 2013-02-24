@@ -11,6 +11,9 @@ use MIME::Base64;
 
 use constant TOKEN_DECRYPT_KEY => 'STINGMIMI';
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
+
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
@@ -55,11 +58,53 @@ sub find_video {
     die "Couldn't get asset XML: " . $browser->response->status_line;
   }
 
-  my $xml = from_xml($raw_xml);
+  my $xml_ref = from_xml($raw_xml);
+  my $xml;
 
-  my $stream_url = $xml->{assetInfo}->{uriData}->{streamUri};
-  my $token      = $xml->{assetInfo}->{uriData}->{token};
-  my $cdn        = $xml->{assetInfo}->{uriData}->{cdn};
+
+  # Check for mp4 if not then try different assetId
+  my $lower_id = 0;
+  my $upper_id = 9999999;
+  if ($xml_ref->{assetInfo}->{uriData}->{streamUri} !~ /mp4$/ ) {
+    for (my $off = 2; $off < 14; $off++) {
+      my $asset_off = $off >> 1;
+      $asset_off = -$asset_off if ($off & 1);
+      $asset_off += $asset_id; 
+      if ($asset_off > $lower_id && $asset_off < $upper_id) {
+        $raw_xml = $browser->get("http://ais.channel4.com/asset/$asset_off");
+        if ($browser->success) {
+          my $xml_off = from_xml($raw_xml); 
+          # Check Same programme
+          if ( $xml_off->{assetInfo}->{brandTitle}      eq  $xml_ref->{assetInfo}->{brandTitle} &&
+               $xml_off->{assetInfo}->{episodeTitle}    eq  $xml_ref->{assetInfo}->{episodeTitle} &&
+               $xml_off->{assetInfo}->{programmeNumber} eq  $xml_ref->{assetInfo}->{programmeNumber}) {
+            if ($xml_off->{assetInfo}->{uriData}->{streamUri} =~ /mp4$/ ) {
+              $xml = $xml_off;
+              info "Found mp4 stream asset id $asset_off siteSectionId $xml->{assetInfo}->{adverts}->{siteSectionId}";
+              if ($xml->{assetInfo}->{uriData}->{streamUri} =~ /\.ps3-/ ) {
+                 last;
+              }
+            }
+          }
+          else {
+            if ($asset_off > $asset_id ) {
+              $upper_id = $asset_off;
+            }
+            else {
+              $lower_id = $asset_off;
+            }
+          }
+        } 
+      }
+    }
+  }
+  else {
+    $xml = $xml_ref;
+  }
+
+  my $stream_url  = $xml->{assetInfo}->{uriData}->{streamUri};
+  my $token       = $xml->{assetInfo}->{uriData}->{token};
+  my $cdn         = $xml->{assetInfo}->{uriData}->{cdn};
 
   my $decoded_token = decode_4od_token($token);
 
@@ -102,7 +147,7 @@ sub find_video {
     $title = join " - ", @title_components;
   }
   
-  my $filename = title_to_filename($title, "mp4");
+  my $filename = title_to_filename($title, "flv");
 
   # Get subtitles if necessary.
   if ($prefs->subtitles) {

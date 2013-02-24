@@ -88,7 +88,9 @@ sub _find_package_url {
 
 sub _found {
   my($package, $url) = @_;
-  info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
+  my $pv = eval "\$".$package."::VERSION";
+  $pv = ' plugin version ' . $pv if $pv;
+  info "Using method '" . lc((split /::/, $package)[-1]) . "'$pv for $url";
   return $package, $url;
 }
 
