@@ -21,3 +21,10 @@ MYMETA.*
 mk/makemaker.mk
 mk/makemaker.mk.old
 mk/makemaker-wrap.mk
+# Emacs files
+#
+*~
+.#*
+\#*\#
+\#*
+TAGS
