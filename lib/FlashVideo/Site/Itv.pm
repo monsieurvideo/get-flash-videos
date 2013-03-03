@@ -172,19 +172,20 @@ EOF
       if (!$browser->success) {
         info "Couldn't download Itv subtitles: " . $browser->response->status_line;
       }
-      my $subtitles_ttml = $flv;
-      my $subtext = $browser->content;
-      my $istart = index $subtext, "<";
-      $subtext = substr($subtext, $istart) unless ($istart < 0);
-      $subtext =~ s/UTF-16/utf8/;
+#      Code to save .ttml file
+#      my $subtitles_ttml = $flv;
+#      my $subtext = $browser->content;
+#      my $istart = index $subtext, "<";
+#      $subtext = substr($subtext, $istart) unless ($istart < 0);
+#      $subtext =~ s/UTF-16/utf8/;
 
-      $subtitles_ttml =~ s/\.flv$/\.ttml/;
+#      $subtitles_ttml =~ s/\.flv$/\.ttml/;
       
-      unlink($subtitles_ttml);
-      open my $fh, ">", $subtitles_ttml;
-      binmode $fh;
-      print $fh $subtext;
-      close $fh;
+#      unlink($subtitles_ttml);
+#      open my $fh, ">", $subtitles_ttml;
+#      binmode $fh;
+#      print $fh $subtext;
+#      close $fh;
 
       my $subtitles_file = $flv;
       $subtitles_file =~ s/\.flv$/\.srt/;
