@@ -6,7 +6,7 @@ use FlashVideo::Utils;
 use HTML::Entities;
 use Encode;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION;}
 
 sub find_video {
