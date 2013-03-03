@@ -7,11 +7,14 @@ use strict;
 
 use Crypt::Blowfish_PP;
 use FlashVideo::Utils;
+use FlashVideo::JSON;
 use MIME::Base64;
+use Time::HiRes qw(time);
+use Data::Dumper;
 
 use constant TOKEN_DECRYPT_KEY => 'STINGMIMI';
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -27,6 +30,9 @@ sub find_video {
                             \ content="\S+series-(\d+)\/episode-(\d+)/x) {
     $series_and_episode = sprintf "S%02dE%02d", $1, $2;
   }
+
+  # Create a uid
+  my $uid = int(time*1000);
 
   # get SWF player file
   my $swf_player;
@@ -66,41 +72,77 @@ sub find_video {
   my $lower_id = 0;
   my $upper_id = 9999999;
   if ($xml_ref->{assetInfo}->{uriData}->{streamUri} !~ /mp4$/ ) {
-    for (my $off = 2; $off < 14; $off++) {
-      my $asset_off = $off >> 1;
-      $asset_off = -$asset_off if ($off & 1);
-      $asset_off += $asset_id; 
-      if ($asset_off > $lower_id && $asset_off < $upper_id) {
-        $raw_xml = $browser->get("http://ais.channel4.com/asset/$asset_off");
-        if ($browser->success) {
-          my $xml_off = from_xml($raw_xml); 
-          # Check Same programme
-          if ( $xml_off->{assetInfo}->{brandTitle}      eq  $xml_ref->{assetInfo}->{brandTitle} &&
-               $xml_off->{assetInfo}->{episodeTitle}    eq  $xml_ref->{assetInfo}->{episodeTitle} &&
-               $xml_off->{assetInfo}->{programmeNumber} eq  $xml_ref->{assetInfo}->{programmeNumber}) {
+    
+    my $find_url = "http://ps3.channel4.com/pmlsd/" . 
+        $xml_ref->{assetInfo}->{webSafeBrandTitle} .
+        "/4od.json?platform=ps3&uid=" . $uid;
+
+    $browser->get($find_url);
+    if ($browser->success) {
+      my $json = from_json($browser->content);
+
+      my $fstr = sprintf "%s/%03d", $xml_ref->{assetInfo}->{contractId}, 
+                   $xml_ref->{assetInfo}->{programmeNumber};
+      info "Looking for programmeId $fstr";
+      foreach my $entry ( @{$json->{feed}->{entry}} ) {
+        if ($entry->{'dc:relation.programmeId'} eq $fstr) {
+          my $ps3_url = $entry->{group}->{player}->{'@url'};
+          info $entry->{'dc:relation.BrandTitle'} .
+            ' - ' . $entry->{title} .
+            ' Series ' . $entry->{'dc:relation.SeriesNumber'} .
+            ' Episode ' . $entry->{'dc:relation.EpisodeNumber'} .
+            ' ProgrammeId ' . $entry->{'dc:relation.programmeId'} .
+            ' Url ' . $ps3_url;
+          $raw_xml = $browser->get($ps3_url);
+          if ($browser->success) {
+            my $xml_off = from_xml($raw_xml);
             if ($xml_off->{assetInfo}->{uriData}->{streamUri} =~ /mp4$/ ) {
               $xml = $xml_off;
-              info "Found mp4 stream asset id $asset_off siteSectionId $xml->{assetInfo}->{adverts}->{siteSectionId}";
-              if ($xml->{assetInfo}->{uriData}->{streamUri} =~ /\.ps3-/ ) {
-                 last;
+              info "Found mp4 stream url $ps3_url siteSectionId $xml->{assetInfo}->{adverts}->{siteSectionId}";
+            }
+          }
+        }
+      }
+
+    }
+    if  (! defined($xml)) {
+      for (my $off = 2; $off < 20; $off++) {
+        my $asset_off = $off >> 1;
+        $asset_off = -$asset_off if ($off & 1);
+        $asset_off += $asset_id; 
+        if ($asset_off > $lower_id && $asset_off < $upper_id) {
+          $raw_xml = $browser->get("http://ais.channel4.com/asset/$asset_off");
+          if ($browser->success) {
+            my $xml_off = from_xml($raw_xml); 
+            # Check Same programme
+            if ( $xml_off->{assetInfo}->{brandTitle}      eq  $xml_ref->{assetInfo}->{brandTitle} &&
+                 $xml_off->{assetInfo}->{programmeNumber} eq  $xml_ref->{assetInfo}->{programmeNumber}) {
+              if ($xml_off->{assetInfo}->{uriData}->{streamUri} =~ /mp4$/ ) {
+                $xml = $xml_off;
+                info "Found mp4 stream asset id $asset_off siteSectionId $xml->{assetInfo}->{adverts}->{siteSectionId}";
+                if ($xml->{assetInfo}->{uriData}->{streamUri} =~ /\.ps3-/ ) {
+                   last;
+                }
               }
             }
-          }
-          else {
-            if ($asset_off > $asset_id ) {
-              $upper_id = $asset_off;
-            }
             else {
-              $lower_id = $asset_off;
+              if ($asset_off > $asset_id ) {
+                $upper_id = $asset_off;
+              }
+              else {
+                $lower_id = $asset_off;
+              }
             }
-          }
-        } 
+          } 
+        }
       }
     }
   }
   else {
     $xml = $xml_ref;
   }
+
+  die "Unable to find suitable stream - may not be available yet\n" unless defined $xml;
 
   my $stream_url  = $xml->{assetInfo}->{uriData}->{streamUri};
   my $token       = $xml->{assetInfo}->{uriData}->{token};
