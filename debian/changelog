@@ -2,7 +2,7 @@ libapp-get-flash-videos-perl (1.24-2) stable; urgency=low
 
   * Add missing dependency to debian control file
 
- -- ChristianBryn <chr,bryn@gmail.com>  Sun, 03 November 2013 17:16:51 +0100
+ -- ChristianBryn <chr,bryn@gmail.com>  Sun, 03 March 2013 17:16:51 +0100
 
 libapp-get-flash-videos-perl (1.24-1) stable; urgency=low
 
