@@ -3,14 +3,14 @@ Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 7)
 Build-Depends-Indep: perl, libwww-perl, liburi-perl, libtie-ixhash-perl,
-  libwww-mechanize-perl
+  libwww-mechanize-perl, libmodule-find-perl
 Maintainer: Monsieur Video <monsieurvideo@gmail.com>
 Standards-Version: 3.8.3
 Homepage: http://code.google.com/p/get-flash-videos/
 
 Package: get-flash-videos
 Architecture: all
-Depends: ${perl:Depends}, libwww-perl, liburi-perl, libwww-mechanize-perl
+Depends: ${perl:Depends}, libwww-perl, liburi-perl, libwww-mechanize-perl, libmodule-find-perl
 Recommends: libxml-simple-perl, libcompress-zlib-perl,
   rtmpdump | flvstreamer, libdigest-sha-perl, liblwp-protocol-socks-perl
 Description: Video downloader for various Flash-based video hosting sites
