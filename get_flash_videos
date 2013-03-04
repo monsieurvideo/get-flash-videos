@@ -41,6 +41,7 @@ use FlashVideo::URLFinder;
 use FlashVideo::Mechanize;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
+use FlashVideo::FFmpegDownloader;
 use FlashVideo::Search;
 use FlashVideo::Utils;
 use FlashVideo::VideoPreferences;
@@ -402,9 +403,14 @@ sub download {
     my $file = $save_as;
 
     if(ref $data eq 'HASH') {
-      # RTMP data
-      $downloader = FlashVideo::RTMPDownloader->new;
-      $file ||= $data->{flv};
+      if (defined($data->{downloader}) && $data->{downloader} eq "ffmpeg") {
+        $downloader = FlashVideo::FFmpegDownloader->new;
+        $file ||= $data->{file};
+      } else {
+        # RTMP data
+        $downloader = FlashVideo::RTMPDownloader->new;
+        $file ||= $data->{flv};
+      }
     } else {
       # HTTP
       $downloader = FlashVideo::Downloader->new;

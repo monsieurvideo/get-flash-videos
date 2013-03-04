@@ -8,10 +8,13 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
+
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
   my @rtmpdump_commands;
-    
+
   if ($browser->uri->as_string !~ m/video\/([0-9]*)/) {
     die "No video id found in url";
   }
@@ -20,7 +23,7 @@ sub find_video {
   my $name = decode_entities($1);
   my $info_url = "http://www.svtplay.se/video/$video_id?output=json";
   $browser->get($info_url);
-    
+
   if (!$browser->success) {
     die "Couldn't download $info_url: " . $browser->response->status_line;
   }
@@ -42,42 +45,6 @@ sub find_video {
     }
   }
 
-  
-  # If we found an m3u8 file we generate the ffmpeg download command
-  if (!($m3u8 eq "")) {
-      
-      $browser->get($m3u8);
-      
-      if (!$browser->success) {
-	  die "Couldn't download $m3u8: " . $browser->response->status_line;
-      }
-      my @lines = split(/\r?\n/, $browser->content);
-      
-      $bitrate = -1;
-      my $video_url = "";
-      my $i = 0;
-      
-      # Select highest bitrate available
-      foreach my $line (@lines) {
-	if ($line =~ /BANDWIDTH/) {
-	  $line =~ /BANDWIDTH=([0-9]*),/;
-	  my $this_rate = $1;
-
-	  if($bitrate < $this_rate) {
-	    $video_url = $lines[$i + 1];
-	    $bitrate = $this_rate;
-	  }
-	}
-	$i++;
-      }
-
-      my $flv_filename = title_to_filename($name, "mp4");
-      die "Not yet supported, use ffmpeg (http://ffmpeg.org/):\n\n"
-	  . "ffmpeg -i '" . $video_url . "' -acodec copy -vcodec copy "
-	  . "-absf aac_adtstoasc -f mp4 '" . $flv_filename . "'\n";
-
-  }
-
   if ($prefs->{subtitles}) {
     if (my $subtitles_url = $video_data->{video}->{subtitleReferences}[0]->{url}) {
       info "Found subtitles URL: $subtitles_url";
@@ -88,7 +55,7 @@ sub find_video {
         info "Couldn't download subtitles: " . $browser->status_line;
       }
 
-      my $srt_filename = title_to_filename($name, "srt"); 
+      my $srt_filename = title_to_filename($name, "srt");
 
       open my $srt_fh, '>', $srt_filename
         or die "Can't open subtitles file $srt_filename: $!";
@@ -101,11 +68,56 @@ sub find_video {
     }
   }
 
-  return {
-	  flv    => title_to_filename($name, "flv"),
-	  rtmp   => $rtmp_url,
-	  swfVfy => "http://www.svtplay.se/public/swf/video/svtplayer-2012.15.swf",
-  };
+  # If we found an m3u8 file we generate the ffmpeg download command
+  if (!($m3u8 eq "")) {
+      $browser->get($m3u8);
+      if (!$browser->success) {
+          die "Couldn't download $m3u8: " . $browser->response->status_line;
+      }
+
+      my @lines = split(/\r?\n/, $browser->content);
+      $bitrate = -1;
+      my $video_url = "";
+      my $i = 0;
+
+      # Select highest bitrate available
+      foreach my $line (@lines) {
+        if ($line =~ /BANDWIDTH/) {
+          $line =~ /BANDWIDTH=([0-9]*),/;
+          my $this_rate = $1;
+
+          if ($bitrate < $this_rate) {
+            $video_url = $lines[$i + 1];
+            $bitrate = $this_rate;
+          }
+        }
+        $i++;
+      }
+
+      my $filename = title_to_filename($name, "mp4");
+
+      # Set the arguments for ffmpeg
+      my @ffmpeg_args = (
+        "-i", "$video_url",
+        "-acodec", "copy",
+        "-vcodec", "copy",
+        "-absf", "aac_adtstoasc",
+        "-f", "mp4",
+        "$filename"
+      );
+
+      return {
+        downloader => "ffmpeg",
+        file       => $filename,
+        args       => \@ffmpeg_args
+      };
+  } else {
+    return {
+      flv    => title_to_filename($name, "flv"),
+      rtmp   => $rtmp_url,
+      swfVfy => "http://www.svtplay.se/public/swf/video/svtplayer-2012.15.swf",
+    };
+  }
 }
 
 1;
