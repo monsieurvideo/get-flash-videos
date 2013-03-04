@@ -10,11 +10,10 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use MIME::Base64;
 use Time::HiRes qw(time);
-use Data::Dumper;
 
 use constant TOKEN_DECRYPT_KEY => 'STINGMIMI';
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION;}
 
 sub find_video {
