@@ -2,7 +2,8 @@ Source: libapp-get-flash-videos-perl
 Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 7)
-Build-Depends-Indep: libtie-ixhash-perl,
+Build-Depends-Indep: libmodule-find-perl,
+  libtie-ixhash-perl,
   liburi-perl,
   libwww-mechanize-perl,
   libwww-perl,
@@ -18,7 +19,7 @@ Depends: libcrypt-blowfish-perl,
   libdata-amf-perl,
   libhtml-parser-perl,
   libhtml-tree-perl,
-  libmodule-find-perl
+  libmodule-find-perl,
   libtie-ixhash-perl,
   liburi-perl,
   libwww-mechanize-perl,
@@ -28,7 +29,7 @@ Depends: libcrypt-blowfish-perl,
   ${perl:Depends}
 Recommends: get_iplayer,
   ffmpeg | libav-tools,
-  libcrypt-rijndeal-perl
+  libcrypt-rijndeal-perl,
   liblwp-protocol-socks-perl,
   libxml-simple-perl
 Suggests: mplayer
