@@ -341,7 +341,7 @@ sub download {
   }
 
   my $suggested_filename = $suggested_fnames[-1];
-  if (ref($actual_url) eq 'ARRAY') {
+  if (ref($actual_url) eq 'HASH') {
       $suggested_filename ||= $actual_url->{flv};
   }
 
