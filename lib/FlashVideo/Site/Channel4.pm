@@ -13,11 +13,18 @@ use Time::HiRes qw(time);
 
 use constant TOKEN_DECRYPT_KEY => 'STINGMIMI';
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION;}
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
+
+
+  if ($browser->response->is_redirect) {
+    my $relurl = $browser->response->header('Location');
+    info "Relocated to $relurl";
+    $browser->get($relurl);
+  }
 
   my $page_url = $browser->uri->as_string;
 
@@ -83,7 +90,15 @@ sub find_video {
       my $fstr = sprintf "%s/%03d", $xml_ref->{assetInfo}->{contractId}, 
                    $xml_ref->{assetInfo}->{programmeNumber};
       info "Looking for programmeId $fstr";
-      foreach my $entry ( @{$json->{feed}->{entry}} ) {
+      my @entries;
+      if (ref($json->{feed}->{entry}) eq "ARRAY") {
+        @entries = @{$json->{feed}->{entry}};
+      }
+      else
+      {
+        $entries[0] = $json->{feed}->{entry};
+      }
+      foreach my $entry ( @entries ) {
         if ($entry->{'dc:relation.programmeId'} eq $fstr) {
           my $ps3_url = $entry->{group}->{player}->{'@url'};
           info $entry->{'dc:relation.BrandTitle'} .
