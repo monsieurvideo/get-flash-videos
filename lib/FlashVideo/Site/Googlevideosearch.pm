@@ -10,6 +10,8 @@ sub search {
   my($self, $search, $type) = @_;
 
   my $browser = FlashVideo::Mechanize->new;
+
+  $browser->allow_redirects;
   
   $browser->get('http://video.google.com/videoadvancedsearch');
 

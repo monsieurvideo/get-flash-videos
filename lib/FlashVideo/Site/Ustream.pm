@@ -5,6 +5,9 @@ use strict;
 use FlashVideo::Utils;
 use MIME::Base64;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION };
+
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
@@ -41,6 +44,8 @@ EOF
 
   # Data::AMF fails to understand this response, so just parse ourselves.
   my($flv_url) = $browser->content =~ /flv.{3,5}(http:[^\0]+)/;
+
+  $browser->allow_redirects;
 
   return $flv_url, title_to_filename($title);
 }

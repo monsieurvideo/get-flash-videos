@@ -2,17 +2,37 @@ Source: libapp-get-flash-videos-perl
 Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 7)
-Build-Depends-Indep: perl, libwww-perl, liburi-perl, libtie-ixhash-perl,
-  libwww-mechanize-perl
+Build-Depends-Indep: libmodule-find-perl,
+  libtie-ixhash-perl,
+  liburi-perl,
+  libwww-mechanize-perl,
+  libwww-perl,
+  libxml-simple-perl,
+  perl
 Maintainer: Monsieur Video <monsieurvideo@gmail.com>
 Standards-Version: 3.8.3
 Homepage: http://code.google.com/p/get-flash-videos/
 
 Package: get-flash-videos
 Architecture: all
-Depends: ${perl:Depends}, libwww-perl, liburi-perl, libwww-mechanize-perl
-Recommends: libxml-simple-perl, libcompress-zlib-perl,
-  rtmpdump | flvstreamer, libdigest-sha-perl, liblwp-protocol-socks-perl
+Depends: libcrypt-blowfish-perl,
+  libdata-amf-perl,
+  libhtml-parser-perl,
+  libhtml-tree-perl,
+  libmodule-find-perl,
+  libtie-ixhash-perl,
+  liburi-perl,
+  libwww-mechanize-perl,
+  libwww-perl,
+  rtmpdump,
+  ${misc:Depends},
+  ${perl:Depends}
+Recommends: get_iplayer,
+  ffmpeg | libav-tools,
+  libcrypt-rijndeal-perl,
+  liblwp-protocol-socks-perl,
+  libxml-simple-perl
+Suggests: mplayer
 Description: Video downloader for various Flash-based video hosting sites
   Download videos from various Flash-based video hosting sites, without having
   to use the Flash player. Handy for saving viqeos for watching offline, and
