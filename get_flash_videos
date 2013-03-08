@@ -310,6 +310,11 @@ sub download {
 
   info "Downloading $url";
   $browser->get($url);
+  # Handle short url which redirect...
+  if ($browser->response->is_redirect and ($url ne $possible_url)) {
+    info "Downloading redirected $possible_url";
+    $browser->get($possible_url);
+  }
 
   # (Redirect check is for Youtube which sometimes redirects to login page
   # for "mature" videos.)

@@ -37,6 +37,16 @@ sub find_package {
     }
   }
 
+  # Handle redirection such as short urls.
+  if (!defined $package) {
+    $browser->get($url);
+    if ($browser->response->is_redirect) {
+      my $possible_url = $browser->response->header('Location');
+      $package = _find_package_url($possible_url, $browser);
+      return _found($package, $possible_url) if (defined $package);
+    }
+  }
+
   if(!defined $package) {
     for(@extra_can_handle) {
       s/FlashVideo::Site:://;
