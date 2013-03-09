@@ -13,7 +13,8 @@ sub find_video {
   my $params = ($browser->content =~ /\["params","(.+?)"\]/)[0];
   $params =~ s/\\u([[:xdigit:]]{1,4})/chr(eval("0x$1"))/egis;
   $params = uri_unescape($params);
-  my $url = ($params =~ /"sd_src":"([^"]*)"/)[0];
+  my $url = ($params =~ /"hd_src":"([^"]*)"/)[0];
+  if (!$url) { $url = ($params =~ /"sd_src":"([^"]*)"/)[0]; }
   $url =~ s/\\\//\//g;
   die "Unable to extract url" unless $url;
 
