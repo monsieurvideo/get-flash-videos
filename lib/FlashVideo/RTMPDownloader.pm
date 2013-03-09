@@ -6,6 +6,8 @@ use base 'FlashVideo::Downloader';
 use IPC::Open3;
 use Fcntl ();
 use Symbol qw(gensym);
+use File::Temp qw(tempfile tempdir);
+use Storable qw(dclone);
 use FlashVideo::Utils;
 
 use constant LATEST_RTMPDUMP => 2.2;
@@ -89,6 +91,54 @@ sub download {
   }
 
   return -s $file;
+}
+
+# Check if a stream is active by downloading a sample
+sub try_download {
+
+  my ($self, $rtmp_data_orig) = @_;
+  my $rtmp_data = dclone($rtmp_data_orig);
+
+  # Create a temporary file for the test
+  my ($fh, $filename) = tempfile();
+  $rtmp_data->{flv} = $filename;
+
+  # Just download a second of video
+  $rtmp_data->{stop} = "1";
+
+  if(my $socks = FlashVideo::Mechanize->new->get_socks_proxy) {
+    $rtmp_data->{socks} = $socks;
+  }
+
+  my $prog = $self->get_rtmp_program;
+
+  if($prog eq 'flvstreamer' && ($rtmp_data->{rtmp} =~ /^rtmpe:/ || $rtmp_data->{swfhash})) {
+    error "FLVStreamer does not support "
+      . ($rtmp_data->{swfhash} ? "SWF hashing" : "RTMPE streams")
+      . ", please install rtmpdump.";
+    exit 1;
+  }
+
+  if($self->debug) {
+    $rtmp_data->{verbose} = undef;
+  }
+
+  my($return, @errors) = $self->run($prog, $rtmp_data);
+
+  if($return != 0 && "@errors" =~ /failed to connect/i) {
+    # Try port 443 as an alternative
+    info "Couldn't connect on RTMP port, trying port 443 instead";
+    $rtmp_data->{port} = 443;
+    ($return, @errors) = $self->run($prog, $rtmp_data);
+  }
+
+  # If we got an unrecoverable error return false
+  if($return == 1) {
+    info "\n Tested stream failed.";
+    return 0;
+  }
+
+  return 1;
 }
 
 sub get_rtmp_program {
