@@ -27,7 +27,7 @@ Depends: libcrypt-blowfish-perl,
   rtmpdump,
   ${misc:Depends},
   ${perl:Depends}
-Recommends: get_iplayer,
+Recommends: get-iplayer,
   ffmpeg | libav-tools,
   libcrypt-rijndeal-perl,
   liblwp-protocol-socks-perl,
