@@ -6,10 +6,22 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
   my $id;
+
+  if ($browser->response->is_redirect) {
+    my $relurl = $browser->response->header('Location');
+    info "Relocated to $relurl";
+    $browser->get($relurl);
+  }
+
+  my $page_url = $browser->uri->as_string;
+
   if ($embed_url =~ /clip_id=(\d+)/) {
     $id = $1;
   } elsif ($embed_url =~ m!/(\d+)!) {
