@@ -8,6 +8,9 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use URI::Escape;
 
+our $VERSION = '0.01';
+sub Version { $VERSION; }
+
 my @formats = (
   { id => 38, resolution => [4096, 2304] },
   { id => 37, resolution => [1920, 1080] },
