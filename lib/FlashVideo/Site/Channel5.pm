@@ -5,6 +5,9 @@ use strict;
 use FlashVideo::Utils;
 use MIME::Base64;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 my $encode_rates = {
      "low" => 480,
      "medium" => 800,
@@ -226,9 +229,6 @@ sub can_handle {
   my($self, $browser, $url) = @_;
 
   return 1 if $url && URI->new($url)->host =~ /\.channel5\.com$/;
-
-  return $browser->content =~ /(playerI[dD]|brightcove.player.create)/
-    && $browser->content =~ /brightcove/i;
 }
 
 1;
