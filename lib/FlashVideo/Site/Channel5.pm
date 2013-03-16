@@ -5,6 +5,9 @@ use strict;
 use FlashVideo::Utils;
 use MIME::Base64;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 my $encode_rates = {
      "low" => 480,
      "medium" => 800,
