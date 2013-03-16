@@ -225,10 +225,10 @@ EOF5
 sub can_handle {
   my($self, $browser, $url) = @_;
 
-  return 1 if ( ( $url && URI->new($url)->host =~ /\.channel5\.com$/ ) &&
+  return 1 if $url && URI->new($url)->host =~ /\.channel5\.com$/;
 
-  ( $browser->content =~ /(playerI[dD]|brightcove.player.create)/
-    && $browser->content =~ /brightcove/i ));
+  return $browser->content =~ /(playerI[dD]|brightcove.player.create)/
+    && $browser->content =~ /brightcove/i;
 }
 
 1;
