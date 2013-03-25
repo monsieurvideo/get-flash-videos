@@ -6,18 +6,24 @@ use FlashVideo::Utils;
 use HTML::Entities;
 use URI::Escape;
 
+our $VERSION = '0.01';
+sub Version { $VERSION; }
+
 die "Must have Digest::MD5 for this download\n" 
   unless eval {
     require Digest::MD5;
   };
 
 sub token {
-  my $url = shift;
-  my $hexdate = $browser->get("http://www.wat.tv/servertime");
-  my @timestamp=split('|',$hexdate);
-  $hexdate=sprintf("%x",shift(@timestamp));
+  my ($url, $browser) =  @_;
+
+  $browser->get("http://www.wat.tv/servertime");
+
+  my $hexdate = $browser->content;
+  my @timestamp = split('\|', $hexdate);
+  $hexdate = sprintf("%x", shift(@timestamp));
   my $key = "9b673b13fa4682ed14c3cfa5af5310274b514c4133e9b3a81e6e3aba00912564";
-  return Digest::MD5::md5_hex($key . $url . $hexdate)."/".$hexdate;
+  return Digest::MD5::md5_hex($key . $url . $hexdate) . "/" . $hexdate;
 }
 
 
@@ -33,7 +39,7 @@ sub find_video {
   my $title = json_unescape(($browser->content =~ /title":"(.*?)",/)[0]);
 
   my $location = "/web/$video_id";
-  my $token = &token($location);
+  my $token = &token($location, $browser);
 
   my $url = "http://www.wat.tv/get".$location.
          "?token=".$token.
