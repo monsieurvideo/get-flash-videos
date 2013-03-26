@@ -18,10 +18,8 @@ sub find_video {
 		}
 	}
 
-	my $id1;
-	if($segIds =~ m/^([^#]*)#/){
-		$id1 = $1;
-	}
+	($segIds)=$browser->{content} =~ m/<section[^>]* ?data-segment-ids=["'](.+?)["'] ?[^>]*>/ if(!$segIds);
+	my ($id1) = $segIds =~ m/^([0-9a-f]+)/;
 
 	my $title;
 	if($browser->{content} =~ m/<meta property=["']og:title["'] content=["']([^"']+)["']\/>/){
@@ -66,20 +64,22 @@ sub find_video {
 	$browser->get($videoURL);
 
 	$xml = from_xml($browser);
-
-#	my $pick;
-#	foreach(@{$xml->{entry}}){
-#		if(!($_->{ref}->{href} =~ m/iPhone/)){
-#			$pick = $1;
-#		}
-#	}
+	my $pick;
+	my $bitrate;
+	my $file_url;
+	foreach(@{$xml->{entry}}){
+		if(!($_->{ref}->{href} =~ m/iPhone/)){
+			$file_url=$_->{ref}->{href};
+			$pick = $1; last;
+		}
+	}
 
 #	grep { $_->{name} eq "mimeType" } @{$_->{param}})[0]->{value} 
 #	my $pick = (grep { $_->{param}->{value}->[3] eq "video/x-flv" } @{$xml->{entry} } )[0];
 
-	my $pick = $xml->{entry}[4];
+#	my $pick = $xml->{entry}[4];
 
-	my $file_url = $pick->{ref}->{href};
+#	my $file_url = $pick->{ref}->{href};
 
 	# $prefs->{quality}
 
