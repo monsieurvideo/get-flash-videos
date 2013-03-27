@@ -108,7 +108,7 @@ sub find_video {
 
       return {
         downloader => "ffmpeg",
-        file       => $filename,
+        flv       => $filename,
         args       => \@ffmpeg_args
       };
   } else {
