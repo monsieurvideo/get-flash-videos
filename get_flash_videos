@@ -410,7 +410,7 @@ sub download {
     if(ref $data eq 'HASH') {
       if (defined($data->{downloader}) && $data->{downloader} eq "ffmpeg") {
         $downloader = FlashVideo::FFmpegDownloader->new;
-        $file ||= $data->{file};
+        $file ||= $data->{flv};
       } else {
         # RTMP data
         $downloader = FlashVideo::RTMPDownloader->new;
