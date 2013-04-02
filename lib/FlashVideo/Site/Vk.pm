@@ -16,28 +16,13 @@ sub find_video {
   my $uid = "";
   my $vtag = "";
   my $url = "";
-  my $reget = 0;
-
-  $new_embed_url = decode_entities($embed_url);
-
-  # if the URL contains undecoded HTML entities, we have the wrong URL
-  # and need to get proper one
-  if ($embed_url ne $new_embed_url) {
-    info ("URI with encoded entities... re-GETing");
-    $embed_url = $new_embed_url;
-    $reget = 1;
-  }
 
   # vkontakte.ru is the same page as vk.com, but it redirects to login (?)
   if ($embed_url =~ /http:\/\/vkontakte.ru\//) {
     $embed_url =~ s/http:\/\/vkontakte.ru\//http:\/\/vk.com\//;
-    $reget = 1;
-  }
-
-  # in either of case above let's get the page again with changed URL
-  if ($reget) {
     $browser->get($embed_url);
   }
+
   debug ("URI: " . $embed_url);
  
   if ($browser->content =~ /\s*var video_title = '([^']+)';/) {
