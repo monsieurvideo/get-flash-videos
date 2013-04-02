@@ -3,21 +3,28 @@ package FlashVideo::Site::Vk;
 
 use strict;
 use FlashVideo::Utils;
+use HTML::Entities;
+
+our $VERSION = '0.02';
+sub Version() { $VERSION; }
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
+  my $new_embed_url = "";
   my $title = "";
   my $host = "";
   my $uid = "";
   my $vtag = "";
   my $url = "";
   my $reget = 0;
-#  return unless ($embed_url !~ /^http:\/\/([^.\/]+\.)?vk\.com\/.*/);
 
-  # it seems that ampersands are often escaped (why?)
-  if ($embed_url =~ /&#038;/) {
-    info ("URI with encoded ampersands... re-GETing");
-    $embed_url =~ s/&#038;/&/g;
+  $new_embed_url = decode_entities($embed_url);
+
+  # if the URL contains undecoded HTML entities, we have the wrong URL
+  # and need to get proper one
+  if ($embed_url != $new_embed_url) {
+    info ("URI with encoded entities... re-GETing");
+    $embed_url = $new_embed_url;
     $reget = 1;
   }
 
@@ -51,7 +58,7 @@ sub find_video {
 
   $url = $host . "u" . $uid . "/videos/" . $vtag . ".360.mp4";
   debug ("URL: '" . $url . "'");
-  return $url, title_to_filename($title);
+  return $url, title_to_filename($title, "mp4");
 }
 
 1;
