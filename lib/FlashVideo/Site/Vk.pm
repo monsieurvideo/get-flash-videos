@@ -22,7 +22,7 @@ sub find_video {
 
   # if the URL contains undecoded HTML entities, we have the wrong URL
   # and need to get proper one
-  if ($embed_url != $new_embed_url) {
+  if ($embed_url ne $new_embed_url) {
     info ("URI with encoded entities... re-GETing");
     $embed_url = $new_embed_url;
     $reget = 1;
