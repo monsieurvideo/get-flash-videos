@@ -6,6 +6,7 @@ use FlashVideo::Utils;
 use URI;
 use FlashVideo::URLFinder;
 use URI::Escape qw(uri_unescape);
+use HTML::Entities qw(decode_entities);
 
 my $video_re = qr!http[-:/a-z0-9%_.?=&]+@{[EXTENSIONS]}
                   # Grab any params that might be used for auth..
@@ -71,6 +72,7 @@ sub find_video {
     if(!$actual_url) {
       for my $iframe($browser->content =~ /<iframe[^>]+src=["']?([^"'>]+)/gi) {
         $iframe = URI->new_abs($iframe, $browser->uri);
+        $iframe = decode_entities($iframe);
         debug "Found iframe: $iframe";
         my $sub_browser = $browser->clone;
         $sub_browser->get($iframe);
