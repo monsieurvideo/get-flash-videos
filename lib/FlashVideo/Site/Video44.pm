@@ -16,8 +16,6 @@ sub find_video {
   my $url = "";
   my $name = "";
 
-
-  $browser->get($embed_url);
   # get configuration passed to flash player
   if ($browser->content =~ /\s*<param name="flashvars"\s*value="([^"]+)" \/>/) {
     $flashvars = $1;
