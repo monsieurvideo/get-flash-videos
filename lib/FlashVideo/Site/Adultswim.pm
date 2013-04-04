@@ -4,6 +4,9 @@ package FlashVideo::Site::Adultswim;
 use strict;
 use FlashVideo::Utils;
 
+our $VERSION = '0.02';
+sub Version() { $VERSION; }
+
 sub find_video {
 	my($self, $browser, $embed_url) = @_;
 
@@ -64,24 +67,16 @@ sub find_video {
 	$browser->get($videoURL);
 
 	$xml = from_xml($browser);
-	my $pick;
-	my $bitrate;
+	my $bitrate=-1;
 	my $file_url;
 	foreach(@{$xml->{entry}}){
-		if(!($_->{ref}->{href} =~ m/iPhone/)){
-			$file_url=$_->{ref}->{href};
-			$pick = $1; last;
-		}
+		next if(ref($_) ne 'HASH');
+		next if ($_->{ref}->{href} =~ m,\.akamaihd\.net\/,); 
+		next if ($_->{param}->{bitrate} < $bitrate && $_->{ref}->{href} =~ m/iPhone/);
+		$file_url=$_->{ref}->{href};
+		$bitrate=$_->{param}->{bitrate};
+		#print STDERR $_->{param}->{bitrate}."\t".$_->{ref}->{href}."\n";
 	}
-
-#	grep { $_->{name} eq "mimeType" } @{$_->{param}})[0]->{value} 
-#	my $pick = (grep { $_->{param}->{value}->[3] eq "video/x-flv" } @{$xml->{entry} } )[0];
-
-#	my $pick = $xml->{entry}[4];
-
-#	my $file_url = $pick->{ref}->{href};
-
-	# $prefs->{quality}
 
 	return $file_url, title_to_filename($title);
 }
