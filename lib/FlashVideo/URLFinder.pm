@@ -113,6 +113,9 @@ sub _load {
     no strict 'refs';
     push @{$package . "::ISA"}, "FlashVideo::Site";
   }
+  else {
+    info "Not loading $package $@" if ($@ =~ m%failed%);
+  }
   return $package;
 }
 
