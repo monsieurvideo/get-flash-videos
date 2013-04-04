@@ -695,8 +695,11 @@ sub plugin_loader {
 
     debug "Trying to open plugin $plugin_dir/$plugin_name";
 
-    if (open my $plugin_fh, '<', "$plugin_dir/$plugin_name") {
-      return $plugin_fh; # Perl then reads the plugin from the FH
+    if (-s "$plugin_dir/$plugin_name") {
+      if (open my $plugin_fh, '<', "$plugin_dir/$plugin_name") {
+        return $plugin_fh; # Perl then reads the plugin from the FH
+      }
+      info "Failed to open plugin $plugin_dir/$plugin_name $!";
     }
   }
 
