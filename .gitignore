@@ -9,6 +9,7 @@ wiki
 *.old
 *.mp4
 *.flv
+*.m3u8
 *.ogg
 *.webm
 *.gz
