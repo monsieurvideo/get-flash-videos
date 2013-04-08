@@ -12,6 +12,9 @@ sub Version { $VERSION; }
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
+  # If we should process Facebook's Like button, leave
+  return if ($embed_url =~ /http:\/\/www\.facebook\.com\/plugins\/like\.php/);
+
   # Grab the file from the page..
   my $params = ($browser->content =~ /\["params","(.+?)"\]/)[0];
   $params =~ s/\\u([[:xdigit:]]{1,4})/chr(eval("0x$1"))/egis;
