@@ -17,10 +17,22 @@ sub find_video {
 
   die "Unable to extract url" unless $video_id;
 
-  my $url = "http://lv1.pinkbike.org/vf/" . (int($video_id / 10000)) . "/pbvid-" . $video_id . ".flv";
-  debug("Video URL: " . $url);
+  my $rel_url = ".pinkbike.org/vf/" . (int($video_id / 10000)) . "/pbvid-" . $video_id;
+  my @urls;
+  push @urls, "http://gv1" . $rel_url . ".mp4";
+  push @urls, "http://lv1" . $rel_url . ".flv";
 
-  return $url, $filename;
+  foreach my $url (@urls) {
+      debug("Checking if URL exists:" . $url);
+      if ($browser->head($url)->is_success) {
+          debug("Video URL: " . $url);
+          return $url, $filename;
+      }
+  }
+
+  die "No existing url found …";
+
+
 }
 
 1;
