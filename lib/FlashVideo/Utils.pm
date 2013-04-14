@@ -236,7 +236,9 @@ sub get_win_codepage {
     %Win32::API::Type::Known = (int => 'i');
   }
 
-  Win32::API->Import("kernel32", "int GetACP()");
+  unless (defined &GetACP) {
+    Win32::API->Import("kernel32", "int GetACP()");
+  }
   return "cp" . GetACP();
 }
 
