@@ -6,14 +6,8 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION;}
-
-my $bitrates = {
-  low    => 250000,
-  medium => 450000,
-  high   => 900000
-};
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
@@ -37,20 +31,36 @@ sub find_video {
   my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
   my $rtmp     = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
   my $playpath = $json->{streams}[0]->{source};
+  my $max_rate = 0;
 
+  # Always take the highest bitrate stream
   foreach my $stream (@{$json->{streams}}) {
     my $rate = int($stream->{bitrate});
-    if ($bitrates->{$prefs->{quality}} == $rate) {
+    if ($rate > $max_rate) {
       $playpath = $stream->{source};
-      last;
+      $max_rate = $rate;
     }
   }
 
-  return {
+  # Check if the maximum quality stream is available.
+  # The stream is not present in the json object even if it exists,
+  # so we have to try the playpath manually.
+  my $downloader = FlashVideo::RTMPDownloader->new;
+  $playpath =~ m/(.*)_([0-9]*)\Z/;
+  my $playpath_max = $1 . "_1600";
+
+  my $args = {
     flv      => title_to_filename($filename, "flv"),
     rtmp     => $rtmp,
-    playpath => $playpath,
+    playpath => $playpath_max,
     swfVfy   => "http://www.kanal5play.se/flash/K5StandardPlayer.swf"
   };
+
+  # If the stream was not found we revert the playpath
+  if (!$downloader->try_download($args)) {
+    $args->{playpath} = $playpath;
+  }
+
+  return $args;
 }
 1;
