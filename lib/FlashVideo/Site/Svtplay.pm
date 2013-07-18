@@ -8,11 +8,11 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION;}
 
-sub find_video {
-  my ($self, $browser, $embed_url, $prefs) = @_;
+sub find_video_svt {
+  my ($self, $browser, $embed_url, $prefs, $oppet_arkiv) = @_;
   my @rtmpdump_commands;
 
   if ($browser->uri->as_string !~ m/video\/([0-9]*)/) {
@@ -21,7 +21,9 @@ sub find_video {
   my $video_id = $1;
   $browser->content =~ m/<title>(.+)<\/title>/;
   my $name = decode_entities($1);
-  my $info_url = "http://www.svtplay.se/video/$video_id?output=json";
+  my $info_url = $oppet_arkiv ?
+                 "http://www.oppetarkiv.se/video/$video_id?output=json" :
+                 "http://www.svtplay.se/video/$video_id?output=json" ;
   $browser->get($info_url);
 
   if (!$browser->success) {
@@ -118,6 +120,11 @@ sub find_video {
       swfVfy => "http://www.svtplay.se/public/swf/video/svtplayer-2012.15.swf",
     };
   }
+}
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  $self->find_video_svt($browser, $embed_url, $prefs, 0);
 }
 
 1;
