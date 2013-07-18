@@ -1,38 +1,71 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
 package FlashVideo::Site::Tv4play;
 use strict;
+use warnings;
 use FlashVideo::Utils;
 use List::Util qw(reduce);
+
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
+
+my $bitrate_index = {
+  high   => 0,
+  medium => 1,
+  low    => 2
+};
+
+sub read_m3u {
+  my $content = shift;
+  my @lines = split(/\r?\n/, $content);
+  my %urltable = ();
+  my $i = 0;
+
+  # Fill the url table
+  foreach my $line (@lines) {
+    if ($line =~ /BANDWIDTH/) {
+      $line =~ /BANDWIDTH=([0-9]*),/;
+      $urltable{int($1)} = $lines[$i + 1];
+    }
+    $i++;
+  }
+
+  return %urltable;
+}
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
   my $video_id = ($embed_url =~ /video_id=([0-9]*)/)[0];
-  my $smi_url = "http://premium.tv4play.se/api/web/asset/$video_id/play";
+  my $smi_url = "http://premium.tv4play.se/api/web/asset/$video_id/play?protocol=hls";
   my $title = ($browser->content =~ /property="og:title" content="(.*?)"/)[0];
-  my $flv_filename = title_to_filename($title, "flv");
-
   $browser->get($smi_url);
   my $content = from_xml($browser);
-  my $i = 0;
-  my @streams;
   my $subtitle_url;
+  my $hls_m3u;
+  my $hls_base;
 
   foreach my $item (@{ $content->{items}->{item} || [] }) {
-    push @streams, {
-      rtmp    => $item->{base},
-      bitrate => $item->{bitrate},
-      mp4     => $item->{url},
-      format  => $item->{mediaFormat}
-    };
-  }
 
-  foreach (@streams) {
-    if ($_->{format} eq 'smi') {
-      $subtitle_url = $_->{mp4};
-      last;
+    # Find playlist item
+    if ($item->{base} =~ m/.*\.m3u8/) {
+      $hls_m3u = $item->{url};
+      $hls_base = $item->{url};
+      # Strip to base
+      $hls_base =~ s/master\.m3u8//;
+    }
+
+    # Set subtitles
+    if ($item->{mediaFormat} eq 'smi') {
+      $subtitle_url = $item->{url};
     }
   }
 
+  if ($hls_m3u eq "") {die "No stream found!"};
+  $browser->get($hls_m3u);
+  if (!$browser->success) {
+    die "Couldn't download $hls_m3u: " . $browser->response->status_line;
+  }
+
+  # Download subtitles
   if ($prefs->{subtitles} == 1) {
     if (not $subtitle_url eq '') {
       $browser->get("$subtitle_url");
@@ -52,13 +85,29 @@ sub find_video {
     }
   }
 
-  my $max_stream = reduce {$a->{bitrate} > $b->{bitrate} ? $a : $b} @streams;
+  my %urls = read_m3u($browser->content);
+
+  # Sort the urls and select the suitable one based upon quality preference
+  my $quality = $bitrate_index->{$prefs->{quality}};
+  my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
+  my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
+
+  my $video_url = $urls{$key};
+  my $filename = title_to_filename($title, "mp4");
+
+  # Set the arguments for ffmpeg
+  my @ffmpeg_args = (
+    "-i", "$hls_base$video_url",
+    "-acodec", "copy",
+    "-vcodec", "copy",
+    "-f", "mp4",
+    "$filename"
+  );
 
   return {
-    rtmp     => $max_stream->{rtmp},
-    swfVfy   => "http://www.tv4play.se/flash/tv4playflashlets.swf",
-    playpath => $max_stream->{mp4},
-    flv      => $flv_filename
+    downloader => "ffmpeg",
+    flv        => $filename,
+    args       => \@ffmpeg_args
   };
 }
 
