@@ -5,7 +5,7 @@ use warnings;
 use FlashVideo::Utils;
 use List::Util qw(reduce);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION;}
 
 my $bitrate_index = {
@@ -14,33 +14,15 @@ my $bitrate_index = {
   low    => 2
 };
 
-sub read_m3u {
-  my $content = shift;
-  my @lines = split(/\r?\n/, $content);
-  my %urltable = ();
-  my $i = 0;
-
-  # Fill the url table
-  foreach my $line (@lines) {
-    if ($line =~ /BANDWIDTH/) {
-      $line =~ /BANDWIDTH=([0-9]*),/;
-      $urltable{int($1)} = $lines[$i + 1];
-    }
-    $i++;
-  }
-
-  return %urltable;
-}
-
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
   my $video_id = ($embed_url =~ /video_id=([0-9]*)/)[0];
   my $smi_url = "http://premium.tv4play.se/api/web/asset/$video_id/play?protocol=hls";
-  my $title = ($browser->content =~ /property="og:title" content="(.*?)"/)[0];
+  my $title = extract_title($browser);
   $browser->get($smi_url);
   my $content = from_xml($browser);
   my $subtitle_url;
-  my $hls_m3u;
+  my $hls_m3u = "";
   my $hls_base;
 
   foreach my $item (@{ $content->{items}->{item} || [] }) {
@@ -59,11 +41,7 @@ sub find_video {
     }
   }
 
-  if ($hls_m3u eq "") {die "No stream found!"};
-  $browser->get($hls_m3u);
-  if (!$browser->success) {
-    die "Couldn't download $hls_m3u: " . $browser->response->status_line;
-  }
+  if ($hls_m3u eq "") {die "No HLS stream found!"};
 
   # Download subtitles
   if ($prefs->{subtitles} == 1) {
@@ -85,7 +63,7 @@ sub find_video {
     }
   }
 
-  my %urls = read_m3u($browser->content);
+  my %urls = read_hls_playlist($browser, $hls_m3u);
 
   # Sort the urls and select the suitable one based upon quality preference
   my $quality = $bitrate_index->{$prefs->{quality}};
@@ -100,6 +78,7 @@ sub find_video {
     "-i", "$hls_base$video_url",
     "-acodec", "copy",
     "-vcodec", "copy",
+    "-absf", "aac_adtstoasc",
     "-f", "mp4",
     "$filename"
   );
