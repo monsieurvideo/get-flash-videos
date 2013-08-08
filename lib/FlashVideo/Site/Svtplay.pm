@@ -8,8 +8,14 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION;}
+
+my $bitrate_index = {
+  high   => 0,
+  medium => 1,
+  low    => 2
+};
 
 sub find_video_svt {
   my ($self, $browser, $embed_url, $prefs, $oppet_arkiv) = @_;
@@ -72,47 +78,33 @@ sub find_video_svt {
 
   # If we found an m3u8 file we generate the ffmpeg download command
   if (!($m3u8 eq "")) {
-      $browser->get($m3u8);
-      if (!$browser->success) {
-          die "Couldn't download $m3u8: " . $browser->response->status_line;
-      }
 
-      my @lines = split(/\r?\n/, $browser->content);
-      $bitrate = -1;
-      my $video_url = "";
-      my $i = 0;
+    my %urls = read_hls_playlist($browser, $m3u8);
 
-      # Select highest bitrate available
-      foreach my $line (@lines) {
-        if ($line =~ /BANDWIDTH/) {
-          $line =~ /BANDWIDTH=([0-9]*),/;
-          my $this_rate = $1;
+    # Sort the urls and select the suitable one based upon quality preference
+    my $quality = $bitrate_index->{$prefs->{quality}};
+    my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
+    my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
 
-          if ($bitrate < $this_rate) {
-            $video_url = $lines[$i + 1];
-            $bitrate = $this_rate;
-          }
-        }
-        $i++;
-      }
+    my $video_url = $urls{$key};
+    my $filename = title_to_filename($name, "mp4");
 
-      my $filename = title_to_filename($name, "mp4");
+    # Set the arguments for ffmpeg
+    my @ffmpeg_args = (
+      "-i", "$video_url",
+      "-acodec", "copy",
+      "-vcodec", "copy",
+      "-absf", "aac_adtstoasc",
+      "-f", "mp4",
+      "$filename"
+    );
 
-      # Set the arguments for ffmpeg
-      my @ffmpeg_args = (
-        "-i", "$video_url",
-        "-acodec", "copy",
-        "-vcodec", "copy",
-        "-absf", "aac_adtstoasc",
-        "-f", "mp4",
-        "$filename"
-      );
+    return {
+      downloader => "ffmpeg",
+      flv        => $filename,
+      args       => \@ffmpeg_args
+    };
 
-      return {
-        downloader => "ffmpeg",
-        flv       => $filename,
-        args       => \@ffmpeg_args
-      };
   } else {
     return {
       flv    => title_to_filename($name, "flv"),
