@@ -17,7 +17,7 @@ our @EXPORT = qw(debug info error
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
   is_program_on_path get_terminal_width json_unescape
   convert_sami_subtitles_to_srt from_xml
-  convert_ttml_subtitles_to_srt);
+  convert_ttml_subtitles_to_srt read_hls_playlist);
 
 sub debug(@) {
   # Remove some sensitive data
@@ -523,6 +523,30 @@ sub from_xml {
   }
 
   return $xml;
+}
+
+sub read_hls_playlist {
+  my($browser, $url) = @_;
+
+  $browser->get($url);
+  if (!$browser->success) {
+    die "Couldn't download m3u file, $url: " . $browser->response->status_line;
+  }
+
+  my @lines = split(/\r?\n/, $browser->content);
+  my %urltable = ();
+  my $i = 0;
+
+  # Fill the url table
+  foreach my $line (@lines) {
+    if ($line =~ /BANDWIDTH/) {
+      $line =~ /BANDWIDTH=([0-9]*),/;
+      $urltable{int($1)} = $lines[$i + 1];
+    }
+    $i++;
+  }
+
+  return %urltable;
 }
 
 1;
