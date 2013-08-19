@@ -3,6 +3,8 @@ package FlashVideo::Site::Tv3play;
 use strict;
 use FlashVideo::Utils;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
@@ -67,10 +69,11 @@ sub find_video_viasat {
     }
   };
 
+  my $rnd = int(rand(10**9)) + 10**9;
 
   return {
 	  rtmp => $rtmp,
-	  swfVfy => "http://flvplayer.viastream.viasat.tv/play/swf/player120328.swf",
+	  swfVfy => "http://flvplayer.viastream.viasat.tv/flvplayer/play/swf/player.swf?rnd=$rnd",
 	  flv => $flv_filename
 	 };
 }
