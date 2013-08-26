@@ -113,9 +113,9 @@ EOF
   my %formats;
 
 # Normal format for catchup service
-  while ($video =~ m/(mp4:[^\]]+_[A-Z]+([0-9]{3,4})[^\]]+_(16|4)[-x](9|3)[^\]]*.mp4)/gi)
+  while ($video =~ m/(mp4:[^\]]+_[A-Z]+([0-9]{3,4})(|_[^\]]+)_(16|4)[-x](9|3)[^\]]*.mp4)/gi)
   {
-    $formats{$2} = { video => $video, playpath => $1, ratio => "$3x$4" };
+    $formats{$2} = { video => $video, playpath => $1, ratio => "$4x$5" };
   }
 
 # alternative formats when download available immediately after shows
