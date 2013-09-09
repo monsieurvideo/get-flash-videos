@@ -15,13 +15,17 @@ sub find_video {
 
 
   # read URL from the configuration passed to flash player
-  if ($browser->content =~ /\s*res0: "(http:\/\/www.munkvideo.cz\/video\/[^?]+?munkvideo=original),.*/) {
-    $url = $1;
+  if ($embed_url =~ /(http:\/\/www.munkvideo.cz\/video\/[^?]{37})?.*/) {
+    $url = "$1?munkvideo=original";
   } else {
     # if we can't get it, just leave as the video URL is there
     return;
   }
 
+#  $browser->allow_redirects;
+  # obtained URL will be redirected
+  $browser->get($url);
+  $url = $browser->response->header('Location');
   debug("URL: '" . $url . "'");
 
   return $url, title_to_filename($url);
