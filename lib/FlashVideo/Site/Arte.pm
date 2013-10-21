@@ -3,56 +3,48 @@ package FlashVideo::Site::Arte;
 
 use strict;
 use FlashVideo::Utils;
+use FlashVideo::JSON;
+
+our $VERSION = '0.01';
+sub Version { $VERSION; }
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
-  my ($lang, $xmlurl1, $xmlurl2, $filename, $videourl, $hash, $playerurl, $quality);
+  my ($lang, $jsonurl, $filename, $videourl, $quality);
 
   debug "Arte::find_video called, embed_url = \"$embed_url\"\n";
 
   my $pageurl = $browser->uri() . "";
-  if($pageurl =~ /videos\.arte\.tv\/(..)\//) {
+  if($pageurl =~ /www\.arte\.tv\/guide\/(..)\//) {
     $lang = $1;
   } else {
     die "Unable to find language in original URL \"$pageurl\"\n";
   }
 
-  if($browser->content =~ /videorefFileUrl = "(.*)";/) {
-    $xmlurl1 = $1;
-    debug "found videorefFileUrl \"$xmlurl1\"\n";
-    ($filename = $xmlurl1) =~ s/-.*$//;
+  if($browser->content =~ /arte_vp_url="(.*)"/) {
+    $jsonurl = $1;
+    debug "found arte_vp_url \"$jsonurl\"\n";
+    ($filename = $jsonurl) =~ s/-.*$//;
     $filename =~ s/^.*\///g;
-    $filename = title_to_filename($filename);
+    $filename .= '_'.$prefs->{quality};
+    $filename = title_to_filename(extract_title($browser), 'flv');
   } else {
-    die "Unable to find 'videorefFileUrl' in page\n";
+    die "Unable to find 'arte_vp_url' in page\n";
   }
 
-  if($browser->content =~ /<param name="movie" value="(http:\/\/videos\.arte\.tv\/[^\?]+)\?/) {
-    $playerurl = $1;
-    debug "found playerurl \"$playerurl\"\n";
-  }
+  $browser->get($jsonurl);
 
-  $browser->get($xmlurl1);
+  $quality = {high => 'SQ', medium => 'MQ', low => 'LQ'}->{$prefs->{quality}};
 
-  if($browser->content =~ /<video lang="$lang" ref="(.*)"\s?\/>/) {
-    $xmlurl2 = $1;
-    debug "found <video ref=\"$xmlurl2\">\n";
-  } else {
-    die "Unable to find <video ref...> in XML $xmlurl1\n";
-  }
+  my $result = from_json($browser->content());
 
-  $browser->get($xmlurl2);
-  $quality = {high => 'hd', low => 'sd'}->{$prefs->{quality}};
-
-  if($browser->content =~ /<url quality="$quality">([^<]+)<\/url>/) {
-    $videourl = { rtmp => $1,
-		flv => $filename};
-    if(defined $playerurl) {
-      $videourl->{swfVfy} = $playerurl;
-    }
-  } else {
-    die "Unable to find <url ...> in XML $xmlurl2\n";
-  }
+  my $video_json = $result->{videoJsonPlayer}->{VSR}->{'RTMP_'.$quality.'_1'};
+   
+  $videourl = { 
+    rtmp     => $video_json->{streamer},
+    playpath => 'mp4:'.$video_json->{url},
+    flv      => $filename,
+  };
 
   return $videourl, $filename;
 }
