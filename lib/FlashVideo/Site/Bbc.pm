@@ -5,6 +5,9 @@ use strict;
 use FlashVideo::Utils;
 use URI;
 
+our $VERSION = '0.01';
+sub Version() {$VERSION;}
+
 sub find_video {
   my ($self, $browser, $page_url, $prefs) = @_;
 
@@ -17,6 +20,14 @@ sub find_video {
   my $playlist_xml;
   if ($browser->content =~ /<param name="playlist" value="(http:.+?\.s?xml)"/) {
     $playlist_xml = $1;
+  }
+  elsif ($browser->content =~ /"href":"(http:[^"]+?playlist\.s?xml)"/) {
+    $playlist_xml = $1;
+    $playlist_xml =~s/\\//g;
+  }
+  elsif ($browser->content =~ /(http:[^":]+?playlist\.s?xml)/) {
+    $playlist_xml = $1;
+    $playlist_xml =~ s/\\//g;
   }
   elsif($browser->content =~ /empDivReady\s*\(([^)]+)/) {
     my @params = split /,\s*/, $1;
