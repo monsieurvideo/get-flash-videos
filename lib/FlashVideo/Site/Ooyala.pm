@@ -16,9 +16,11 @@ sub find_video {
 
   my ($player_js) = uri_unescape(
     decode_entities(
-      $browser->content =~ m{<script[^>]+src=["'](http://player\.ooyala\.com/player\.js[^'"]*)['"]}
+      $browser->content =~ m{<(?:embed|script)[^>]+src=["'](http://player\.ooyala\.com/player\.(?:swf|js)[^'"]*)['"]}
     )
   );
+
+  $player_js =~ s{player\.swf}{player.js};
 
   die 'Could not find player.js URL' unless $player_js;
 
@@ -57,7 +59,7 @@ sub can_handle {
 
   return 1 if $url && URI->new($url)->host =~ /\.ooyala\.com$/;
 
-  return $browser->content =~ m{<script[^>]+src=["']http://player\.ooyala\.com/player\.js[^'"]*['"]};
+  return $browser->content =~ m{<(?:embed|script)[^>]+src=["']http://player\.ooyala\.com/player\.(?:swf|js)[^'"]*['"]};
 }
 
 1;
