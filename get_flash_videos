@@ -672,6 +672,18 @@ sub install_plugin {
 
     return 1;
   }
+  # Handle redirects from plugin URL's, e.g. http to https
+  #
+  elsif ($browser->response->is_redirect) { 
+    my $redirect_url = $browser->response->header('Location');
+
+    # Reconstruct new URI to account for relative redirect URL's 
+    #
+    $redirect_url = URI->new_abs($redirect_url, $browser->response->base);
+    info "Plugin download redirected $redirect_url";
+
+    return install_plugin($browser, $redirect_url, $file);
+  }
   else {
     warn "Download failed: " . $browser->response->status_line;
   }
