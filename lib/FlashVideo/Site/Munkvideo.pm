@@ -15,7 +15,7 @@ sub find_video {
 
 
   # read URL from the configuration passed to flash player
-  if ($embed_url =~ /(http:\/\/www.munkvideo.cz\/video\/[^?]{37})?.*/) {
+  if ($embed_url =~ /(http:\/\/www.munkvideo.cz\/video\/[^?]+)?.*/) {
     $url = "$1?munkvideo=original";
   } else {
     # if we can't get it, just leave as the video URL is there
@@ -26,6 +26,9 @@ sub find_video {
   # obtained URL will be redirected
   $browser->get($url);
   $url = $browser->response->header('Location');
+  if ($url =~ /http:\/\/www\.munkvideo\.cz\/error\.php?type=video_missing/) {
+      return;
+  }
   debug("URL: '" . $url . "'");
 
   return $url, title_to_filename($url);
