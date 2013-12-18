@@ -16,19 +16,8 @@ sub find_video {
   my $url = "";
   my $name = "";
 
-  # get configuration passed to flash player
-  if ($browser->content =~ /\s*<param name="flashvars"\s*value="([^"]+)" \/>/) {
-    $flashvars = $1;
-  } else {
-    # if we can't get it, just leave as the video URL is there
-    debug("Can't find flashvars");
-    return;
-  }
-
-  debug ("Flashvars: " . $flashvars);
-
-  # in the configuration there is also URL we're looking for
-  if ($flashvars =~ /&amp;file=(http[^&]+)&amp;/) {
+  debug ("Content: " . $browser->content);
+  if ($browser->content =~ /file: "(http:[^"]*\.(flv|mp4))",/) {
     $file = $1;
   } else {
     debug("Can't find file");
