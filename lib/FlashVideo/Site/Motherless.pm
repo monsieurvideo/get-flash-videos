@@ -4,11 +4,14 @@ package FlashVideo::Site::Motherless;
 use strict;
 use FlashVideo::Utils;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
   my $url;
-  print $embed_url
+  print $embed_url;
   if ($browser->content =~ /"file'[[:blank:]]*: "([^"]+)",/) {
     $url = $1."?start=0";
   } else {
