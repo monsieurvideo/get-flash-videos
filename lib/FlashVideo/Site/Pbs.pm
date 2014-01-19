@@ -26,6 +26,9 @@ TODO:
 
 =cut
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
