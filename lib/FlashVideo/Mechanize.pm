@@ -58,6 +58,10 @@ sub allow_redirects {
   my($self) = @_;
   $self->{redirects_ok} = 1;
 }
+sub prohibit_redirects {
+  my($self) = @_;
+  $self->{redirects_ok} = 0;
+}
 
 sub get {
   my($self, @rest) = @_;
