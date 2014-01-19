@@ -6,11 +6,11 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION; }
 
 sub find_video {
-  my ($self, $browser, $embed_url) = @_;
+  my ($self, $browser, $embed_url, $prefs) = @_;
 
   my $id;
 
@@ -29,34 +29,20 @@ sub find_video {
   }
   die "No ID found\n" unless $id;
 
-  my $sig = ($browser->content =~ /"signature":"(\w+)"/)[0];
-  my $time = ($browser->content =~ /"timestamp":([0-9]+)/)[0];
-  my $quality = ($browser->content =~ /"videoQuality" content="([A-Z]+)"/)[0];
-  $quality = lc $quality;
-
-  # Use the embed api to get the correctly formatted title of the video
-  my $info_url = "http://vimeo.com/api/oembed.json?url=http://vimeo.com/$id";
+  # this JSON response will contain title and video URLs
+  my $info_url = "http://player.vimeo.com/v2/video/$id/config";
   $browser->get($info_url);
   my $video_data = from_json($browser->content);
-  my $title = $video_data->{title};
+  my $title = $video_data->{video}{title};
+  my $filename = title_to_filename($title, "mp4");
 
-  debug "id: $id \n" .
-        "sig: $sig \n" .
-        "time: $time \n" .
-        "quality: $quality \n" .
-        "title: $title \n";
+  my @formats = map {
+          { resolution => [$_->{width}, $_->{height}], url => $_->{url} }
+      } values $video_data->{request}{files}{h264};
 
-  my $url = "http://player.vimeo.com/play_redirect?" .
-            "clip_id=$id&sig=$sig&time=$time&quality=$quality" .
-            "&codecs=H264,VP8,VP6&type=moogaloop_local&embed_location=";
-  my $filename = title_to_filename($title, "flv");
+  my $preferred_quality = $prefs->quality->choose(@formats);
 
-  $browser->get($url, Referer => $embed_url);
-  $url = $browser->response->header('Location');
-
-  $browser->allow_redirects;
-
-  return $url, $filename;
+  return $preferred_quality->{url}, $filename;
 }
 
 1;
