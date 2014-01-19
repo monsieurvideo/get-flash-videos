@@ -9,6 +9,9 @@ use HTML::Entities;
 use URI::Escape;
 use Data::Dumper;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
+
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
