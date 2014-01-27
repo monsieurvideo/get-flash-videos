@@ -25,6 +25,11 @@ sub find_video {
   for (my $c = 0; $c < 16; $c++) {
     $ord .= int(rand(10));
   }
+
+  # Strip all leading zeros, but make sure there's at least one
+  # (possibly zero) digit left.
+  $ord =~ s/^0+(.)/$1/gs;
+
   my $player = $1 . $ord;
 
   # Default title is perfect.  We need to do this before we re-use the
