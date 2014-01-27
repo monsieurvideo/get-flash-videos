@@ -79,8 +79,11 @@ sub find_video {
   my $filename = title_to_filename(extract_title($browser));
   $filename ||= get_video_filename();
 
+  # It seems to be necessary to use --live, otherwise the stream
+  # periodically jumps backwards.
   return {
     rtmp => $rtmp,
+    live => 1,
     swfVfy => "http://wa2.static.mediaworks.co.nz/video/jw/6.60/jwplayer.flash.swf",
     flv => $filename
    };
