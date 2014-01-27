@@ -83,7 +83,7 @@ sub find_video {
   # periodically jumps backwards.
   return {
     rtmp => $rtmp,
-    live => 1,
+    live => "",
     swfVfy => "http://wa2.static.mediaworks.co.nz/video/jw/6.60/jwplayer.flash.swf",
     flv => $filename
    };
