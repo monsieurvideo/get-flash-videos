@@ -73,7 +73,7 @@ sub find_video {
   my $conSpeed = $encodeRate->{speed};
 
   my $rtmp = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_/mp4:tv3/" .
-    $replace . "_" . $conSpeed . "K";
+    $replace . "_" . $conSpeed . "K.mp4";
 
   # Default title is perfect.
   my $filename = title_to_filename(extract_title($browser));
