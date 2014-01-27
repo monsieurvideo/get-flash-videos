@@ -84,6 +84,7 @@ sub find_video {
   return {
     rtmp => $rtmp,
     live => "",
+    token => "v.#LTjCUOsGDY>nO7jX{]sS50r>r~m+9Hp#AZky",
     swfVfy => "http://wa2.static.mediaworks.co.nz/video/jw/6.60/jwplayer.flash.swf",
     flv => $filename
    };
