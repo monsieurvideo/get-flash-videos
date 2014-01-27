@@ -6,7 +6,7 @@ use FlashVideo::Utils;
 
 my $encode_rates = {
   "low" => {
-    speed => 300,
+    speed => 330,
     flag => undef,
     downgrade => undef
    },
@@ -25,7 +25,7 @@ my $encode_rates = {
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
-  if ($browser->content !~ m/var\s+video\s*=\"\*([^"]+)\"\s*;/s) {
+  if ($browser->content !~ m/var\s+video\s*=\"[\/\*]([^"]+)\"\s*;/s) {
     die "Unable to extract file";
   }
   my $replace = $1;
@@ -72,7 +72,7 @@ sub find_video {
 
   my $conSpeed = $encodeRate->{speed};
 
-  my $rtmp = "rtmpe://nzcontent.mediaworks.co.nz:80/tv3/_definst_/mp4:" .
+  my $rtmp = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_/mp4:tv3/" .
     $replace . "_" . $conSpeed . "K";
 
   # Default title is perfect.
