@@ -81,7 +81,7 @@ sub find_video {
 
   return {
     rtmp => $rtmp,
-    swfVfy => "http://static.mediaworks.co.nz/video/6.9/videoPlayer6.9.83.swf?rnd=1932311212",
+    swfVfy => "http://wa2.static.mediaworks.co.nz/video/jw/6.60/jwplayer.flash.swf",
     flv => $filename
    };
 }
