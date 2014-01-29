@@ -4,6 +4,9 @@ package FlashVideo::Site::Tv3;
 use strict;
 use FlashVideo::Utils;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
