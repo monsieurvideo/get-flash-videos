@@ -4,84 +4,133 @@ package FlashVideo::Site::Tv3;
 use strict;
 use FlashVideo::Utils;
 
-my $encode_rates = {
-  "low" => {
-    speed => 300,
-    flag => undef,
-    downgrade => undef
-   },
-  "medium" => {
-    speed => 700,
-    flag => "sevenHundred",
-    downgrade => "low"
-   },
-  "high" => {
-    speed => 1500,
-    flag => "fifteenHundred",
-    downgrade => "medium"
-   }
- };
-
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
-  if ($browser->content !~ m/var\s+video\s*=\"\*([^"]+)\"\s*;/s) {
+  my $content = $browser->content;
+
+  if ($content !~ m/var\s+video\s*=\"[\/\*]([^"]+)\"\s*;/s) {
     die "Unable to extract file";
   }
   my $replace = $1;
   $replace =~ s/\*/\//sg;
 
-  my $quality = $prefs->{quality};
-  my $encodeRate = $encode_rates->{$quality};
-  if (!defined($encodeRate)) {
-    foreach my $rate (values(%$encode_rates)) {
-      if ($rate->{speed} eq $quality) {
-        $encodeRate = $rate;
-        last;
-      }
-    }
+  if ($content !~ m/src=['"](\/[A-Za-z0-9\/]+\/player[-\d]+\.min\.js\?v=\d*)['"]\+ord/s) {
+    die "Unable to locate player module";
   }
 
-  my $content = undef;
-  while (defined($encodeRate)) {
-    debug "Trying to use encoding rate " . $encodeRate->{speed};
-
-    my $flag = $encodeRate->{flag};
-    if (defined($flag)) {
-      $content = $browser->content if !defined($content);
-      if ($content !~ m/flashvars\.$flag\s*=\s*"yes"/s) {
-        my $downgrade = $encodeRate->{downgrade};
-        if (!defined($downgrade)) {
-          $encodeRate = undef;
-          last;
-        }
-
-        debug "Rate " . $encodeRate->{speed} .
-          " isn't available, dowgrading to " . $downgrade;
-
-        $encodeRate = $encode_rates->{$downgrade};
-        next;
-      }
-    }
-    last;
+  # The player always has a random component appended to a fixed
+  # numeric prefix that will normally be 16 decimal digits long.
+  my $ord = "";
+  for (my $c = 0; $c < 16; $c++) {
+    $ord .= int(rand(10));
   }
 
-  if (!defined($encodeRate)) {
-    die "Couldn't match the requested quality";
-  }
+  # Strip all leading zeros, but make sure there's at least one
+  # (possibly zero) digit left.
+  $ord =~ s/^0+(.)/$1/gs;
 
-  my $conSpeed = $encodeRate->{speed};
+  my $player = $1 . $ord;
 
-  my $rtmp = "rtmpe://nzcontent.mediaworks.co.nz:80/tv3/_definst_/mp4:" .
-    $replace . "_" . $conSpeed . "K";
-
-  # Default title is perfect.
+  # Default title is perfect.  We need to do this before we re-use the
+  # browser to obtain other files.
   my $filename = title_to_filename(extract_title($browser));
   $filename ||= get_video_filename();
 
+  debug "Trying to get player: $player";
+
+  #
+  # Getting the player.js isn't strictly necessary, but it allows us
+  # to check assumptions, and not have to hard code the token - which
+  # potentially might be changed from time to time.
+  #
+
+  my $smilPath = "/portals/0/video/smil1500-2.aspx";
+  my $secureToken;
+  {
+    my $playerResponse = $browser->get($player);
+    die "Failed to get player.js" if !$playerResponse->is_success();
+
+    my $playerContent = $playerResponse->decoded_content();
+    if ($playerContent !~ m/securetoken\s*:\s*\"([^\"]+)\"/s) {
+      die "Unable to obtain securetoken";
+    }
+    $secureToken = $1;
+
+    debug "Securetoken = $secureToken";
+
+    my $smilPathRE = quotemeta($smilPath);
+    if ($playerContent !~ m/$smilPathRE/s) {
+      die "The expected SMIL path is not present";
+    }
+  }
+
+  my $serverVar = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_";
+  my $locationVar = "mp4:tv3/" . $replace;
+
+  my $info = undef;
+  {
+    my $smil = $smilPath . "?serverVar=" . $serverVar .
+      "&locationVar=" . $locationVar . "&typeVar=mp4";
+
+    debug "Trying to get SMIL: $smil";
+
+    my $smilResponse = $browser->get($smil);
+    die "Failed to get SMIL" if !$smilResponse->is_success();
+    my $smilContent = $smilResponse->decoded_content();
+
+    my $xml = $smilContent;
+    my %rateMap = ();
+    while ($xml =~ s/\<video src=\"([^\"]+)" system-bitrate=\"(\d+)\"//) {
+      my $url = $1;
+      my $bps = $2;
+
+      debug "Available rate of ${bps} from $url";
+
+      $rateMap{$bps} = { rate => $bps, src => $url };
+    }
+
+    my $quality = $prefs->{quality};
+    $quality = "default" if !defined($quality);
+
+    $info = $rateMap{$quality};
+    if (!defined($info)) {
+      my @rates = map { $rateMap{$_} } sort { $a <=> $b } keys %rateMap;
+
+      my $option = undef;
+      foreach my $try ("high", "medium", "low") {
+        $option = pop(@rates) if (scalar(@rates) > 0);
+
+        if ($try eq $quality) {
+          # Matched
+          $info = $option;
+          last;
+        }
+
+        if (!defined($info)) {
+          # Default to highest quality if no match seen.
+          $info = $option;
+        }
+      }
+    }
+
+    if (!defined($info)) {
+      die "Couldn't match the requested quality";
+    }
+
+    debug "Matching \"$quality\" quality at " . $info->{rate} .
+      "bps with source \"" . $info->{src} . "\"";
+  }
+
+  my $rtmp = $serverVar . "/" . $info->{src};
+
+  # It seems to be necessary to use --live, otherwise the stream
+  # periodically jumps backwards.
   return {
     rtmp => $rtmp,
-    swfVfy => "http://static.mediaworks.co.nz/video/6.9/videoPlayer6.9.83.swf?rnd=1932311212",
+    live => "",
+    token => $secureToken,
+    swfVfy => "http://wa2.static.mediaworks.co.nz/video/jw/6.60/jwplayer.flash.swf",
     flv => $filename
    };
 }
