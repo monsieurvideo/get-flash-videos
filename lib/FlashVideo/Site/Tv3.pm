@@ -4,8 +4,12 @@ package FlashVideo::Site::Tv3;
 use strict;
 use FlashVideo::Utils;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION; }
+
+sub getSloc($) {
+  return "tv3";
+}
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
@@ -69,7 +73,8 @@ sub find_video {
   }
 
   my $serverVar = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_";
-  my $locationVar = "mp4:tv3/" . $replace;
+  my $sloc = $self->getSloc();
+  my $locationVar = "mp4:" . $sloc . "/" . $replace;
 
   my $info = undef;
   {
@@ -136,6 +141,14 @@ sub find_video {
     swfVfy => "http://wa2.static.mediaworks.co.nz/video/jw/6.60/jwplayer.flash.swf",
     flv => $filename
    };
+}
+
+sub can_handle {
+  my($self, $browser, $url) = @_;
+
+  my $slocRE = quotemeta($self->getSloc());
+
+  return $url && URI->new($url)->host =~ m/(?:^|\.)$slocRE\.co\.nz$/;
 }
 
 1;
