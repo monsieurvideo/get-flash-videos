@@ -25,7 +25,14 @@ sub find_video {
   my $hls_m3u = "";
   my $hls_base;
 
-  foreach my $item (@{ $content->{items}->{item} || [] }) {
+  my @items;
+  if (ref $content->{items}->{item} eq 'HASH') {
+    push(@items, $content->{items}->{item});
+  } else {
+    @items = @{$content->{items}->{item}};
+  }
+
+  foreach my $item (@items) {
 
     # Find playlist item
     if ($item->{base} =~ m/.*\.m3u8/) {
@@ -73,9 +80,11 @@ sub find_video {
   my $video_url = $urls{$key};
   my $filename = title_to_filename($title, "mp4");
 
+  my $url = $video_url =~ m/http:\/\// ? $video_url : $hls_base.$video_url;
+
   # Set the arguments for ffmpeg
   my @ffmpeg_args = (
-    "-i", "$hls_base$video_url",
+    "-i", "$url",
     "-acodec", "copy",
     "-vcodec", "copy",
     "-absf", "aac_adtstoasc",
