@@ -73,9 +73,11 @@ sub find_video {
   my $video_url = $urls{$key};
   my $filename = title_to_filename($title, "mp4");
 
+  my $url = $video_url =~ m/http:\/\// ? $video_url : $hls_base.$video_url;
+
   # Set the arguments for ffmpeg
   my @ffmpeg_args = (
-    "-i", "$hls_base$video_url",
+    "-i", "$url",
     "-acodec", "copy",
     "-vcodec", "copy",
     "-absf", "aac_adtstoasc",
