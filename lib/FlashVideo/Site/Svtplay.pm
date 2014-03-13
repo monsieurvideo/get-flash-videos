@@ -8,7 +8,7 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION;}
 
 my $bitrate_index = {
