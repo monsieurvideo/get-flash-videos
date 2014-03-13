@@ -25,7 +25,14 @@ sub find_video {
   my $hls_m3u = "";
   my $hls_base;
 
-  foreach my $item (@{ $content->{items}->{item} || [] }) {
+  my @items;
+  if (ref $content->{items}->{item} eq 'HASH') {
+    push(@items, $content->{items}->{item});
+  } else {
+    @items = @{$content->{items}->{item}};
+  }
+
+  foreach my $item (@items) {
 
     # Find playlist item
     if ($item->{base} =~ m/.*\.m3u8/) {
