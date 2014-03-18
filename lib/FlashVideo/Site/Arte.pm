@@ -5,7 +5,7 @@ use strict;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version { $VERSION; }
 
 sub find_video {
