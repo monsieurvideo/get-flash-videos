@@ -17,6 +17,8 @@ sub find_video {
   my $pageurl = $browser->uri() . "";
   if($pageurl =~ /www\.arte\.tv\/guide\/(..)\//) {
     $lang = $1;
+  } elsif($pageurl =~ /concert.arte.tv\/(..)\//) {
+    $lang = $1;
   } else {
     die "Unable to find language in original URL \"$pageurl\"\n";
   }
@@ -37,16 +39,26 @@ sub find_video {
   $quality = {high => 'SQ', medium => 'MQ', low => 'LQ'}->{$prefs->{quality}};
 
   my $result = from_json($browser->content());
+  my $protocol = "";
 
-  my $video_json = $result->{videoJsonPlayer}->{VSR}->{'RTMP_'.$quality.'_1'};
-   
-  $videourl = { 
-    rtmp     => $video_json->{streamer},
-    playpath => 'mp4:'.$video_json->{url},
-    flv      => $filename,
-  };
+  if (defined ($result->{videoJsonPlayer}->{VSR}->{'RTMP_'.$quality.'_1'})) {
+    my $video_json = $result->{videoJsonPlayer}->{VSR}->{'RTMP_'.$quality.'_1'};
+     
+    $videourl = { 
+      rtmp     => $video_json->{streamer},
+      playpath => 'mp4:'.$video_json->{url},
+      flv      => $filename,
+    };
 
-  return $videourl, $filename;
+    return $videourl, $filename;
+  } elsif (defined ($result->{videoJsonPlayer}->{VSR}->{'HTTP_'.$quality.'_1'})) {
+    my $video_json = $result->{videoJsonPlayer}->{VSR}->{'HTTP_'.$quality.'_1'};
+    
+    return $video_json->{url}, $filename;
+  } else {
+    die "Unable to figure out transport protocol in page\n";
+  }
+    
 }
 
 1;
