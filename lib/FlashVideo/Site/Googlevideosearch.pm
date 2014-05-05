@@ -6,6 +6,9 @@ no warnings 'uninitialized';
 use FlashVideo::Mechanize;
 use URI::Escape;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION};
+
 sub search {
   my($self, $search, $type) = @_;
 
@@ -13,7 +16,7 @@ sub search {
 
   $browser->allow_redirects;
   
-  $browser->get('http://video.google.com/videoadvancedsearch');
+  $browser->get('http://www.google.com/videohp');
 
   $browser->submit_form(
     with_fields => {

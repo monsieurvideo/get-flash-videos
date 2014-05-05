@@ -1,5 +1,5 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
-package FlashVideo::Site::Video44;
+package FlashVideo::Site::Vidzur;
 
 use strict;
 use FlashVideo::Utils;
@@ -11,27 +11,28 @@ sub Version() { $VERSION; }
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my $flashvars = "";
-  my $file = "";
+  my $coded_url = "";
   my $url = "";
   my $name = "";
 
-  debug ("Content: " . $browser->content);
-  if ($browser->content =~ /file: "(http:[^"]*\.(flv|mp4))",/) {
-    $file = $1;
+
+  # read URL from the configuration passed to flash player
+  if ($browser->content =~ /\s*url: '(http:\/\/[^']+vidzur.com%2Fvideos%2F[^']+)',.*/) {
+    $coded_url = $1;
   } else {
-    debug("Can't find file");
+    # if we can't get it, just leave as the video URL is there
     return;
   }
 
-  debug("File: " . $file);
+  debug ("Coded URL: " . $coded_url);
 
-  $url = uri_unescape($file);
+
+  $url = uri_unescape($coded_url);
   debug("URL: '" . $url . "'");
 
   # URL ends with filename
   $name = $url;
-  $name =~ s/.*\/([^\/]+)/$1/;
+  $name =~ s/.*\/([^\/]+)\?.*/$1/;
   return $url, title_to_filename($name);
 }
 

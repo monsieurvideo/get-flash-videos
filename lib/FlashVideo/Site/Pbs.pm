@@ -26,6 +26,9 @@ TODO:
 
 =cut
 
+our $VERSION = '0.01';
+sub Version() { $VERSION; }
+
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
@@ -68,6 +71,7 @@ sub find_video {
   die "Couldn't find media_id\n" unless defined $media_id;
   debug "media_id: $media_id\n";
 
+  $browser->allow_redirects;
   $browser->get("http://video.pbs.org/videoPlayerInfo/$media_id");
 
   my $xml = $browser->content;
@@ -93,6 +97,7 @@ sub find_video {
   }
   debug "unencrypted release url: $release_url\n";
 
+  $browser->prohibit_redirects;
   $browser->get($release_url);
 
   my $rtmp_url = $browser->res->header('location')
