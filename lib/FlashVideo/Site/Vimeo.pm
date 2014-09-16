@@ -6,7 +6,7 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION; }
 
 sub find_video {
@@ -30,7 +30,7 @@ sub find_video {
   die "No ID found\n" unless $id;
 
   # this JSON response will contain title and video URLs
-  my $info_url = "http://player.vimeo.com/v2/video/$id/config";
+  my $info_url = "http://player.vimeo.com/video/$id/config";
   $browser->get($info_url);
   my $video_data = from_json($browser->content);
   my $title = $video_data->{video}{title};
