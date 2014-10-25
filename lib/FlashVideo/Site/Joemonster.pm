@@ -99,6 +99,14 @@ sub can_handle {
 sub find_video {
     my($self, $browser, $url) = @_;
     $self->resolve_redirects($browser);
+
+    my $title;
+    if ($browser->title =~ m/(.*) - Joe Monster/ ) {
+	$title = $1;
+    } else {
+	$title = $browser->title;
+    }
+
     my $real_url;
 
     if ($self->is_new_monster_player($browser)) {
@@ -106,13 +114,6 @@ sub find_video {
     }
     else {
 	$real_url = $self->get_old_monster_player_url($browser);
-    }
-
-    my $title;
-    if ($browser->title =~ m/(.*) - Joe Monster/ ) {
-	$title = $1;
-    } else {
-	$title = $browser->title;
     }
 
     return $real_url, title_to_filename($title);
