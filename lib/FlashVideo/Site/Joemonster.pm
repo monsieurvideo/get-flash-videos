@@ -53,7 +53,7 @@ sub resolve_redirects {
 # We have to find dummy embedded urls, that contain the real url in the file param of the dummy url
 # e.g. <embed src="http://www.joemonster.org/flvplayer.swf?file=http%3A%2F%2Fdv.joemonster.org%2Fj%2FWszyscy_kochamy_Pols28372.flv&config=http://www.joemonster.org/mtvconfig.xml&image= http://www.joemonster.org/i/downth/th/p87612.jpg&recommendations=http://www.joemonster.org/download-related.php?lid=28372"
 # regexen have to be escaped in strings:(
-my $new_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/www\\.joemonster\\.org\\/flvplayer\\.swf\\?file=.*?)\\s*\"";
+my $new_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/(www\\.)?joemonster\\.org\\/flvplayer\\.swf\\?file=.*?)\\s*\"";
 
 sub is_new_monster_player {
     my($self, $browser) = @_;
