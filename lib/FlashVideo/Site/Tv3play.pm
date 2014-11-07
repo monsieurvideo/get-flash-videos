@@ -14,7 +14,7 @@ sub find_video {
 
 sub find_video_viasat {
   my ($self, $browser, $embed_url, $prefs) = @_;
-  my $video_id = ($browser->content =~ /id:([0-9]*),/)[0];
+  my $video_id = ($browser->content =~ /data-video-id="([0-9]*)"/)[0];
   info "Got video_id: $video_id";
   my $info_url = "http://viastream.viasat.tv/PlayProduct/$video_id";
   $browser->get($info_url);
