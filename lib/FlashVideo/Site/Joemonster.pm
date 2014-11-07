@@ -40,49 +40,83 @@ use URI::QueryParam;
 
 # Warning! This is the only perl code I've ever written.
 
+sub resolve_redirects {
+    # it's nice to be sure that $browser->content actually contains
+    # contents of url provided on command line and not some 301 response
+    my($self, $browser) = @_;
+    if ($browser->response->is_redirect) {
+        $browser->allow_redirects;
+        $browser->get($browser->response->header('Location'));
+    }
+}
+
 # We have to find dummy embedded urls, that contain the real url in the file param of the dummy url
 # e.g. <embed src="http://www.joemonster.org/flvplayer.swf?file=http%3A%2F%2Fdv.joemonster.org%2Fj%2FWszyscy_kochamy_Pols28372.flv&config=http://www.joemonster.org/mtvconfig.xml&image= http://www.joemonster.org/i/downth/th/p87612.jpg&recommendations=http://www.joemonster.org/download-related.php?lid=28372"
 # regexen have to be escaped in strings:(
-my $new_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/www\\.joemonster\\.org\\/flvplayer\\.swf\\?file=.*?)\\s*\"";
+my $new_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/(www\\.)?joemonster\\.org\\/flvplayer\\.swf\\?file=.*?)\\s*\"";
 
 sub is_new_monster_player {
     my($self, $browser) = @_;
+    $self->resolve_redirects($browser);
     return $browser->content =~ m/$new_monster_player_regex/;
 }
 
 sub get_new_monster_player_url {
     my($self, $browser) = @_;
+    $self->resolve_redirects($browser);
     $browser->content =~ m/$new_monster_player_regex/;
     return URI->new($1)->query_param('file') or die "no file key in player link";
 }
 
 # Old player is as easy to detect:
-# e.g. <embed src="http://www.joemonster.org/emb/446297/Genialny_wystep_mlodego_iluzjonisty_w_Mam_talent/ex"
-my $old_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/www\\.joemonster\\.org\\/emb\\/.*?)\\s*\"";
+# e.g. <div id="fileFile"><iframe style="margin:0px;padding:0px;border:0px;" src="http://joemonster.org/emb/1277979/yt_758298656" WIDTH="800" HEIGHT="450" ></iframe></div>
+my $old_monster_player_regex = '<\\s*?div\\s+?id\\s*?=\\s*?"fileFile"\\s*?>\\s*?<\\s*?iframe.*?src\\s*?=\\s*?"([^"]+?)"';
 
 sub is_old_monster_player {
     my($self, $browser) = @_;
+    $self->resolve_redirects($browser);
     return $browser->content =~ m/$old_monster_player_regex/;
 }
 
-# But harder to download, matched url redirects to url, similar to what new player matches
-
+# But harder to download, matched url keeps redirecting (losing https, www thingies),
+# until finally redirects to flash player with real video url in file parameter
 sub get_old_monster_player_url {
     my($self, $browser) = @_;
+    $self->resolve_redirects($browser);
     $browser->content =~ m/$old_monster_player_regex/;
-    my $embedded_url = $1;
-    $browser->get($embedded_url);
-    my $url = $browser->uri;
-    return URI->new($url)->query_param('file') or die "no file key in player link";
+    my $url = $1;
+    my $file;
+
+    # follow all the redirects until we reach the final redirect with location set to something like:
+    # http://joemonster.org/flvplayer44.swf?file=http://vader.joemonster.org/upload/zhr/vid_44457715fe3324QfrOb1YBDPc.flv&skin=.......
+    # we have to disable (and later reenable) auto-redirect feature
+    my $auto_redirect_count = $browser->max_redirect;
+    $browser->max_redirect(0);
+    do {
+        $url = $browser->get($url)->header('Location');
+        $file = URI->new($url)->query_param('file');
+    } while (!$file);
+    $browser->max_redirect($auto_redirect_count);
+    return $file;
 }
 
 sub can_handle {
     my($self, $browser, $url) = @_;
+    $self->resolve_redirects($browser);
     return $self->is_new_monster_player($browser) || $self->is_old_monster_player($browser);
 }
 
 sub find_video {
     my($self, $browser, $url) = @_;
+    $self->resolve_redirects($browser);
+
+    my $title;
+    if ($browser->title =~ m/(.*) - Joe Monster/ ) {
+	$title = $1;
+    } else {
+	$title = $browser->title;
+    }
+
     my $real_url;
 
     if ($self->is_new_monster_player($browser)) {
@@ -90,13 +124,6 @@ sub find_video {
     }
     else {
 	$real_url = $self->get_old_monster_player_url($browser);
-    }
-
-    my $title;
-    if ($browser->title =~ m/(.*) - Joe Monster/ ) {
-	$title = $1;
-    } else {
-	$title = $browser->title;
     }
 
     return $real_url, title_to_filename($title);
