@@ -8,7 +8,7 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use URI::Escape;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version { $VERSION; }
 
 my @formats = (
@@ -379,7 +379,7 @@ EOT
   }
   else {
     # Lame Youtube redirection to uk.youtube.com and so on.
-    if ($browser->response->code == 302) {
+    if ($browser->response->code == 301 || $browser->response->code == 302) {
       $browser->get($browser->response->header('Location'));
     }
 
