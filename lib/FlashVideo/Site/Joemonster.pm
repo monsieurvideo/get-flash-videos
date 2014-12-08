@@ -37,6 +37,7 @@ use strict;
 use FlashVideo::Utils;
 use URI::Escape;
 use URI::QueryParam;
+use Encode;
 
 # Warning! This is the only perl code I've ever written.
 
@@ -112,7 +113,7 @@ sub find_video {
 
     my $title;
     if ($browser->title =~ m/(.*) - Joe Monster/ ) {
-	$title = $1;
+	$title = Encode::encode_utf8($1);
     } else {
 	$title = $browser->title;
     }
