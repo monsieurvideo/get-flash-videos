@@ -45,7 +45,7 @@ sub resolve_redirects {
     # it's nice to be sure that $browser->content actually contains
     # contents of url provided on command line and not some 301 response
     my($self, $browser) = @_;
-    if ($browser->response->is_redirect) {
+    if ($browser->response && $browser->response->is_redirect) {
         $browser->allow_redirects;
         $browser->get($browser->response->header('Location'));
     }
