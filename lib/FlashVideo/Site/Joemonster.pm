@@ -17,13 +17,16 @@
 # only downloads Monster Player movies, the rest is discarded,
 # because I don't know how to provide links AND fallback to a different method.
 #
-# There are two versions of Monster Player:
+# There are three versions of Monster Player:
 # * old/fat
 # http://www.joemonster.org/filmy/28784/Genialny_wystep_mlodego_iluzjonisty_w_Mam_talent (single video)
 # http://www.joemonster.org/filmy/28693/Dave_Chappelle_w_San_Francisco_ (multi videos)
 #
 # * new/slim
 # http://www.joemonster.org/filmy/28372/Wszyscy_kochamy_Polske_czesc_ (single video)
+#
+# * html5
+# http://joemonster.org/filmy/65314/Przyciemniane_szyby_Jakie_przy
 #
 # Currently multiple videos are unsupported, only the first one is downloaded,
 # I have no idea how to return multiple links
@@ -71,7 +74,8 @@ sub get_new_monster_player_url {
 
 # Old player is as easy to detect:
 # e.g. <div id="fileFile"><iframe style="margin:0px;padding:0px;border:0px;" src="http://joemonster.org/emb/1277979/yt_758298656" WIDTH="800" HEIGHT="450" ></iframe></div>
-my $old_monster_player_regex = '<\\s*?div\\s+?id\\s*?=\\s*?"fileFile"\\s*?>\\s*?<\\s*?iframe.*?src\\s*?=\\s*?"([^"]+?)"';
+# the url in src attribute is important! html5 player has the same markup, but different url
+my $old_monster_player_regex = '<\\s*?div\\s+?id\\s*?=\\s*?"fileFile"\\s*?>\\s*?<\\s*?iframe.*?src\\s*?=\\s*?"(.*?/emb/[^"]+?)"';
 
 sub is_old_monster_player {
     my($self, $browser) = @_;
@@ -101,10 +105,35 @@ sub get_old_monster_player_url {
     return $file;
 }
 
+# HTML5 player is as easy to detect:
+# e.g. <div id="fileFile"><iframe style="margin:0px;padding:0px;border:0px;" src="http://joemonster.org/embtv.php?did=1298662&nothumb=1" WIDTH="1020" HEIGHT="450" ></iframe></div>
+# the url in src attribute is important! Old player has the same markup, but different url
+my $html5_monster_player_regex = '<\\s*?div\\s+?id\\s*?=\\s*?"fileFile"\\s*?>\\s*?<\\s*?iframe.*?src\\s*?=\\s*?"(.*?/embtv\\.php[^"]+?)"';
+
+sub is_html5_monster_player {
+    my($self, $browser) = @_;
+    $self->resolve_redirects($browser);
+    return $browser->content =~ m/$html5_monster_player_regex/;
+}
+
+sub get_html5_monster_player_url {
+    my($self, $browser) = @_;
+    $self->resolve_redirects($browser);
+    $browser->content =~ m/$html5_monster_player_regex/;
+    $browser->get($1);
+    my $iframe_content = $browser->content;
+
+    # iframe contains <video> tag with <source> tag inside
+    # e.g. <video class="html5videobox-action"  poster="" controls style="width:100%; height: 100%; margin: 0px;"> <source src="http://vader.joemonster.org/upload/qno/129866237b6a530yt_216564226.mp4" type="video/mp4">
+    my $video_source_regex = '<\\s*video\\s+class\\s*=\\s*"html5videobox-action".*?<\\s*source\\s+src\\s*=\\s*"([^"]+?)"';
+    $iframe_content =~ m/$video_source_regex/s;
+    return $1;
+}
+
 sub can_handle {
     my($self, $browser, $url) = @_;
     $self->resolve_redirects($browser);
-    return $self->is_new_monster_player($browser) || $self->is_old_monster_player($browser);
+    return $self->is_html5_monster_player($browser) || $self->is_new_monster_player($browser) || $self->is_old_monster_player($browser);
 }
 
 sub find_video {
@@ -122,8 +151,9 @@ sub find_video {
 
     if ($self->is_new_monster_player($browser)) {
 	$real_url = $self->get_new_monster_player_url($browser);
-    }
-    else {
+    } elsif ($self->is_html5_monster_player($browser)) {
+        $real_url = $self->get_html5_monster_player_url($browser);
+    } else {
 	$real_url = $self->get_old_monster_player_url($browser);
     }
 
