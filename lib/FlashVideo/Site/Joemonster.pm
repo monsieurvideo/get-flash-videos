@@ -42,6 +42,9 @@ use URI::Escape;
 use URI::QueryParam;
 use Encode;
 
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
+
 # Warning! This is the only perl code I've ever written.
 
 sub resolve_redirects {
