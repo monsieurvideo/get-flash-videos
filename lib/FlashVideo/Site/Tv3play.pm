@@ -3,8 +3,9 @@ package FlashVideo::Site::Tv3play;
 use strict;
 use warnings;
 use FlashVideo::Utils;
+use FlashVideo::JSON;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -14,61 +15,65 @@ sub find_video {
 
 sub find_video_viasat {
   my ($self, $browser, $embed_url, $prefs) = @_;
+
+  my $bitrate_index = {
+    high   => 0,
+    medium => 1,
+    low    => 2
+  };
+
   my $video_id = ($browser->content =~ /data-video-id="([0-9]*)"/)[0];
   info "Got video_id: $video_id";
-  my $info_url = "http://viastream.viasat.tv/PlayProduct/$video_id";
+  my $info_url = "http://playapi.mtgx.tv/v3/videos/$video_id";
+  my $stream_url = "http://playapi.mtgx.tv/v3/videos/stream/$video_id";
   $browser->get($info_url);
 
-  my $xml = from_xml($browser->content);
-  my $product = $xml->{Product};
-  my $title = $product->{Title};
-  my $flv_filename = title_to_filename($title, "flv");
+  my $json = from_json($browser->content);
+  my $title = $json->{title};
 
-  # Create array of video resolutions
-  my @videos;
-  if (ref $product->{Videos} eq 'HASH') {
-    push(@videos, $product->{Videos});
-  } else {
-    @videos = $product->{Videos};
+  $browser->get($stream_url);
+  $json = from_json($browser->content);
+
+  # Prefer hls stream since it contains better video format
+  if ($json->{streams}->{hls}) {
+    my $hls_url = $json->{streams}->{hls};
+
+    my %urls = read_hls_playlist($browser, $hls_url);
+
+    #  Sort the urls and select the suitable one based upon quality preference
+    my $quality = $bitrate_index->{$prefs->{quality}};
+    my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
+    my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
+
+    my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
+    my $filename = title_to_filename($title, "mp4");
+    my $video_url = $hls_base . $urls{$key};
+
+    my @ffmpeg_args = (
+       "-i", "$video_url",
+       "-acodec", "copy",
+       "-vcodec", "copy",
+       "-absf", "aac_adtstoasc",
+       "-f", "mp4",
+       "$filename"
+     );
+
+    return {
+       downloader => "ffmpeg",
+       flv        => $filename,
+       args       => \@ffmpeg_args
+     };
   }
 
-  # Collect the rtmp data for each resolution
-  my @urls;
-  foreach (@videos) {
-    my $video = $_->{Video};
-    my $bitrate = $video->{BitRate};
-    my $url = $video->{Url};
+  # Fallback to rtmp stream if hls not available
+  my $filename = title_to_filename($title, "flv");
 
-    if ($url =~ m/http:\/\//){
-      $browser->get($url);
-      $xml = from_xml($browser->content);
-      $url = $xml->{'Url'};
-    }
+  my $rtmp_med = $json->{streams}->{medium};
 
-    my $rtmp_data = {
-      'swfVfy' => "http://flvplayer.viastream.viasat.tv/flvplayer/play/swf/MTGXPlayer-0.7.4.swf",
-      'flv'    => $flv_filename
-    };
-
-    if ($url =~ /(rtmp:.*)(mp4:.*)/) {
-      $rtmp_data->{'rtmp'} = $1;
-      $rtmp_data->{'playpath'} = $2;
-    } else {
-      $rtmp_data->{'rtmp'} = $url;
-    }
-
-    push(@urls, { 'bitrate' => $bitrate, 'rtmp_data' => $rtmp_data });
-  }
-
-  my $bitrate = 0;
-  my $new_bitrate;
-  my $rtmp_data;
-  foreach (@urls) {
-    $new_bitrate = int($_->{bitrate});
-    if ($new_bitrate > $bitrate) {
-      $bitrate = int($_->{bitrate});
-      $rtmp_data = $_->{rtmp_data};
-    }
+  my $rtmp_data = {
+    'rtmp'   => $rtmp_med,
+    'swfVfy' => "http://flvplayer.viastream.viasat.tv/flvplayer/play/swf/MTGXPlayer-2.0.6.swf",
+    'flv'    => $filename
   };
 
   return $rtmp_data;
