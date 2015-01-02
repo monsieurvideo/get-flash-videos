@@ -540,7 +540,7 @@ sub read_hls_playlist {
   # Fill the url table
   foreach my $line (@lines) {
     if ($line =~ /BANDWIDTH/) {
-      $line =~ /BANDWIDTH=([0-9]*),/;
+      $line =~ /BANDWIDTH=([0-9]*)/;
       $urltable{int($1)} = $lines[$i + 1];
     }
     $i++;
