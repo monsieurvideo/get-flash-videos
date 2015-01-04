@@ -5,7 +5,7 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -47,7 +47,7 @@ sub find_video_viasat {
 
     my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
     my $filename = title_to_filename($title, "mp4");
-    my $video_url = $hls_base . $urls{$key};
+    my $video_url = $urls{$key} =~ m/http:\/\// ? $urls{$key} : $hls_base.$urls{$key};
 
     my @ffmpeg_args = (
        "-i", "$video_url",
