@@ -178,6 +178,29 @@ sub download_url_encoded_fmt_stream_map {
   return $preferred_quality->{url}, title_to_filename($title, "mp4");
 }
 
+sub swap_at {
+    my (@list) = @_;
+    my $offset = pop @list;
+    my $tmp = $list[0];
+    $list[0] = $list[$offset];
+    $list[$offset] = $tmp;
+    return @list;
+}
+
+sub decipher {
+    my ($encoded) = @_;
+    my @list = split //, $encoded;
+    @list = reverse @list;
+    @list = swap_at(@list, 29);
+    shift @list;
+    @list = reverse @list;
+    shift @list;
+    @list = reverse @list;
+    @list = swap_at(@list, 4);
+    @list = swap_at(@list, 28);
+    return join '', @list;
+}
+
 sub parse_youtube_url_encoded_fmt_stream_map {
   my($raw_map) = @_;;
 
@@ -197,7 +220,15 @@ sub parse_youtube_url_encoded_fmt_stream_map {
         $url = uri_unescape($value);
       } elsif ($name eq "sig") {
         $signature = $value;
+      } elsif ($name eq "s") {
+        $signature = decipher($value);
       }
+    }
+
+    # URLs on "insecure" videos already have the signature precalcuated and
+    # mixed in.
+    unless ($url =~ m/signature=/) {
+      $url .= "&signature=".$signature;
     }
     
     $map->{$format} = $url."&signature=".$signature;
