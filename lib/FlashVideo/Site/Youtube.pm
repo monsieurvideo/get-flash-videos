@@ -211,6 +211,7 @@ sub parse_youtube_url_encoded_fmt_stream_map {
     my $format = "";
     my $url = "";
     my $signature = "";
+    my $mime = "";
     
     foreach my $pair (split /&/, $params) {
       my ($name, $value) = split /=/, $pair;
@@ -222,6 +223,10 @@ sub parse_youtube_url_encoded_fmt_stream_map {
         $signature = $value;
       } elsif ($name eq "s") {
         $signature = decipher($value);
+      } elsif ($name eq "type") {
+        ($mime) = split /;/, uri_unescape($value);
+        debug "Using MIME $mime";
+        $mime = uri_escape($mime);
       }
     }
 
@@ -230,8 +235,15 @@ sub parse_youtube_url_encoded_fmt_stream_map {
     unless ($url =~ m/signature=/) {
       $url .= "&signature=".$signature;
     }
+
+    # Add mime to sparams. If we fail to do this, then we get 403 even if the
+    # signature is valid. Why? Dunno; go ask Google.
+    unless ($url =~ m/mime=/) {
+      $url =~ s/sparams=/sparams=mime%2C/;
+      $url .= "&mime=".$mime;
+    }
     
-    $map->{$format} = $url."&signature=".$signature;
+    $map->{$format} = $url;
   }
   
   return $map;
