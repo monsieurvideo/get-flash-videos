@@ -51,6 +51,10 @@ sub find_video {
     };
 
     return $videourl, $filename;
+  } elsif (defined ($result->{videoJsonPlayer}->{VSR}->{'HTTP_MP4_'.$quality.'_1'})) {
+    my $video_json = $result->{videoJsonPlayer}->{VSR}->{'HTTP_MP4_'.$quality.'_1'};
+
+    return $video_json->{url}, $filename;
   } elsif (defined ($result->{videoJsonPlayer}->{VSR}->{'HTTP_'.$quality.'_1'})) {
     my $video_json = $result->{videoJsonPlayer}->{VSR}->{'HTTP_'.$quality.'_1'};
     
