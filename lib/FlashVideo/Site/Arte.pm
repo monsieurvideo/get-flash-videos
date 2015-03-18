@@ -10,7 +10,7 @@ sub Version { $VERSION; }
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
-  my ($lang, $jsonurl, $filename, $videourl, $quality);
+  my ($lang, $jsonurl, $filename, $title, $videourl, $quality);
 
   debug "Arte::find_video called, embed_url = \"$embed_url\"\n";
 
@@ -27,9 +27,7 @@ sub find_video {
     $jsonurl = $1;
     debug "found arte_vp_url \"$jsonurl\"\n";
     ($filename = $jsonurl) =~ s/-.*$//;
-    $filename =~ s/^.*\///g;
-    $filename .= '_'.$prefs->{quality};
-    $filename = title_to_filename(extract_title($browser), 'flv');
+    $title = extract_title($browser);
   } else {
     die "Unable to find 'arte_vp_url' in page\n";
   }
@@ -43,6 +41,7 @@ sub find_video {
 
   if (defined ($result->{videoJsonPlayer}->{VSR}->{'RTMP_'.$quality.'_1'})) {
     my $video_json = $result->{videoJsonPlayer}->{VSR}->{'RTMP_'.$quality.'_1'};
+    $filename = title_to_filename($title, 'flv');
 
     $videourl = {
       rtmp     => $video_json->{streamer},
@@ -53,10 +52,12 @@ sub find_video {
     return $videourl, $filename;
   } elsif (defined ($result->{videoJsonPlayer}->{VSR}->{'HTTP_MP4_'.$quality.'_1'})) {
     my $video_json = $result->{videoJsonPlayer}->{VSR}->{'HTTP_MP4_'.$quality.'_1'};
+    $filename = title_to_filename($title, 'mp4');
 
     return $video_json->{url}, $filename;
   } elsif (defined ($result->{videoJsonPlayer}->{VSR}->{'HTTP_'.$quality.'_1'})) {
     my $video_json = $result->{videoJsonPlayer}->{VSR}->{'HTTP_'.$quality.'_1'};
+    $filename = title_to_filename($title, 'mp4');
 
     return $video_json->{url}, $filename;
   } else {
