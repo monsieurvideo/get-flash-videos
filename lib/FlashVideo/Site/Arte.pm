@@ -23,7 +23,7 @@ sub find_video {
     die "Unable to find language in original URL \"$pageurl\"\n";
   }
 
-  if($browser->content =~ /arte_vp_url="(.*)"/) {
+  if($browser->content =~ /arte_vp_url=['"](.*)['"]/) {
     $jsonurl = $1;
     debug "found arte_vp_url \"$jsonurl\"\n";
     ($filename = $jsonurl) =~ s/-.*$//;
