@@ -8,7 +8,7 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION;}
 
 my $bitrate_index = {
@@ -21,15 +21,16 @@ sub find_video_svt {
   my ($self, $browser, $embed_url, $prefs, $oppet_arkiv) = @_;
   my @rtmpdump_commands;
 
-  if ($browser->uri->as_string !~ m/video\/([0-9]*)/) {
+  if ($browser->uri->as_string !~ m/(video|klipp)\/([0-9]*)/) {
     die "No video id found in url";
   }
-  my $video_id = $1;
+  my $vid_type = $1;
+  my $video_id = $2;
   $browser->content =~ m/<title>(.+)<\/title>/;
   my $name = decode_entities($1);
   my $info_url = $oppet_arkiv ?
                  "http://www.oppetarkiv.se/video/$video_id?output=json" :
-                 "http://www.svtplay.se/video/$video_id?output=json" ;
+                 "http://www.svtplay.se/$vid_type/$video_id?output=json" ;
   $browser->get($info_url);
 
   if (!$browser->success) {

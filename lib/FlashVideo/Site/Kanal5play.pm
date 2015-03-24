@@ -35,7 +35,7 @@ sub find_video {
   my $season   = $json->{seasonNumber};
   my $subtitle = $json->{hasSubtitle};
   my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
-  my $rtmp     = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
+  my $rtmp     = $json->{streamBaseUrl};
   my $playpath = $json->{streams}[0]->{source};
   my %paths=();
 
@@ -44,24 +44,12 @@ sub find_video {
     $paths{int($stream->{bitrate})} = $stream->{source};
   }
 
-  # Check if the maximum quality stream is available.
-  # The stream is not present in the json object even if it exists,
-  # so we have to try the playpath manually.
-  my $downloader = FlashVideo::RTMPDownloader->new;
-  $playpath =~ m/(.*)_([0-9]*)\Z/;
-  my $playpath_max = $1 . "_1600";
-
   my $args = {
     flv      => title_to_filename($filename, "flv"),
     rtmp     => $rtmp,
-    playpath => $playpath_max,
+    live     => 1,
     swfVfy   => "http://www.kanal5play.se/flash/K5StandardPlayer.swf"
   };
-
-  # If the stream was found we push it to the list of playpaths
-  if ($downloader->try_download($args)) {
-    $paths{1600000} = $playpath_max;
-  }
 
   # Sort the paths and select the suitable one based upon quality preference
   my $quality = $bitrate_index->{$prefs->{quality}};
