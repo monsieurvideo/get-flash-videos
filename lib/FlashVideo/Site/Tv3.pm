@@ -4,7 +4,7 @@ package FlashVideo::Site::Tv3;
 use strict;
 use FlashVideo::Utils;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION; }
 
 sub getSloc($) {
@@ -19,7 +19,7 @@ sub find_video {
   #open(F, "> content.html");print F $content;close(F);
 
   if ($content !~ m/var\s+video\s*=\s*\"[\/\*]([^"]+)\"\s*;/s) {
-    die "Unable to extract file";
+    die "Unable to parse video path from web page";
   }
   my $replace = $1;
   $replace =~ s/\*/\//sg;
@@ -30,6 +30,23 @@ sub find_video {
   my $geo = $1;
 
   debug "GEO mode: $geo";
+
+  my $sloc = $self->getSloc();;
+
+  # As per the JavaScript on the episode base page, for TV3's current
+  # affairs programs the requested source location should be altered
+  # to "3news" instead of "tv3".
+  if ($content =~ m/var\s+pageloc\s*=\s*\'([^']+)\'\s*;/s) {
+    my $pageloc = $1;
+    debug "pageloc : $pageloc";
+
+    if ($pageloc =~ m/^[^-]+-[^-]+-[^-]+-[^-]+-currentaffairs-/si) {
+      # if sect4 == "currentaffairs" then sloc="3news"
+      $sloc = "3news";
+    }
+  } else {
+    debug "No pageloc parsed, optimistically continuing...";
+  }
 
   if ($content !~ m/src=['"](\/[A-Za-z0-9\/]+\/player[-\d]+\.min\.js\?(?:|v=[0-9A-Za-z]*))['"](\>|\+ord)/s) {
     die "Unable to locate player module";
@@ -96,7 +113,6 @@ sub find_video {
     $serverVar = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_";
   }
 
-  my $sloc = $self->getSloc();
   my $locationVar = "mp4:" . $sloc . "/" . $replace;
 
   my $info = undef;
@@ -110,9 +126,11 @@ sub find_video {
     die "Failed to get SMIL" if !$smilResponse->is_success();
     my $smilContent = $smilResponse->decoded_content();
 
+    #open(F, "> smil.xml");print F $smilContent;close(F);
+
     my $xml = $smilContent;
     my %rateMap = ();
-    while ($xml =~ s/\<video src=\"([^\"]+)" system-bitrate=\"(\d+)\"//) {
+    while ($xml =~ s/\<video src=\"([^\"]+)" system-bitrate=\"(\d+)\"//s) {
       my $url = $1;
       my $bps = $2;
 
