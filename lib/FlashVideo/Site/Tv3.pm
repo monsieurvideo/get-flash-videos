@@ -4,7 +4,7 @@ package FlashVideo::Site::Tv3;
 use strict;
 use FlashVideo::Utils;
 
-our $VERSION = '0.02';
+our $VERSION = '0.04';
 sub Version() { $VERSION; }
 
 sub getSloc($) {
@@ -16,28 +16,60 @@ sub find_video {
 
   my $content = $browser->content;
 
-  if ($content !~ m/var\s+video\s*=\"[\/\*]([^"]+)\"\s*;/s) {
-    die "Unable to extract file";
+  #open(F, "> content.html");print F $content;close(F);
+
+  if ($content !~ m/var\s+video\s*=\s*\"[\/\*]([^"]+)\"\s*;/s) {
+    die "Unable to parse video path from web page";
   }
   my $replace = $1;
   $replace =~ s/\*/\//sg;
 
-  if ($content !~ m/src=['"](\/[A-Za-z0-9\/]+\/player[-\d]+\.min\.js\?v=\d*)['"]\+ord/s) {
+  if ($content !~ m/var\s+geo\s*=\s*\"([^"]+)\"\s*;/s) {
+    die "Unable to determine geo mode";
+  }
+  my $geo = $1;
+
+  debug "GEO mode: $geo";
+
+  my $sloc = $self->getSloc();;
+
+  # As per the JavaScript on the episode base page, for TV3's current
+  # affairs programs the requested source location should be altered
+  # to "3news" instead of "tv3".
+  if ($content =~ m/var\s+pageloc\s*=\s*\'([^']+)\'\s*;/s) {
+    my $pageloc = $1;
+    debug "pageloc : $pageloc";
+
+    if ($pageloc =~ m/^[^-]+-[^-]+-[^-]+-[^-]+-currentaffairs-/si) {
+      # if sect4 == "currentaffairs" then sloc="3news"
+      $sloc = "3news";
+    }
+  } else {
+    debug "No pageloc parsed, optimistically continuing...";
+  }
+
+  if ($content !~ m/src=['"](\/[A-Za-z0-9\/]+\/player[-\d]+\.min\.js\?(?:|v=[0-9A-Za-z]*))['"](\>|\+ord)/s) {
     die "Unable to locate player module";
   }
+  my $basePlayer = $1;
+  my $withOrd = $2 =~ m/ord/s;
 
-  # The player always has a random component appended to a fixed
-  # numeric prefix that will normally be 16 decimal digits long.
   my $ord = "";
-  for (my $c = 0; $c < 16; $c++) {
-    $ord .= int(rand(10));
+
+  if ($withOrd) {
+    # The player has, historically, always has a random component
+    # appended to a fixed numeric prefix that will normally be 16
+    # decimal digits long.
+    for (my $c = 0; $c < 16; $c++) {
+      $ord .= int(rand(10));
+    }
+
+    # Strip all leading zeros, but make sure there's at least one
+    # (possibly zero) digit left.
+    $ord =~ s/^0+(.)/$1/gs;
   }
 
-  # Strip all leading zeros, but make sure there's at least one
-  # (possibly zero) digit left.
-  $ord =~ s/^0+(.)/$1/gs;
-
-  my $player = $1 . $ord;
+  my $player = $basePlayer . $ord;
 
   # Default title is perfect.  We need to do this before we re-use the
   # browser to obtain other files.
@@ -72,8 +104,15 @@ sub find_video {
     }
   }
 
-  my $serverVar = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_";
-  my $sloc = $self->getSloc();
+  #
+  # Default is "non-geo", and we've seen at least two values for the
+  # "geo" variable, "non" and "non-geo".
+  #
+  my $serverVar = "rtmpe://vod-non-geo.mediaworks.co.nz/vod/_definst_";
+  if ($geo eq "geo") {
+    $serverVar = "rtmpe://vod-geo.mediaworks.co.nz/vod/_definst_";
+  }
+
   my $locationVar = "mp4:" . $sloc . "/" . $replace;
 
   my $info = undef;
@@ -87,9 +126,11 @@ sub find_video {
     die "Failed to get SMIL" if !$smilResponse->is_success();
     my $smilContent = $smilResponse->decoded_content();
 
+    #open(F, "> smil.xml");print F $smilContent;close(F);
+
     my $xml = $smilContent;
     my %rateMap = ();
-    while ($xml =~ s/\<video src=\"([^\"]+)" system-bitrate=\"(\d+)\"//) {
+    while ($xml =~ s/\<video src=\"([^\"]+)" system-bitrate=\"(\d+)\"//s) {
       my $url = $1;
       my $bps = $2;
 
