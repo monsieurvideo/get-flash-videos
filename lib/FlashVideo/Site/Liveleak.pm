@@ -8,8 +8,8 @@ sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
   my $url;
-  if ($browser->content =~ /file: "([^"]+)"/) {
-	  $url = $1;
+  if ($browser->content =~ /file: "((?!rtmp))([^"]+)"/) {
+	  $url = $2;
   } else {
 	  die "Unable to extract video url";
   }
