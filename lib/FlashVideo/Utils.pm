@@ -126,7 +126,7 @@ sub title_to_filename {
 
   $type ||= "flv";
 
-  $title = decode_utf8($title);
+  eval { $title = decode_utf8($title) };
 
   # We want \w below to match non-ASCII characters.
   utf8::upgrade($title);
