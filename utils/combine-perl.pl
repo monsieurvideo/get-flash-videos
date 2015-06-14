@@ -75,11 +75,15 @@ sub process_file {
       $output .= $_, next unless $module =~ /^[A-Z]/i;
 
       if(has_module($module) || $module =~ $exclude || $module !~ $include) {
-        $output .= $_;
+        if (/use\sExporter\s'import'/) {
+          $output .= "require Exporter;\nour \@ISA = qw(Exporter);\n";
+        } else {
+          $output .= $_;
+        }
       } else {
         if(/^\s*use [^ ;(]+((?: |\()[^;]*)?;/) {
           my $params = defined $1 ? $1 : "";
-          $params =~ s/^(\s*[0-9.]+)\s*\(\s*\)\s*$/\1/;
+          $params =~ s/^(\s*[0-9.]+)\s*\(\s*\)\s*$/$1/;
           if($params !~ /^\s*\(\s*\)\s*$/) {
             my @items = eval $params;
             $output .= "BEGIN { $module->import($params); } # (added by $0)\n";
