@@ -6,7 +6,7 @@ use FlashVideo::Utils;
 use HTML::Entities;
 use Encode;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -112,6 +112,17 @@ EOF
 
   my %formats;
 
+  my $progtitle;
+  my $eptitle;
+  if ($browser->content =~ m%<ProgrammeTitle>(.*?)</ProgrammeTitle>% ) {
+    $progtitle = $1;
+    $progtitle =~ s/\W+/-/g;
+  }
+  if ( $browser->content =~ m%<EpisodeTitle>(.*?)</EpisodeTitle%) {
+    $eptitle = $1;
+    $eptitle =~ s/\W+/-/g;
+  }
+
 # Normal format for catchup service
   while ($video =~ m/(mp4:[^\]]+_[A-Z]+([0-9]{3,4})(|_[^\]]+)_(16|4)[-x](9|3)[^\]]*.mp4)/gi)
   {
@@ -165,6 +176,10 @@ EOF
   my($playpath) = $format->{"playpath"};
   my($flv) = $playpath =~ m{/([^/]+)$};
   $flv =~ s/\.mp4$/.flv/;
+  if ( $flv =~ /_PC01\d+_/i ) {
+    $flv =~ s/_/_${progtitle}-${eptitle}_/;
+    $flv = title_to_filename($flv);
+  } 
 
   # Get subtitles if necessary.
   if ($prefs->{subtitles}) {
