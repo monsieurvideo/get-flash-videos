@@ -3,7 +3,7 @@ package FlashVideo::Site::Pbs;
 
 use strict;
 use warnings;
-
+use Encode;
 use FlashVideo::Utils;
 use MIME::Base64 qw(decode_base64);
 
@@ -26,7 +26,7 @@ TODO:
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() { $VERSION; }
 
 sub find_video {
@@ -73,12 +73,25 @@ sub find_video {
 
   $browser->allow_redirects;
   $browser->get("http://video.pbs.org/videoPlayerInfo/$media_id");
-
+  debug "fetched: $media_id\n";
+  
   my $xml = $browser->content;
-  $xml =~ s/&/&amp;/g;
+  debug "retrieved xml: $media_id\n";
+  
+  $xml = encode('utf-8', $xml);
+  debug "encode: $media_id\n";
+  
+  #$xml =~ s/&/&amp;/g; # not sure this is needed anymore
+  #debug "decoded ampersands: $media_id\n";
+  
   my $href = from_xml($xml);
+  debug "from_xml: $media_id\n";
+  
   my $file = $href->{videoInfo}->{title};
+  debug "title is: $file\n";
+  
   my $release_url = $href->{releaseURL};
+  debug "release_url is: $release_url\n";
 
   unless ($release_url =~ m[^https?://]) {
     debug "encrypted release url: $release_url\n";
@@ -99,11 +112,19 @@ sub find_video {
 
   $browser->prohibit_redirects;
   $browser->get($release_url);
+  debug "retrieved release_url: $release_url\n";
 
   my $rtmp_url = $browser->res->header('location')
     || from_xml($browser->content)->{choice}{url}
     || die "Couldn't find stream url\n";
   $rtmp_url =~ s/<break>//;
+  debug "rtmp_url: $rtmp_url\n";
+  
+  my $playpath;
+  my $filetype;
+  ($playpath, $filetype) = $rtmp_url =~ m[/(([^/:]*):videos.*$)];
+  debug "playpath: $playpath\n";
+  debug "file type: $filetype\n";
 
   if(!$file) {
     ($file) = $rtmp_url =~ m{([^/\?]+)$};
@@ -111,9 +132,9 @@ sub find_video {
 
   return {
     rtmp    => $rtmp_url,
-    pageUrl => $embed_url,
-    swfUrl  => 'http://www-tc.pbs.org/video/media/swf/PBSPlayer.swf?18809',
-    flv     => title_to_filename($file),
+    playpath => $playpath,
+    flashVer => 'LNX 11,2,202,481',
+    flv     => title_to_filename($file, $filetype),
   };
 }
 
