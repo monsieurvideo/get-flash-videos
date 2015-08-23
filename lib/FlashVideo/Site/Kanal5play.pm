@@ -6,7 +6,7 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION;}
 
 my $bitrate_index = {
@@ -21,7 +21,8 @@ sub find_video {
     die "No video id found in url";
   }
   my $video_id = $1;
-  my $info_url = "http://www.kanal5play.se/api/getVideo?format=FLASH&videoId=$video_id";
+  my $info_url = "http://www.kanal5play.se/api/getVideo?format=IPAD&videoId=$video_id";
+
   $browser->get($info_url);
 
   if (!$browser->success) {
@@ -35,27 +36,31 @@ sub find_video {
   my $season   = $json->{seasonNumber};
   my $subtitle = $json->{hasSubtitle};
   my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
-  my $rtmp     = $json->{streamBaseUrl};
-  my $playpath = $json->{streams}[0]->{source};
-  my %paths=();
+  my $hls_m3u  = $json->{streams}[0]->{source};
 
-  # Put the streams into the hash
-  foreach my $stream (@{$json->{streams}}) {
-    $paths{int($stream->{bitrate})} = $stream->{source};
-  }
-
-  my $args = {
-    flv      => title_to_filename($filename, "flv"),
-    rtmp     => $rtmp,
-    live     => 1,
-    swfVfy   => "http://www.kanal5play.se/flash/K5StandardPlayer.swf"
-  };
+  my %paths = read_hls_playlist($browser, $hls_m3u);
 
   # Sort the paths and select the suitable one based upon quality preference
   my $quality = $bitrate_index->{$prefs->{quality}};
   my $min = $quality < scalar(keys(%paths)) ? $quality : scalar(keys(%paths));
   my $key = (sort {int($b) <=> int($a)} keys %paths)[$min];
-  $args->{playpath} = $paths{$key};
+
+  my $video_url = $paths{$key};
+
+  my $hls_base = $hls_m3u;
+  $hls_base =~ s/playlist\.m3u8//;
+
+  $filename = title_to_filename($filename, "mp4");
+
+  # Set the arguments for ffmpeg
+  my @ffmpeg_args = (
+    "-i", "$hls_base$video_url",
+    "-acodec", "copy",
+    "-vcodec", "copy",
+    "-absf", "aac_adtstoasc",
+    "-f", "mp4",
+    "$filename.mp4"
+  );
 
   # Check for subtitles
   if ($prefs->{subtitles} and $subtitle) {
@@ -108,6 +113,10 @@ sub find_video {
     close $srt_fh;
   }
 
-  return $args;
+  return {
+    downloader => "ffmpeg",
+    flv        => $filename,
+    args       => \@ffmpeg_args
+  };
 }
 1;
