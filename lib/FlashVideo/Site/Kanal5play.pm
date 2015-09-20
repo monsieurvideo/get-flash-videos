@@ -59,7 +59,7 @@ sub find_video {
     "-vcodec", "copy",
     "-absf", "aac_adtstoasc",
     "-f", "mp4",
-    "$filename.mp4"
+    "$filename"
   );
 
   # Check for subtitles
