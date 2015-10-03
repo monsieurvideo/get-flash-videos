@@ -6,7 +6,7 @@ use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 sub Version() { $VERSION;}
 
 my $bitrate_index = {
@@ -35,7 +35,7 @@ sub find_video {
   my $episode  = $json->{episodeNumber};
   my $season   = $json->{seasonNumber};
   my $subtitle = $json->{hasSubtitle};
-  my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
+  my $title = sprintf "%s - S%02dE%02d", $name, $season, $episode;
   my $hls_m3u  = $json->{streams}[0]->{source};
 
   my %paths = read_hls_playlist($browser, $hls_m3u);
@@ -50,7 +50,7 @@ sub find_video {
   my $hls_base = $hls_m3u;
   $hls_base =~ s/playlist\.m3u8//;
 
-  $filename = title_to_filename($filename, "mp4");
+  my $filename = title_to_filename($title, "mp4");
 
   # Set the arguments for ffmpeg
   my @ffmpeg_args = (
@@ -84,7 +84,7 @@ sub find_video {
     #
     # We convert this to an srt
 
-    my $srt_filename = title_to_filename($filename, "srt");
+    my $srt_filename = title_to_filename($title, "srt");
     open my $srt_fh, '>', $srt_filename
       or die "Can't open subtitles file $srt_filename: $!";
 
