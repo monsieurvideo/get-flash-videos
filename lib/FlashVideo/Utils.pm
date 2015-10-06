@@ -16,7 +16,7 @@ our @EXPORT = qw(debug info error
   extract_title extract_info title_to_filename get_video_filename url_exists
   swfhash swfhash_data EXTENSIONS get_user_config_dir get_win_codepage
   is_program_on_path get_terminal_width json_unescape
-  convert_sami_subtitles_to_srt from_xml
+  convert_sami_subtitles_to_srt convert_dc_subtitles_to_srt from_xml
   convert_ttml_subtitles_to_srt read_hls_playlist);
 
 sub debug(@) {
@@ -373,7 +373,29 @@ sub convert_ttml_subtitles_to_srt {
   return;
 }
 
+sub convert_dc_subtitles_to_srt {
+  my ($dc_subtitles, $srt_filename) = @_;
+  die "DC subtitles must be provided" unless $dc_subtitles;
+  die "Output SRT filename must be provided" unless $srt_filename;
 
+  my $xml = from_xml($dc_subtitles, ForceArray => 1);
+
+  open my $srt_fh, '>:encoding(UTF-8)', $srt_filename
+    or die "Can't open subtitles file $srt_filename: $!";
+
+  for my $text (@{$xml->{Font}[0]->{Subtitle}}) {
+    my $subtitle = "";
+
+    for my $line (@{$text->{Text}}) {
+      $subtitle = $subtitle . $line->{content} . "\n";
+    }
+
+    print $srt_fh
+        "$text->{SpotNumber}\n"
+      . "$text->{TimeIn} --> $text->{TimeOut}\n"
+      . "$subtitle\n";
+  }
+}
 
 sub convert_sami_subtitles_to_srt {
   my ($sami_subtitles, $filename, $decrypt_callback) = @_;
