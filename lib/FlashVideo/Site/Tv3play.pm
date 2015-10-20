@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -30,10 +30,22 @@ sub find_video_viasat {
   my $json = from_json($browser->content);
   my $title = $json->{title};
 
-  if ($prefs->{subtitles} && exists $json->{subtitles_for_hearing_impaired}) {
-    my $srt_name = title_to_filename($title, "srt");
-    $browser->get($json->{subtitles_for_hearing_impaired});
-    convert_dc_subtitles_to_srt($browser, $srt_name);
+  if ($prefs->{subtitles}) {
+    my $sub_url = "";
+
+    if (exists $json->{sami_path}) {
+      $sub_url = $json->{sami_path};
+    } elsif (exists $json->{subtitles_for_hearing_impaired}) {
+      $sub_url = $json->{subtitles_for_hearing_impaired};
+    }
+
+    if ($sub_url ne "") {
+      my $srt_name = title_to_filename($title, "srt");
+      $browser->get($sub_url);
+      convert_dc_subtitles_to_srt($browser, $srt_name);
+    } else {
+      info "No subtitles found!";
+    }
   }
 
   $browser->get($stream_url);
