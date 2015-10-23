@@ -1,0 +1,25 @@
+# For OpenBSD wrapper to avoid using Gnu make.
+# Makefile is overloaded as
+# perl Makefile.PL overwrites.
+
+all::
+
+mk/makemaker-wrap.mk: Makefile.PL
+	@if [ ! -f "mk/makemaker.mk" ]; then GFV_DEVEL_MODE=1 perl Makefile.PL; fi
+	@echo "-include mk/makemaker.mk" > $@
+
+mk/makemaker.mk : Makefile.PL
+	GFV_DEVEL_MODE=1 perl Makefile.PL
+
+# No longer used github creates archives for download.
+distgit:
+	git archive --format=tar.gz --prefix=${DISTNAME}-${VERSION}/ \
+		-o ${DISTNAME}-${VERSION}.tar.gz ${VERSION}^{tree}
+
+# No longer used.
+cleandistgit: clean
+	rm ${DISTNAME}-${VERSION}.tar.gz
+
+-include mk/makemaker-wrap.mk
+include mk/targets.mk
+include mk/release.mk
