@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+#
+# get_flash_videos -- download all the Flash videos off a web page
+#
+#   http://code.google.com/p/get-flash-videos/
+#
+# Copyright 2009, zakflash and MonsieurVideo
+#
+
+# Fix up for modules only used once giving compile warnings
+# use a second time to stop typo warning....
+
+use HTTP::Headers qw(referrer);
+use HTTP::Request qw(url);
+my $dummy = $IO::Uncompress::Bunzip2::Bunzip2Error;
+$dummy = $IO::Uncompress::Inflate::InflateError;
+$dummy = $IO::Compress::Bzip2::Bzip2Error;
+$dummy = $IO::Compress::Deflate::DeflateError;
+$dummy = $HTTP::Status::RC_MOVED_TEMPORARILY;
+
+1;
