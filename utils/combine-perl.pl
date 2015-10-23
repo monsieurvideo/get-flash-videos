@@ -118,6 +118,13 @@ sub process_file {
       if($base) {
         $output .= $base;
       }
+    } elsif (/^\s*our\s+@(EXPORT|EXPORT_OK).*;/) {
+       if (/is_/) {
+         $output .= $_;
+       } else {
+         chomp;
+         $output .= "BEGIN { ".$_." }\n";
+       }
     } elsif(/^=(?!cut)\w+/) {
       while(<$fh>) {
         last if /^=cut/;
