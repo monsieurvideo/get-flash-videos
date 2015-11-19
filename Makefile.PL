@@ -22,6 +22,7 @@ my %mm_vars = (
       URI              => 0,
       'LWP::UserAgent' => 0,
       'WWW::Mechanize' => 0,
+      'IO::Socket::SSL' => 0,
       'LWP::Protocol::https' => 0,
       'LWP::Protocol::socks' => 0,
       'Module::Find' => 0,
