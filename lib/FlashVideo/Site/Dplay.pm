@@ -7,11 +7,8 @@ use FlashVideo::JSON;
 use HTTP::Cookies;
 use URI::Escape;
 
-my $bitrate_index = {
-  high   => 0,
-  medium => 1,
-  low    => 2
-};
+our $VERSION = '0.01';
+sub Version() { $VERSION;}
 
 sub find_video {
  my ($self, $browser, $embed_url, $prefs) = @_;
