@@ -5,7 +5,7 @@ use warnings;
 use FlashVideo::Utils;
 use List::Util qw(reduce);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION;}
 
 my $bitrate_index = {
@@ -70,32 +70,12 @@ sub find_video {
     }
   }
 
-  my %urls = read_hls_playlist($browser, $hls_m3u);
-
-  # Sort the urls and select the suitable one based upon quality preference
-  my $quality = $bitrate_index->{$prefs->{quality}};
-  my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
-  my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
-
-  my $video_url = $urls{$key};
   my $filename = title_to_filename($title, "mp4");
 
-  my $url = $video_url =~ m/http:\/\// ? $video_url : $hls_base.$video_url;
-
-  # Set the arguments for ffmpeg
-  my @ffmpeg_args = (
-    "-i", "$url",
-    "-acodec", "copy",
-    "-vcodec", "copy",
-    "-absf", "aac_adtstoasc",
-    "-f", "mp4",
-    "$filename"
-  );
-
   return {
-    downloader => "ffmpeg",
+    downloader => "hls",
     flv        => $filename,
-    args       => \@ffmpeg_args
+    args       => { hls_url => $hls_m3u, prefs => $prefs }
   };
 }
 

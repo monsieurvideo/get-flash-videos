@@ -8,14 +8,8 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 sub Version() { $VERSION;}
-
-my $bitrate_index = {
-  high   => 0,
-  medium => 1,
-  low    => 2
-};
 
 sub find_video_svt {
   my ($self, $browser, $embed_url, $prefs, $oppet_arkiv) = @_;
@@ -79,32 +73,13 @@ sub find_video_svt {
 
   # If we found an m3u8 file we generate the ffmpeg download command
   if (!($m3u8 eq "")) {
-
-    my %urls = read_hls_playlist($browser, $m3u8);
-
-    # Sort the urls and select the suitable one based upon quality preference
-    my $quality = $bitrate_index->{$prefs->{quality}};
-    my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
-    my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
-
-    my $video_url = $urls{$key};
     my $filename = title_to_filename($name, "mp4");
 
-    # Set the arguments for ffmpeg
-    my @ffmpeg_args = (
-      "-i", "$video_url",
-      "-acodec", "copy",
-      "-vcodec", "copy",
-      "-absf", "aac_adtstoasc",
-      "-f", "mp4",
-      "$filename"
-    );
-
     return {
-      downloader => "ffmpeg",
+      downloader => "hls",
       flv        => $filename,
-      args       => \@ffmpeg_args
-    };
+      args       => { hls_url => $m3u8, prefs => $prefs }
+    }
 
   } else {
     return {

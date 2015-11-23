@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -54,31 +54,12 @@ sub find_video_viasat {
   # Prefer hls stream since it contains better video format
   if ($json->{streams}->{hls}) {
     my $hls_url = $json->{streams}->{hls};
-
-    my %urls = read_hls_playlist($browser, $hls_url);
-
-    #  Sort the urls and select the suitable one based upon quality preference
-    my $quality = $bitrate_index->{$prefs->{quality}};
-    my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
-    my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
-
-    my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
     my $filename = title_to_filename($title, "mp4");
-    my $video_url = $urls{$key} =~ m/http:\/\// ? $urls{$key} : $hls_base.$urls{$key};
-
-    my @ffmpeg_args = (
-       "-i", "$video_url",
-       "-acodec", "copy",
-       "-vcodec", "copy",
-       "-absf", "aac_adtstoasc",
-       "-f", "mp4",
-       "$filename"
-     );
 
     return {
-       downloader => "ffmpeg",
+       downloader => "hls",
        flv        => $filename,
-       args       => \@ffmpeg_args
+       args       => { hls_url => $hls_url, prefs => $prefs }
      };
   }
 
