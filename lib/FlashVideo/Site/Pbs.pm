@@ -3,9 +3,8 @@ package FlashVideo::Site::Pbs;
 
 use strict;
 use warnings;
-use Encode;
 use FlashVideo::Utils;
-use MIME::Base64 qw(decode_base64);
+use FlashVideo::JSON;
 
 =pod
 
@@ -23,17 +22,15 @@ Programs that don't work yet:
 
 TODO:
     - subtitles
+    - hi-res with PBS Video login ID
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 sub Version() { $VERSION; }
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
-
-  die "Must have Crypt::Rijndael installed to download from PBS"
-    unless eval { require Crypt::Rijndael };
 
   my ($media_id) = $embed_url =~ m[http://video\.pbs\.org/videoPlayerInfo/(\d+)]x;
   unless (defined $media_id) {
@@ -72,70 +69,45 @@ sub find_video {
   debug "media_id: $media_id\n";
 
   $browser->allow_redirects;
-  $browser->get("http://video.pbs.org/videoPlayerInfo/$media_id");
-  debug "fetched: $media_id\n";
   
-  my $xml = $browser->content;
-  debug "retrieved xml: $media_id\n";
+  # format query to get video details in JSON  
+  my $query = 'http://player.pbs.org/videoInfo/' . $media_id . '/?callback=video_info&format=jsonp&type=portal';
   
-  $xml = encode('utf-8', $xml);
-  debug "encode: $media_id\n";
+  info "Downloading video metadata";
+  $browser->get($query);
+  die "Could not get video metadata" unless $browser->success();
   
-  #$xml =~ s/&/&amp;/g; # not sure this is needed anymore
-  #debug "decoded ampersands: $media_id\n";
+  # Content is JSON fomatted
+  my $result = from_json($browser->content());
   
-  my $href = from_xml($xml);
-  debug "from_xml: $media_id\n";
+  # Get the video's title and urs source
+  my $title = $result->{title};
+  die "Could not extract video title" unless $title;
+  debug "title is: $title\n";
   
-  my $file = $href->{videoInfo}->{title};
-  debug "title is: $file\n";
+  my $urs = $result->{alternate_encoding}->{url};
+  die "Could not extract video urs" unless $urs;
+  debug "urs extracted\n";
   
-  my $release_url = $href->{releaseURL};
-  debug "release_url is: $release_url\n";
-
-  unless ($release_url =~ m[^https?://]) {
-    debug "encrypted release url: $release_url\n";
-    my ($type, $iv, $ciphertext) = split '\$', $release_url, 3;
-    $release_url = undef;
-
-    # From http://www-tc.pbs.org/video/media/swf/PBSPlayer.swf
-    my $key = 'RPz~i4p*FQmx>t76';
-
-    my $cipher = Crypt::Rijndael->new($key, Crypt::Rijndael->MODE_CBC);
-    $iv = pack 'H*', $iv if 32 == length $iv;
-    $cipher->set_iv($iv);
-
-    $release_url = $cipher->decrypt(decode_base64($ciphertext));
-    $release_url =~ s/\s+$//;
-  }
-  debug "unencrypted release url: $release_url\n";
-
-  $browser->prohibit_redirects;
-  $browser->get($release_url);
-  debug "retrieved release_url: $release_url\n";
-
-  my $rtmp_url = $browser->res->header('location')
-    || from_xml($browser->content)->{choice}{url}
-    || die "Couldn't find stream url\n";
-  $rtmp_url =~ s/<break>//;
-  debug "rtmp_url: $rtmp_url\n";
+  # format another query to get video url in JSON  
+  $query = $urs . '?format=json';
   
-  my $playpath;
-  my $filetype;
-  ($playpath, $filetype) = $rtmp_url =~ m[/(([^/:]*):videos.*$)];
-  debug "playpath: $playpath\n";
-  debug "file type: $filetype\n";
+  info "Downloading video details";
+  $browser->get($query);
+  die "Could not get video details" unless $browser->success();
+  
+  # Content is JSON fomatted
+  $result = from_json($browser->content());
+  
+  # Get the video's url source
+  my $url = $result->{url};
+  die "Could not extract video url" unless $url;
+  debug "found PBS video: $media_id url\n";
+  
+  my ($filetype) = $url =~ m[.*\.([a-zA-Z0-9]+)]x;
+  debug "filetype is: $filetype\n";
 
-  if(!$file) {
-    ($file) = $rtmp_url =~ m{([^/\?]+)$};
-  }
-
-  return {
-    rtmp    => $rtmp_url,
-    playpath => $playpath,
-    flashVer => 'LNX 11,2,202,481',
-    flv     => title_to_filename($file, $filetype),
-  };
+  return $url, title_to_filename($title, $filetype);
 }
 
 1;
