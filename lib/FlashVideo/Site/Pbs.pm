@@ -67,11 +67,67 @@ sub find_video {
   }
   die "Couldn't find media_id\n" unless defined $media_id;
   debug "media_id: $media_id\n";
-
+  
+  # pbs.org uses redirects all over the place
   $browser->allow_redirects;
   
-  # format query to get video details in JSON  
-  my $query = 'http://player.pbs.org/videoInfo/' . $media_id . '/?callback=video_info&format=jsonp&type=portal';
+  my $account = $prefs->account("pbs.org", <<EOT);
+If you set up a PBS account, you can access high definition videos.
+The pbs.org login is the email address you registered at pbs.org.
+See the documentation, i.e man netrc, for how to configure ~/.netrc
+and skip continual prompting for account credentials. Example:
+   machine pbs.org
+   login myemail\@xyzzy.net
+   password xxxxxxx
+NOTE: if the login is set to 'no', standard definition will be downloaded.
+
+EOT
+
+  my $query = 'http://player.pbs.org/videoInfo/' . $media_id;
+
+  if ($account->username and $account->username ne 'no' and $account->password) {
+   # get the pbs.ord login page and fill in the login form
+   $browser->get('https://account.pbs.org/oauth2/authorize/?scope=account&redirect_uri=http://video.pbs.org/login/&response_type=code&client_id=FtcYEF4VCletfLiHAV6XPLX2BzDjR9GrDI7');
+   die "Could not access login page" unless $browser->success();
+   
+   # fill in the login form with the users credentials
+   $browser->form_number(1);
+   $browser->field('email', $account->username);
+   $browser->field('password', $account->password);
+   
+   # submit the login request
+   $browser->submit();
+   if ($browser->success()) {
+   
+      # login successful, but need to extract some cookie values to retrieve
+      # high definition video
+      my $pbs_uid;
+      my $pbs_station;
+   
+      foreach my $cookie (split /\n/, $browser->cookie_jar->as_string()) {
+         my @tokens = split /; |: /, $cookie;
+         my ($cname, $cvalue) = split /=/, $tokens[1];
+         $pbs_uid = $cvalue if $cname eq 'pbs_uid';
+         $pbs_station = $cvalue if $cname eq 'pbsol.station';
+         debug "cookie name = $cname, value = $cvalue"
+      }
+   
+      debug "setting pbs_uid=$pbs_uid and callsign=$pbs_station";
+      info "using pbs.org account " . $account->username . " to retrieve high definition videos";
+      # format query to get high definition video details in JSON
+      $query = $query . '/?callsign=' . $pbs_station . '&uid=' . $pbs_uid . '&callback=video_info&format=jsonp&type=portal';
+      
+      } else {
+         info "\n*** pbs.org login failed ***\ncorrect your login and password\nwill retrieve standard definition video.\n";
+         # format query to get standard definition video details in JSON
+         $query = $query . '/?callsign=KCTS&callback=video_info&format=jsonp&type=portal';
+      }
+   
+  } else {
+   info "no pbs login credentials, will retrieve standard definition video.";
+   # format query to get standard definition video details in JSON
+   $query = $query . '/?callsign=KCTS&callback=video_info&format=jsonp&type=portal';
+  }
   
   info "Downloading video metadata";
   $browser->get($query);
@@ -85,7 +141,7 @@ sub find_video {
   die "Could not extract video title" unless $title;
   debug "title is: $title\n";
   
-  my $urs = $result->{alternate_encoding}->{url};
+  my $urs = $result->{recommended_encoding}->{url};
   die "Could not extract video urs" unless $urs;
   debug "urs extracted\n";
   
@@ -102,12 +158,21 @@ sub find_video {
   # Get the video's url source
   my $url = $result->{url};
   die "Could not extract video url" unless $url;
-  debug "found PBS video: $media_id url\n";
+  debug "found PBS video: $media_id @ $url\n";
   
   my ($filetype) = $url =~ m[.*\.([a-zA-Z0-9]+)]x;
   debug "filetype is: $filetype\n";
-
-  return $url, title_to_filename($title, $filetype);
+  
+  if ($filetype eq "m3u8") {
+    debug "using hls downloader";
+    return {
+      downloader => "hls",
+      flv        => title_to_filename($title, "mp4"),
+      args       => { hls_url => $url, prefs => $prefs }
+    };
+  } else {
+    return $url, title_to_filename($title, $filetype);
+  }
 }
 
 1;
