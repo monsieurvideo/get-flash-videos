@@ -41,7 +41,7 @@ sub download {
    
   # Fill the url table
   foreach my $line (@lines) {
-    if ($line !~ /#EXT/) {
+    if ($line !~ /#/) {
       push @segments, $line; 
     }
   }
