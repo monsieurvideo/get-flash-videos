@@ -158,20 +158,37 @@ EOT
   # Get the video's url source
   my $url = $result->{url};
   die "Could not extract video url" unless $url;
-  debug "found PBS video: $media_id @ $url\n";
+  debug "found PBS video: $media_id @ $url";
   
-  my ($filetype) = $url =~ m[.*\.([a-zA-Z0-9]+)]x;
-  debug "filetype is: $filetype\n";
+  # get the scheme and filetype to determine appropriate downloader
+  my ($scheme, $filetype) = $url =~ m[(^\w+):.*\.(\w+)$];
+     debug "scheme is: $scheme";
+     debug "file type is: $filetype";  
   
-  if ($filetype eq "m3u8") {
-    debug "using hls downloader";
-    return {
-      downloader => "hls",
-      flv        => title_to_filename($title, "mp4"),
-      args       => { hls_url => $url, prefs => $prefs }
-    };
+  if ($scheme =~ m[^rtmp]) {
+  # pbs.org has not moved all videos from flash to hls
+  # use rtmpdump for backward compatibility
+     my $playpath;
+     ($playpath) = $url =~ m[(\w+:*:videos.*$)];
+     debug "playpath is: $playpath";
+     debug "using rtmp downloader";
+     return {
+       rtmp    => $url,
+       playpath => $playpath,
+       flashVer => 'LNX 11,2,202,481',
+       flv     => title_to_filename($title, $filetype),
+     };
+  } elsif ($scheme =~ m[^http] and $filetype eq "m3u8") {
+      debug "using hls downloader";
+      return {
+         downloader => "hls",
+         flv        => title_to_filename($title, "mp4"),
+         args       => { hls_url => $url, prefs => $prefs }
+      };
+  } elsif ($scheme =~ m[^http] and $filetype eq "mp4") {
+      return $url, title_to_filename($title, $filetype);
   } else {
-    return $url, title_to_filename($title, $filetype);
+      die "Video is in unknown scheme or format. Run with debug and report problem";
   }
 }
 
