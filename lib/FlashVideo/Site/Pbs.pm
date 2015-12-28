@@ -10,6 +10,7 @@ use FlashVideo::JSON;
 
 Programs that work:
     - http://video.pbs.org/video/1623753774/
+    - http://www.pbs.org/video/2365612568/
     - http://www.pbs.org/wnet/nature/episodes/revealing-the-leopard/full-episode/6084/
     - http://www.pbs.org/wgbh/nova/ancient/secrets-stonehenge.html
     - http://www.pbs.org/wnet/americanmasters/episodes/lennonyc/outtakes-jack-douglas/1718/
@@ -22,7 +23,6 @@ Programs that don't work yet:
 
 TODO:
     - subtitles
-    - hi-res with PBS Video login ID
 
 =cut
 
@@ -32,15 +32,15 @@ sub Version() { $VERSION; }
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
-  my ($media_id) = $embed_url =~ m[http://video\.pbs\.org/videoPlayerInfo/(\d+)]x;
+  my ($media_id) = $embed_url =~ m[http://(?:video|www)\.pbs\.org/videoPlayerInfo/(\d+)]x;
   unless (defined $media_id) {
     ($media_id) = $browser->uri->as_string =~ m[
-      ^http://video\.pbs\.org/video/(\d+)
+      ^http://(?:video|www)\.pbs\.org/video/(\d+)
     ]x;
   }
   unless (defined $media_id) {
     ($media_id) = $browser->content =~ m[
-      http://video\.pbs\.org/widget/partnerplayer/(\d+)
+      http://(?:video|www)\.pbs\.org/widget/partnerplayer/(\d+)
     ]x;
   }
   unless (defined $media_id) {
@@ -87,7 +87,7 @@ EOT
 
   if ($account->username and $account->username ne 'no' and $account->password) {
    # get the pbs.ord login page and fill in the login form
-   $browser->get('https://account.pbs.org/oauth2/authorize/?scope=account&redirect_uri=http://video.pbs.org/login/&response_type=code&client_id=FtcYEF4VCletfLiHAV6XPLX2BzDjR9GrDI7');
+   $browser->get('https://account.pbs.org/oauth2/authorize/?scope=account&redirect_uri=http://www.pbs.org/login/&response_type=code&client_id=LXLFIaXOVDsfS850bnvsxdcLKlvLStjRBoBWbFRE');
    die "Could not access login page" unless $browser->success();
    
    # fill in the login form with the users credentials
