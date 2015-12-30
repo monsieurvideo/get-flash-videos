@@ -10,18 +10,9 @@ sub Version { $VERSION; }
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
-  my ($lang, $jsonurl, $filename, $title, $videourl, $quality);
+  my ($jsonurl, $filename, $title, $videourl, $quality);
 
   debug "Arte::find_video called, embed_url = \"$embed_url\"\n";
-
-  my $pageurl = $browser->uri() . "";
-  if($pageurl =~ /www\.arte\.tv\/guide\/(..)\//) {
-    $lang = $1;
-  } elsif($pageurl =~ /concert.arte.tv\/(..)\//) {
-    $lang = $1;
-  } else {
-    die "Unable to find language in original URL \"$pageurl\"\n";
-  }
 
   if($browser->content =~ /arte_vp_url=['"](.*)['"]/) {
     $jsonurl = $1;
