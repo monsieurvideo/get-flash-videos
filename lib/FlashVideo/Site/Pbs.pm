@@ -11,7 +11,6 @@ use FlashVideo::JSON;
 Programs that work:
     - http://video.pbs.org/video/1623753774/
     - http://www.pbs.org/video/2365612568/
-    - http://www.pbs.org/wnet/nature/episodes/revealing-the-leopard/full-episode/6084/
     - http://www.pbs.org/wgbh/nova/ancient/secrets-stonehenge.html
     - http://www.pbs.org/wnet/americanmasters/episodes/lennonyc/outtakes-jack-douglas/1718/
     - http://www.pbs.org/wnet/need-to-know/video/need-to-know-november-19-2010/5189/
@@ -33,28 +32,40 @@ sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
   my ($media_id) = $embed_url =~ m[http://(?:video|www)\.pbs\.org/videoPlayerInfo/(\d+)]x;
+  debug("media id found in URL") if (defined $media_id);
   unless (defined $media_id) {
+    debug("media id not found in URL");
     ($media_id) = $browser->uri->as_string =~ m[
       ^http://(?:video|www)\.pbs\.org/video/(\d+)
     ]x;
+    debug("media id found in URU") if (defined $media_id);
   }
   unless (defined $media_id) {
+    debug("media id not found in URI");
     ($media_id) = $browser->content =~ m[
       http://(?:video|www)\.pbs\.org/widget/partnerplayer/(\d+)
     ]x;
+    debug("media id found in partner player link") if (defined $media_id);
   }
   unless (defined $media_id) {
+    debug("media id not found in partner player link");
     ($media_id) = $browser->content =~ m[
       /embed-player[^"]+\bepisodemediaid=(\d+)
     ]x;
+    debug("media id found in embedded player reference") if (defined $media_id);
   }
   unless (defined $media_id) {
+    debug("media id not found in embedded player reference");
     ($media_id) = $browser->content =~ m[var videoUrl = "([^"]+)"];
+    debug("media id found in a pbs_video_id tag") if (defined $media_id);
   }
   unless (defined $media_id) {
+    debug("media id not found in a javascript videoURL variable");
     ($media_id) = $browser->content =~ m[pbs_video_id_\S+" value="([^"]+)"];
+    debug("media id found in a pbs_video_id tag") if (defined $media_id);
   }
   unless (defined $media_id) {
+    debug("media id not found in a pbs_video_id tag");
     my ($pap_id, $youtube_id) = $browser->content =~ m[
       \bDetectFlashDecision\ \('([^']+)',\ '([^']+)'\);
     ]x;
