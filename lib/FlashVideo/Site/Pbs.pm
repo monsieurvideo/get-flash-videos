@@ -12,9 +12,8 @@ Programs that work:
     - http://video.pbs.org/video/1623753774/
     - http://www.pbs.org/video/2365612568/
     - http://www.pbs.org/wgbh/nova/ancient/secrets-stonehenge.html
-    - http://www.pbs.org/wnet/americanmasters/episodes/lennonyc/outtakes-jack-douglas/1718/
+    - http://www.pbs.org/show/bletchley-circle/
     - http://www.pbs.org/wnet/need-to-know/video/need-to-know-november-19-2010/5189/
-    - http://www.pbs.org/newshour/bb/transportation/july-dec10/airport_11-22.html
 
 Programs that don't work yet:
     - http://www.pbs.org/wgbh/pages/frontline/woundedplatoon/view/
@@ -29,6 +28,7 @@ our $VERSION = '0.03';
 sub Version() { $VERSION; }
 
 sub find_video {
+  our %opt;
   my ($self, $browser, $embed_url, $prefs) = @_;
 
   my ($media_id) = $embed_url =~ m[http://(?:video|www)\.pbs\.org/videoPlayerInfo/(\d+)]x;
@@ -38,7 +38,7 @@ sub find_video {
     ($media_id) = $browser->uri->as_string =~ m[
       ^http://(?:video|www)\.pbs\.org/video/(\d+)
     ]x;
-    debug("media id found in URU") if (defined $media_id);
+    debug("media id found in URI") if (defined $media_id);
   }
   unless (defined $media_id) {
     debug("media id not found in URI");
@@ -75,13 +75,47 @@ sub find_video {
       require FlashVideo::Site::Youtube;
       return FlashVideo::Site::Youtube->find_video($browser, $url, $prefs);
     }
+    debug("media id not found in a YouTube tag");
   }
-  die "Couldn't find media_id\n" unless defined $media_id;
-  debug "media_id: $media_id\n";
-  
+
   # pbs.org uses redirects all over the place
   $browser->allow_redirects;
+
+  if (! defined $media_id) {
+    debug ("...scanning for list of multiple videos");
   
+    my @possible_videos = $browser->content =~ m{<a href=['"](/video/\d+/)['"][^>]*>([^<]+)</a>}g;
+    if (@possible_videos) {
+      if (!$opt{yes}) {
+        print "There are " . scalar(@possible_videos)/2 . " videos referenced, please choose:\n";
+        my $count;
+        for (my $i = 0; $i < $#possible_videos; $i += 2) {
+          my $item = $i/2;
+          my $item_title = $possible_videos[$i+1];
+          print "$item - $item_title\n";
+        }
+
+        print "\nWhich video would you like to use?: ";
+        chomp(my $chosen_item = <STDIN>);    
+        $chosen_item *= 2;
+        if ($possible_videos[$chosen_item]) {
+          my $chosen_url = "http://www.pbs.org" . $possible_videos[$chosen_item];
+          $browser->get($chosen_url);
+          return $self->find_video($browser, $chosen_url, $prefs);
+        }
+      }
+      else
+      {
+        info "There were " . scalar(@possible_videos)/2 . " referenced videos, but you used the yes option.";
+        info "Re-run without the yes option to select one.";
+      }
+    }
+  }
+
+  #
+  die "Couldn't find media_id\n" unless defined $media_id;
+  debug "media_id: $media_id\n";
+    
   my $account = $prefs->account("pbs.org", <<EOT);
 If you set up a PBS account, you can access high definition videos.
 The pbs.org login is the email address you registered at pbs.org.
@@ -168,7 +202,7 @@ EOT
   
   # Get the video's url source
   my $url = $result->{url};
-  die "Could not extract video url" unless $url;
+  die "Could not extract video url. Possibly it is no longer available." unless $url;
   debug "found PBS video: $media_id @ $url";
   
   # get the scheme and filetype to determine appropriate downloader
