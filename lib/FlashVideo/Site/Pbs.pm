@@ -128,12 +128,15 @@ NOTE: if the login is set to 'no', standard definition will be downloaded.
 
 EOT
 
-  my $query = 'http://player.pbs.org/videoInfo/' . $media_id;
+  my $query = 'http://player.pbs.org/portalplayer/' . $media_id;
 
   if ($account->username and $account->username ne 'no' and $account->password) {
    # get the pbs.ord login page and fill in the login form
    $browser->get('https://account.pbs.org/oauth2/authorize/?scope=account&redirect_uri=http://www.pbs.org/login/&response_type=code&client_id=LXLFIaXOVDsfS850bnvsxdcLKlvLStjRBoBWbFRE');
-   die "Could not access login page" unless $browser->success();
+   if (! $browser->success()) {
+     debug $browser->content();
+     die "Could not access login page" unless $browser->success();
+   }
    
    # fill in the login form with the users credentials
    $browser->form_number(1);
@@ -178,8 +181,28 @@ EOT
   $browser->get($query);
   die "Could not get video metadata" unless $browser->success();
   
-  # Content is JSON fomatted
-  my $result = from_json($browser->content());
+  # PBS returns the video metadata as a javascript variable
+  # extract the embedded javascript and extract the PBS.videoData variable
+  my @scriptags =  $browser->content() =~/<script[^>]*>(.+?)<\/script>/sig;
+  my $script;
+  my $pbsdata;
+  local $/ = "\r\n";
+  foreach $script (@scriptags)
+  {
+     if ($script =~ /PBS.videoData/si) {
+       ($pbsdata) = $script =~ /PBS.videoData += +([^;]*);/s;
+       # change ' to " for the json parser
+       $pbsdata =~ s/'/"/g;
+       # PBS computes the number of chapters in the javascript.
+       # We don't care, so replace it with an integer.'
+       $pbsdata =~ s/: *chapters *,/: 4,/g;
+       debug $pbsdata;
+       last;
+     }
+  }
+# Parse the json structure
+  my $result = from_json($pbsdata);
+  debug Data::Dumper::Dumper($result);
   
   # Get the video's title and urs source
   my $title = $result->{title};
