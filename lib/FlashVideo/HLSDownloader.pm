@@ -53,9 +53,10 @@ sub download {
   info "Downloading segments";
   my $progress_bar = Term::ProgressBar->new($num_segs);
 
+  open(my $fh_app, '>>', $filename_ts) or die "Could not open file $filename_ts";
+
   foreach my $url (@segments) {
     $browser->get($url);
-    open(my $fh_app, '>>', $filename_ts) or die "Could not open file append.ts";
     print $fh_app $browser->content;
     $progress_bar->update($i);
     $i++;
