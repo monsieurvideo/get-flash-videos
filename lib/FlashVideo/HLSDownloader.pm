@@ -32,7 +32,7 @@ sub download {
   my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
   my $filename_mp4 = $args->{flv};
   my $filename_ts = $args->{flv} . ".ts";
-  my $video_url = $urls{$key} =~ m/http:\/\// ? $urls{$key} : $hls_base.$urls{$key};
+  my $video_url = $urls{$key} =~ m/http(s?):\/\// ? $urls{$key} : $hls_base.$urls{$key};
 
   $browser->get($video_url);
 
