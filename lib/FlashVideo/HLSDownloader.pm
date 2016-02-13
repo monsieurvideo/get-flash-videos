@@ -52,6 +52,7 @@ sub download {
   my $progress_bar = Term::ProgressBar->new($num_segs);
 
   open(my $fh_app, '>', $filename_ts) or die "Could not open file $filename_ts";
+  binmode($fh_app);
 
   foreach my $url (@segments) {
     $browser->get($url);
