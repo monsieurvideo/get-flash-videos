@@ -46,14 +46,12 @@ sub download {
     }
   }
 
-  unlink $filename_ts; # Remove ts file if present
-
   my $i = 1;
   my $num_segs = @segments;
   info "Downloading segments";
   my $progress_bar = Term::ProgressBar->new($num_segs);
 
-  open(my $fh_app, '>>', $filename_ts) or die "Could not open file $filename_ts";
+  open(my $fh_app, '>', $filename_ts) or die "Could not open file $filename_ts";
 
   foreach my $url (@segments) {
     $browser->get($url);
