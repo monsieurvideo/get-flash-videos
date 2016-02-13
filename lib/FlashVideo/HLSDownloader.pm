@@ -79,6 +79,8 @@ sub download {
   my $ffmpeg_downloader = FlashVideo::FFmpegDownloader->new;
   $ffmpeg_downloader->download($dl_args, $filename_mp4);
 
+  $self->{printable_filename} = $filename_mp4;
+
   unlink $filename_ts;
   return -s $filename_mp4; 
 }
