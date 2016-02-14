@@ -32,7 +32,7 @@ sub download {
   my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
   my $filename_mp4 = $args->{flv};
   my $filename_ts = $args->{flv} . ".ts";
-  my $video_url = $urls{$key} =~ m/http:\/\// ? $urls{$key} : $hls_base.$urls{$key};
+  my $video_url = $urls{$key} =~ m/http(s?):\/\// ? $urls{$key} : $hls_base.$urls{$key};
 
   $browser->get($video_url);
 
@@ -46,16 +46,16 @@ sub download {
     }
   }
 
-  unlink $filename_ts; # Remove ts file if present
-
   my $i = 1;
   my $num_segs = @segments;
   info "Downloading segments";
   my $progress_bar = Term::ProgressBar->new($num_segs);
 
+  open(my $fh_app, '>', $filename_ts) or die "Could not open file $filename_ts";
+  binmode($fh_app);
+
   foreach my $url (@segments) {
     $browser->get($url);
-    open(my $fh_app, '>>', $filename_ts) or die "Could not open file append.ts";
     print $fh_app $browser->content;
     $progress_bar->update($i);
     $i++;
@@ -78,6 +78,8 @@ sub download {
 
   my $ffmpeg_downloader = FlashVideo::FFmpegDownloader->new;
   $ffmpeg_downloader->download($dl_args, $filename_mp4);
+
+  $self->{printable_filename} = $filename_mp4;
 
   unlink $filename_ts;
   return -s $filename_mp4; 
