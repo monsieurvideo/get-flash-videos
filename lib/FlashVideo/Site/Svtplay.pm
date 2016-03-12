@@ -6,9 +6,8 @@ use warnings;
 
 use FlashVideo::Utils;
 use FlashVideo::JSON;
-use HTML::Entities;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 sub Version() { $VERSION;}
 
 sub find_video_svt {
@@ -20,8 +19,7 @@ sub find_video_svt {
   }
   my $vid_type = $1;
   my $video_id = $2;
-  $browser->content =~ m/<title>(.+)<\/title>/;
-  my $name = decode_entities($1);
+  my $name = extract_title($browser);
   my $info_url = $oppet_arkiv ?
                  "http://www.oppetarkiv.se/video/$video_id?output=json" :
                  "http://www.svtplay.se/$vid_type/$video_id?output=json" ;
