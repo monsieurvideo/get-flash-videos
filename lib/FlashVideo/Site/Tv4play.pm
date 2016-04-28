@@ -17,7 +17,7 @@ my $bitrate_index = {
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
   my $video_id = ($embed_url =~ /video_id=([0-9]*)/)[0];
-  my $smi_url = "http://premium.tv4play.se/api/web/asset/$video_id/play?protocol=hls";
+  my $smi_url = "http://prima.tv4play.se/api/web/asset/$video_id/play?protocol=hls";
   my $title = extract_title($browser);
   $browser->get($smi_url);
   my $content = from_xml($browser);
