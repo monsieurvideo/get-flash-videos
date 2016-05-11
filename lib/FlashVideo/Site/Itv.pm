@@ -5,8 +5,9 @@ use strict;
 use FlashVideo::Utils;
 use HTML::Entities;
 use Encode;
+use Data::Dumper;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -219,14 +220,78 @@ EOF
     }
   }
 
-  return {
+  my $dlparams = {
     rtmp => $rtmp,
     playpath => $playpath,
     flv => $flv,
-    swfhash($browser, "http://www.itv.com/mercury/Mercury_VideoPlayer.swf")
+    itv_swfhash($browser, "http://www.itv.com/mercury/Mercury_VideoPlayer.swf")
   };
+  
+  if ($dlparams->{swfsize} < 10) {
+    # Use hardcoded value if failed
+    print STDERR "Size too small - using hardcoded values for swf\n";
+    $dlparams->{swfUrl} = 'http://www.itv.com/mercury/Mercury_VideoPlayer.swf';
+    $dlparams->{swfsize} = 990750;
+    $dlparams->{swfhash} = 'b6c8966da3f49610be7178b01ca33d046bbf915e2908d9dafe11e4b042d8eeea';
+  }
+  return $dlparams;
 }
 
+
+use constant FP_KEY => "Genuine Adobe Flash Player 001";
+
+# Replacement swfhash upto version 19
+sub itv_swfhash {
+  my($browser, $url) = @_;
+
+  $browser->get($url);
+
+  return itv_swfhash_data($browser->content, $url);
+}
+
+sub itv_swfhash_data {
+  my ($data, $url) = @_;
+
+    die "Must have Digest::SHA for this RTMP download\n"
+        unless eval {
+          require Digest::SHA;
+        };
+
+  # swf file header
+  # swf signature type FWS uncompressed, CWS Zlib compression, ZWS LZMA compression
+  # swf version
+  my ($swftype, $swfversion , $swfsize) = unpack ("a3CI", substr($data, 0, 8));
+
+  print STDERR "swf type = $swftype version = $swfversion size = $swfsize\n";
+
+  if ($swftype eq 'CWS' ) {
+
+    die "Must have Compress::Zlib for this RTMP download\n"
+        unless eval {
+          require Compress::Zlib;
+        };
+
+    # sfw uncompressed header.
+    $data = "F" . substr($data, 1, 7)
+                . Compress::Zlib::uncompress(substr $data, 8);
+
+  } elsif ($swftype eq 'ZWS') {
+    # swf version 13 and later
+    print STDERR "Warning Lzma not supported\n";
+  } elsif ($swftype ne 'FWS') {
+    print STDERR "Warning Not a SWF Format file\n"; 
+  }
+
+  my $datalen = length $data;
+  if ($datalen != $swfsize) {
+    print STDERR "swf size $swfsize doesn't match uncompressed size $datalen\n";
+  }
+
+  return
+    swfsize => $datalen,
+    swfhash => Digest::SHA::hmac_sha256_hex($data, FP_KEY),
+    swfUrl  => $url;
+}
 
 
 1;
