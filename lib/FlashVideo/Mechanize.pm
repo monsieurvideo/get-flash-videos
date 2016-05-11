@@ -72,7 +72,8 @@ sub get {
 
   if($App::get_flash_videos::opt{debug}) {
     my $text = join " ", $self->response->code,
-      $self->response->header("Content-type"), "(" . length($self->content) . ")";
+      $self->response->header("Content-type"), $self->response->header("Content-length"),
+        "(" . length($self->content) . ")";
     $text .= ": " . DBI::data_string_desc($self->content) if eval { require DBI };
 
     print STDERR "<- $text\n";
