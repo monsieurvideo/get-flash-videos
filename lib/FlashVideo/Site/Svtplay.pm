@@ -23,18 +23,21 @@ sub find_video_svt {
   my $info_url = $oppet_arkiv ?
                  "http://www.oppetarkiv.se/video/$video_id?output=json" :
                  "http://www.svtplay.se/$vid_type/$video_id?output=json" ;
+  $browser->allow_redirects;
   $browser->get($info_url);
 
   if (!$browser->success) {
     die "Couldn't download $info_url: " . $browser->response->status_line;
   }
 
-  my $video_data = from_json($browser->content);
+  $browser->content =~ /(?<=root\[\"__svtplay\"\] = )(.*)/;
+  my $jsonstr = $1;
+  my $video_data = from_json($jsonstr);
   my $bitrate = -1;
   my $rtmp_url;
   my $m3u8 = "";
 
-  foreach my $video (@{ $video_data->{video}->{videoReferences} }) {
+  foreach my $video (@{ $video_data->{context}->{dispatcher}->{stores}->{VideoTitlePageStore}->{data}->{video}->{videoReferences} }) {
     my $rate = int $video->{bitrate};
 
     if ($bitrate < $rate && $video->{playerType} eq "flash") {
@@ -47,7 +50,7 @@ sub find_video_svt {
   }
 
   if ($prefs->{subtitles}) {
-    if (my $subtitles_url = $video_data->{video}->{subtitleReferences}[0]->{url}) {
+    if (my $subtitles_url = $video_data->{context}->{dispatcher}->{stores}->{VideoTitlePageStore}->{data}->{video}->{subtitles}[1]->{url}) {
       info "Found subtitles URL: $subtitles_url";
 
       $browser->get($subtitles_url);
