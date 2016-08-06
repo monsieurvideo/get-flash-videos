@@ -203,6 +203,8 @@ EOT
 # Parse the json structure
   my $result = from_json($pbsdata);
   debug Data::Dumper::Dumper($result);
+  die "Could not extract video metadata.\n   Video may not be available.\n"
+     unless ref($result) eq "HASH";
   
   # Get the video's title and urs source
   my $title = $result->{title};
