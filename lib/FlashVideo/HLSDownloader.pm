@@ -32,6 +32,7 @@ sub download {
   my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
   my $filename_mp4 = $args->{flv};
   my $filename_ts = $args->{flv} . ".ts";
+  my $filename_ts_segment = $args->{flv} . ".tsx";
   my $video_url = $urls{$key} =~ m/http(s?):\/\// ? $urls{$key} : $hls_base.$urls{$key};
 
   $browser->get($video_url);
@@ -53,14 +54,28 @@ sub download {
 
   open(my $fh_app, '>', $filename_ts) or die "Could not open file $filename_ts";
   binmode($fh_app);
+  my $buffer;
 
   foreach my $url (@segments) {
-    $browser->get($url);
-    print $fh_app $browser->content;
+    # Download and save each segment in a re-used segment file.
+    # Otherwise, the process memory expands monotonically. Large downloads would use up
+    # all memory and kill the process.
+    $browser->get($url, ":content_file" => $filename_ts_segment);
+    # Open the segment and append it to the TS file.
+    open(SEG, '<', $filename_ts_segment) or die "Could not open file $filename_ts_segment";
+    binmode(SEG);
+    while (read(SEG, $buffer, 16384)) {
+      print $fh_app $buffer;
+    }
+    close(SEG);
     $progress_bar->update($i);
     $i++;
   }
-
+  
+  # Remove the segment file as it is no longer needed.
+  unlink $filename_ts_segment;
+  close($fh_app);
+  
   # Use ffmpeg to clean up audio
   my @ffmpeg_args = (
     "-i", $filename_ts,
