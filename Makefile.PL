@@ -26,6 +26,8 @@ my %mm_vars = (
       'LWP::Protocol::https' => 0,
       'LWP::Protocol::socks' => 0,
       'Module::Find' => 0,
+      'Term::ProgressBar' => 0,
+      'Term::ReadKey' => 0,
     },
 );
 
