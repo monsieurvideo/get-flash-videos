@@ -38,7 +38,7 @@ sub find_video {
 
   my @formats = map {
           { resolution => [$_->{width}, $_->{height}], url => $_->{url} }
-      } values %{ $video_data->{request}{files}{progressive} };
+      } values @{$video_data->{request}{files}{progressive}};
 
   my $preferred_quality = $prefs->quality->choose(@formats);
 
