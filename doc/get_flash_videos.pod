@@ -148,14 +148,6 @@ with an extension of 'srt'.
 
 Be quiet, only print errors.
 
-=item I<-u>, I<--update>
-
-Check the I<get-flash-videos> website for a newer version. If a newer version is
-available download it and replace the running version with it. You will need to
-run this as a user with permission to write to the location of the
-F<get_flash_videos> program. If you installed using a packaging system it is
-recommended to use that to upgrade, not this option.
-
 =item I<-v>, I<--version>
 
 Print the version of B<get_flash_videos>.

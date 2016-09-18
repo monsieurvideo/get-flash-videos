@@ -110,7 +110,6 @@ Options:
      --subtitles  Download subtitles where available.
   -q --quiet      Be quiet (only print errors).
   -r --quality    Quality to download at (high|medium|low, or site specific).
-  -u --update     Update to latest version.
   -v --version    Print version.
   -y --yes        Say yes to any questions (don't prompt for any information).
   -i --info       Print out info about video instead of downloading.
@@ -130,12 +129,10 @@ or fixing.
 Please confirm the site is using Flash video and if you have Flash available
 check that the URL really works(!).
 
-Check for updates by running: $0 --update
-
 If the latest version does not support this please open a bug
-at http://code.google.com/p/get-flash-videos/ making sure you include
-the output with --debug enabled. Alternatively, fix it yourself and send us
-a pull request on Github: https://github.com/monsieurvideo/get-flash-videos
+at making sure you include the output with --debug enabled. 
+Alternatively, fix it yourself and send us a pull request on 
+Github: https://github.com/monsieurvideo/get-flash-videos
 EOF
 
 read_conf();
@@ -144,7 +141,6 @@ GetOptions(
   "yes|y"        => \$opt{yes},
   "filename|f=s" => \$opt{filename},
   "version|v"    => \$opt{version},
-  "update|u"     => \$opt{update},
   "help|h"       => \$opt{help},
   "play|p"       => \$opt{play},
   "player=s"     => \$opt{player},
