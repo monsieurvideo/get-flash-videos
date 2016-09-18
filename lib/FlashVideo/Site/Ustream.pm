@@ -3,50 +3,73 @@ package FlashVideo::Site::Ustream;
 
 use strict;
 use FlashVideo::Utils;
-use MIME::Base64;
+use FlashVideo::JSON;
+use HTML::Entities qw(decode_entities);
+use Text::Balanced qw (extract_codeblock);
 
-our $VERSION = '0.01';
+=pod
+
+Programs that work:
+    - http://www.ustream.tv/recorded/90549242
+    - http://www.ustream.tv/recorded/89581110
+    - http://www.ustream.tv/recorded/49307509
+    - http://www.ustream.tv/recorded/429648
+    - http://www.ustream.tv/recorded/90985738
+    - http://www.ustream.tv/recorded/59501326
+
+Programs that don't work yet: (may require a ustream site login capability)
+    - http://www.ustream.tv/recorded/90800134
+    - 
+
+TODO:
+    - find out why http://www.ustream.tv/recorded/90800134 does not work
+
+=cut
+
+our $VERSION = '0.02';
 sub Version() { $VERSION };
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  unless(eval { require Data::AMF::Packet }) {
-    die "Must have Data::AMF::Packet installed to download ustream videos";
+  # ustream returns the video metadata as a javascript variable
+  # extract the embedded javascript and extract the ustream.vars.videoData variable
+  my @scriptags =  $browser->content() =~/<script[^>]*>(.+?)<\/script>/sig;
+  my $script;
+  my $usdata;
+  local $/ = "\r\n";
+  foreach $script (@scriptags)
+  {
+     if ($script =~ /ustream.vars.videoData/si) {
+       # find the beginning of the video metadata block
+       ($script) = $script =~ /ustream.vars.videoData *= *(.*)/s;
+       # extract the metadata block
+       # use Test::Balanced::extract_codeblock as the regex parser cannot handle
+       # nested parentheses, quote and escaped characters.
+       ($usdata) = extract_codeblock($script);
+       # fix up the HTML entities
+       $usdata = decode_entities($usdata);
+       debug $usdata;
+       last;
+     }
   }
-
-  my $packet = Data::AMF::Packet->deserialize(decode_base64(<<EOF));
-AAAAAAABAA9WaWV3ZXIuZ2V0VmlkZW8AAi8xAAAAiAoAAAABAwAIYXV0b3BsYXkBAQAEcnBpbgIA
-GHJwaW4uMC4xODM2MDk4NTkzMTY0Njg5OAAHdmlkZW9JZAIABzIzNTU3MzYAB3BhZ2VVcmwCACZo
-dHRwOi8vd3d3LnVzdHJlYW0udHYvcmVjb3JkZWQvMjM1NTczNgAHYnJhbmRJZAIAATEAAAkK
-EOF
-
-  my $title = extract_info($browser)->{meta_title};
-
-  # http://www.ustream.tv/recorded/\d+
-  my($video_id) = $browser->uri =~ m{recorded/(\d+)};
-  $video_id ||= $browser->content =~ m{vid\s*=\s*["']?(\d+)};
-
-  $packet->messages->[0]->{value}->[0]->{videoId} = $video_id;
-
-  my $data = $packet->serialize;
-
-  $browser->post(
-    # This is hidden as gwUrl inside the second loaded SWF
-    # (viewer.rsl.VER.swf), too much effort to extract properly.
-    "http://rgw.ustream.tv/gateway.php",
-    Content_Type => "application/x-amf",
-    Content => $data
-  );
-
-  die "Failed to post to Ustream AMF gateway"
-    unless $browser->response->is_success;
-
-  # Data::AMF fails to understand this response, so just parse ourselves.
-  my($flv_url) = $browser->content =~ /flv.{3,5}(http:[^\0]+)/;
-
+# Parse the json structure
+  my $result = from_json($usdata);
+  debug Data::Dumper::Dumper($result);
+  die "Could not extract video metadata.\n   Video may not be available.\n"
+     unless ref($result) eq "HASH";
+  
+  # Get the video's title and urs source
+  my $title = $result->{title};
+  die "Could not extract video title" unless $title;
+  debug "title is: $title\n";
+  
+  my $flv_url = $result->{media_urls}->{flv};
+  die "Could not extract video url" unless $flv_url;
+  debug "url extracted\n";
+  
   $browser->allow_redirects;
-
+  
   return $flv_url, title_to_filename($title);
 }
 
