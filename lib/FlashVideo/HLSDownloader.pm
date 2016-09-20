@@ -5,7 +5,6 @@ use strict;
 use warnings;
 use base 'FlashVideo::Downloader';
 use FlashVideo::Utils;
-use FlashVideo::FFmpegDownloader;
 use FlashVideo::JSON;
 use Term::ProgressBar;
 
@@ -14,6 +13,43 @@ my $bitrate_index = {
   medium => 1,
   low    => 2
 };
+
+sub cleanup_audio {
+  my ($in_file, $out_file) = @_;
+  my @args = {};
+
+  # Look for executable (ffmpeg or avconv)
+  if (!is_program_on_path("ffmpeg")) {
+    if (!is_program_on_path("avconv")) {
+      die "Could not find ffmpeg nor avconv executable!";
+    } else {
+      @args = (
+        "avconv",
+        "-i", $in_file,
+        "-bsf:a", "aac_adtstoasc",
+        "-c", "copy",
+        "-f", "mp4",
+        $out_file
+      );
+    }
+  } else {
+    @args = (
+      "ffmpeg",
+      "-i", $in_file,
+      "-absf", "aac_adtstoasc",
+      "-c", "copy",
+      "-f", "mp4",
+      $out_file
+    );
+  }
+
+  # Execute command
+  if (system(@args) != 0) {
+    die "Calling @args failed: $?";
+  }
+
+  return 1;
+}
 
 sub download {
   my ($self, $args, $file, $browser) = @_;
@@ -76,23 +112,7 @@ sub download {
   unlink $filename_ts_segment;
   close($fh_app);
   
-  # Use ffmpeg to clean up audio
-  my @ffmpeg_args = (
-    "-i", $filename_ts,
-    "-absf", "aac_adtstoasc",
-    "-c", "copy",
-    "-f", "mp4",
-    $filename_mp4
-  );
-
-  my $dl_args = { 
-    downloader => "ffmpeg",
-    flv        => $filename_mp4,
-    args       => \@ffmpeg_args
-  };
-
-  my $ffmpeg_downloader = FlashVideo::FFmpegDownloader->new;
-  $ffmpeg_downloader->download($dl_args, $filename_mp4);
+  cleanup_audio($filename_ts, $filename_mp4);
 
   $self->{printable_filename} = $filename_mp4;
 
