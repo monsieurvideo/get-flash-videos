@@ -2,7 +2,7 @@
 #
 # get_flash_videos -- download all the Flash videos off a web page
 #
-#   http://code.google.com/p/get-flash-videos/
+#   https://github.com/monsieurvideo/get-flash-videos
 #
 # Copyright 2009, 2010 zakflash, MonsieurVideo and contributors.
 #
@@ -89,7 +89,7 @@ BEGIN {
 
 # constant evaluated at compile time, can't use runtime variables.
 use constant VER_INFO => 
-    "get_flash_videos version " . CVERSION . " (http://code.google.com/p/get-flash-videos/)\n";
+    "get_flash_videos version " . CVERSION . " (https://github.com/monsieurvideo/get-flash-videos)\n";
 
 use constant USAGE => VER_INFO . <<EOF;
 
