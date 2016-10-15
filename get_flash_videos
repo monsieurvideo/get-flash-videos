@@ -126,13 +126,13 @@ use constant FRIENDLY_FAILURE => <<EOF;
 Couldn't extract Flash movie URL. This site may need specific support adding,
 or fixing.
 
-Please confirm the site is using Flash video and if you have Flash available
-check that the URL really works(!).
+Please confirm that the URL is valid and that you are running the latest
+version of get-flash-videos.
 
-If the latest version does not support this please open a bug
-at making sure you include the output with --debug enabled. 
-Alternatively, fix it yourself and send us a pull request on 
-Github: https://github.com/monsieurvideo/get-flash-videos
+If the latest version does not support this site please create a bug
+report at https://github.com/monsieurvideo/get-flash-videos making
+sure you include the output with --debug enabled. Alternatively,
+fix it yourself and send us a pull request.
 EOF
 
 read_conf();
