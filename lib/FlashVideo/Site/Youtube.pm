@@ -383,6 +383,11 @@ EOT
       $browser->get($browser->response->header('Location'));
     }
 
+    if ($browser->response->code == 301) {
+      debug "Video not available (301), trying " . $browser->response->header('Location');
+      $browser->get($browser->response->header('Location'));
+    }
+
     if ($browser->response->code == 303) {
       debug "Video not available (303), trying " . $browser->response->header('Location');
       $browser->get($browser->response->header('Location'));
