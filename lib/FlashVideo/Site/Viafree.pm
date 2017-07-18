@@ -1,18 +1,14 @@
 # Part of get-flash-videos. See get_flash_videos for copyright.
-package FlashVideo::Site::Tv3play;
+package FlashVideo::Site::Viafree;
 use strict;
 use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
-our $VERSION = '0.07';
+
+our $VERSION = '0.08';
 sub Version() { $VERSION;}
 
 sub find_video {
-  my ($self, $browser, $embed_url, $prefs) = @_;
-  return $self->find_video_viasat($browser,$embed_url,$prefs);
-}
-
-sub find_video_viasat {
   my ($self, $browser, $embed_url, $prefs) = @_;
 
   my $bitrate_index = {
@@ -21,7 +17,21 @@ sub find_video_viasat {
     low    => 2
   };
 
-  my $video_id = ($browser->content =~ /data-video-id="([0-9]*)"/)[0];
+  # If the url ends in a number that is the video id
+  my $video_id = ($embed_url =~ /.*\/([0-9]*)/)[0];
+
+  # If no number we look at image url to find video id
+  if ($video_id eq "") {
+    my $image_url = ($browser->content =~ /<meta property=\"og:image\" content=\"(.*?)\"\/>/)[0];
+    if (not $image_url eq "") {
+      $video_id = ($image_url =~ /\/inbox\/([0-9]*)\//)[0];
+    }
+  }
+
+  if ($video_id eq "") {
+    die "No video id found";
+  }
+
   info "Got video_id: $video_id";
   my $info_url = "http://playapi.mtgx.tv/v3/videos/$video_id";
   my $stream_url = "http://playapi.mtgx.tv/v3/videos/stream/$video_id";
