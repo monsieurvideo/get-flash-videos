@@ -7,7 +7,7 @@ use HTML::Entities;
 use Encode;
 use Data::Dumper;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 sub Version() { $VERSION;}
 
 sub find_video {
@@ -57,6 +57,8 @@ EOF
     if (! $productionid) {
       ($productionid) = $browser->content =~ / data-video-id\s*=\s*\"([^\"]+)\"/i;
     }
+    $productionid =~ s%^.*/%%;
+    $productionid =~ tr%_\.%/#%;
     debug "Production ID $productionid\n";
     die "No id (filter) found in URL or production id\n" unless $productionid;
     $browser->post("http://mercury.itv.com/PlaylistService.svc",
