@@ -8,7 +8,7 @@ mk/makemaker-wrap.mk: Makefile.PL
 	@if [ ! -f "mk/makemaker.mk" ]; then GFV_DEVEL_MODE=1 perl Makefile.PL; fi
 	@echo "-include mk/makemaker.mk" > $@
 
-mk/makemaker.mk : Makefile.PL
+mk/makemaker.mk : Makefile.PL get_flash_videos
 	GFV_DEVEL_MODE=1 perl Makefile.PL
 
 # No longer used github creates archives for download.
