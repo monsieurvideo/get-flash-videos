@@ -5,15 +5,18 @@ use strict;
 use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
+use Data::Dumper;
 
 =pod
 
 Programs that work:
     - http://video.pbs.org/video/1623753774/
+    - http://www.pbs.org/video/1623753774/
+    - http://www.pbs.org/video/circus-born-to-be-circus/
     - http://www.pbs.org/video/2365612568/
-    - http://www.pbs.org/wgbh/nova/ancient/secrets-stonehenge.html
-    - http://www.pbs.org/show/bletchley-circle/
-    - http://www.pbs.org/wnet/need-to-know/video/need-to-know-november-19-2010/5189/
+    - http://www.pbs.org/video/american-experience-bonnie-clyde-preview/
+    - http://www.pbs.org/show/tunnel/
+    - http://www.pbs.org/show/remember-me/
 
 Programs that don't work yet:
     - http://www.pbs.org/wgbh/pages/frontline/woundedplatoon/view/
@@ -24,19 +27,32 @@ TODO:
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 sub Version() { $VERSION; }
 
 sub find_video {
   our %opt;
   my ($self, $browser, $embed_url, $prefs) = @_;
+  
+  # check for redirect. PBS redirects old URLs to their most recent structures.
+  my $status = $browser->status();
+  if (($status >= 300) && ($status < 400)) {
+    my $location = $browser->response()->header('Location');
+    if (defined $location) {
+      info "Redirected to $location\n";
+      my $redirecturl = URI->new_abs($location, $browser->base());
+      $browser->get($redirecturl);
+        return $self->find_video($browser, $redirecturl, $prefs);
+    }
+  }
 
+  # looking for the media ID which is needed to get the video player configuration
   my ($media_id) = $embed_url =~ m[http://(?:video|www)\.pbs\.org/videoPlayerInfo/(\d+)]x;
   debug("media id found in URL") if (defined $media_id);
   unless (defined $media_id) {
     debug("media id not found in URL");
     ($media_id) = $browser->uri->as_string =~ m[
-      ^http://(?:video|www)\.pbs\.org/video/(\d+)
+      ^http://(?:video|www)\.pbs\.org/video/(.+)
     ]x;
     debug("media id found in URI") if (defined $media_id);
   }
@@ -84,7 +100,7 @@ sub find_video {
   if (! defined $media_id) {
     debug ("...scanning for list of multiple videos");
   
-    my @possible_videos = $browser->content =~ m{<a href=['"](/video/\d+/)['"][^>]*>([^<]+)</a>}g;
+    my @possible_videos = $browser->content =~ m{<a href=['"](/video/.+/)['"][^>]*>([^<]+)</a>}g;
     if (@possible_videos) {
       if (!$opt{yes}) {
         print "There are " . scalar(@possible_videos)/2 . " videos referenced, please choose:\n";
@@ -92,6 +108,10 @@ sub find_video {
         for (my $i = 0; $i < $#possible_videos; $i += 2) {
           my $item = $i/2;
           my $item_title = $possible_videos[$i+1];
+          # remove extraeous line feeds and white space
+          $item_title =~ s/[\r\n]*//g;
+          $item_title =~ s/^ *//;
+          $item_title =~ s/ *$//;
           print "$item - $item_title\n";
         }
 
@@ -115,7 +135,45 @@ sub find_video {
   #
   die "Couldn't find media_id\n" unless defined $media_id;
   debug "media_id: $media_id\n";
-    
+  
+  # PBS returns the player configuration as a javascript variable
+  # extract the embedded javascript and extract the PBS.playerConfig variable
+  my @scriptags =  $browser->content() =~/<script[^>]*>(.+?)<\/script>/sig;
+  my $script;
+  my $pbsdata;
+  local $/ = "\r\n";
+  foreach $script (@scriptags)
+  {
+     if ($script =~ /PBS.playerConfig/si) {
+       ($pbsdata) = $script =~ /PBS.playerConfig += +([^;]*);/s;
+       # change ' to " for the json parser
+       $pbsdata =~ s/'/"/g;
+       $pbsdata =~ s/([a-zA-Z_]+) *: /"$1" : /g;
+       debug $pbsdata;
+       last;
+     }
+  }
+# Parse the json structure
+  my $result = from_json($pbsdata);
+  debug Data::Dumper::Dumper($result);
+  die "Could not extract video player info.\n   Video may not be available.\n"
+     unless ref($result) eq "HASH";
+  
+  # Get the video's id and the metadata source url and type
+  my $video_id = $result->{id};
+  die "Could not extract video id" unless $video_id;
+  debug "video id is: $video_id\n";
+  
+  my $metaurl = $result->{embedURL};
+  die "Could not extract video metadata source" unless $metaurl;
+  debug "video metadata source is: $metaurl\n";
+  
+  my $metatype = $result->{embedType};
+  die "Could not extract video metadata type" unless $metatype;
+  debug "video metadata source is: $metatype\n";
+  
+  my $query = $metaurl . $metatype . $video_id;
+ 
   my $account = $prefs->account("pbs.org", <<EOT);
 If you set up a PBS account, you can access high definition videos.
 The pbs.org login is the email address you registered at pbs.org.
@@ -128,8 +186,10 @@ NOTE: if the login is set to 'no', standard definition will be downloaded.
 
 EOT
 
-  my $query = 'http://player.pbs.org/portalplayer/' . $media_id;
+  my $pbs_uid;
+  my $pbs_station;
 
+  # log into PBS if user has provided their credentials
   if ($account->username and $account->username ne 'no' and $account->password) {
    # get the pbs.ord login page and fill in the login form
    $browser->get('https://account.pbs.org/oauth2/authorize/?scope=account&redirect_uri=http://www.pbs.org/login/&response_type=code&client_id=LXLFIaXOVDsfS850bnvsxdcLKlvLStjRBoBWbFRE');
@@ -149,8 +209,6 @@ EOT
    
       # login successful, but need to extract some cookie values to retrieve
       # high definition video
-      my $pbs_uid;
-      my $pbs_station;
    
       foreach my $cookie (split /\n/, $browser->cookie_jar->as_string()) {
          my @tokens = split /; |: /, $cookie;
@@ -163,18 +221,18 @@ EOT
       debug "setting pbs_uid=$pbs_uid and callsign=$pbs_station";
       info "using pbs.org account " . $account->username . " to retrieve high definition videos";
       # format query to get high definition video details in JSON
-      $query = $query . '/?callsign=' . $pbs_station . '&uid=' . $pbs_uid . '&callback=video_info&format=jsonp&type=portal';
+      $query = $query . '/?uid=' . $pbs_uid;
       
       } else {
          info "\n*** pbs.org login failed ***\ncorrect your login and password\nwill retrieve standard definition video.\n";
          # format query to get standard definition video details in JSON
-         $query = $query . '/?callsign=KCTS&callback=video_info&format=jsonp&type=portal';
+         # $query = $query . '/?callsign=KCTS&callback=video_info&format=jsonp&type=portal';
       }
    
   } else {
    info "no pbs login credentials, will retrieve standard definition video.";
    # format query to get standard definition video details in JSON
-   $query = $query . '/?callsign=KCTS&callback=video_info&format=jsonp&type=portal';
+   # $query = $query . '/?callsign=KCTS&callback=video_info&format=jsonp&type=portal';
   }
   
   info "Downloading video metadata";
@@ -183,9 +241,9 @@ EOT
   
   # PBS returns the video metadata as a javascript variable
   # extract the embedded javascript and extract the PBS.videoData variable
-  my @scriptags =  $browser->content() =~/<script[^>]*>(.+?)<\/script>/sig;
-  my $script;
-  my $pbsdata;
+  @scriptags =  $browser->content() =~/<script[^>]*>(.+?)<\/script>/sig;
+  $script = "";
+  $pbsdata = "";
   local $/ = "\r\n";
   foreach $script (@scriptags)
   {
@@ -194,20 +252,21 @@ EOT
        # change ' to " for the json parser
        $pbsdata =~ s/'/"/g;
        # PBS computes the number of chapters in the javascript.
-       # We don't care, so replace it with an integer.'
+       # We don't care, so replace it with an integer
+       # so that the json parser does not fail.
        $pbsdata =~ s/: *chapters *,/: 4,/g;
        debug $pbsdata;
        last;
      }
   }
 # Parse the json structure
-  my $result = from_json($pbsdata);
+  $result = from_json($pbsdata);
   debug Data::Dumper::Dumper($result);
   die "Could not extract video metadata.\n   Video may not be available.\n"
      unless ref($result) eq "HASH";
   
   # Get the video's title and urs source
-  my $title = $result->{title};
+  my $title = $result->{program}->{title} . " " . $result->{title};
   die "Could not extract video title" unless $title;
   debug "title is: $title\n";
   
