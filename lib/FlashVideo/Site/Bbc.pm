@@ -4,8 +4,9 @@ package FlashVideo::Site::Bbc;
 use strict;
 use FlashVideo::Utils;
 use URI;
+use Data::Dumper;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 sub Version() {$VERSION;}
 
 sub find_video {
@@ -71,21 +72,25 @@ sub find_video {
     die "Couldn't find BBC XML playlist URL in " . $browser->uri->as_string;
   }
 
+  debug "User Agent: ".$browser->agent()."\n";
   $browser->get($playlist_xml);
   if (!$browser->success) {
     die "Couldn't download BBC XML playlist $playlist_xml: " .
       $browser->response->status_line;
   }
 
+  debug $browser->content;
   my $playlist = eval { from_xml($browser, KeyAttr => {item => 'kind'}) };
 
+  debug Dumper($playlist);
   if ($@) {
     # Try to fix their potentially broken XML..
     my $content = $browser->content;
     if ($content !~ m{</media>}) {
       $content .= "\n</media></item></playlist>\n";
     }
-    $playlist = from_xml($$content, KeyAttr => {item => 'kind'})
+    $playlist = from_xml($content, KeyAttr => {item => 'kind'});
+    debug Dumper($playlist);
   }
 
   my $sound = ($playlist->{item}->{guidance} !~ /has no sound/);
