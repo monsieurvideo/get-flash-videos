@@ -499,7 +499,7 @@ sub update {
   if($::SCRIPT_NAME) {
     my $browser = FlashVideo::Mechanize->new;
 
-    $browser->get("https://github.com/monsieurvideo/get-flash-videos/wiki/Version")
+    $browser->get("https://github.com/monsieurvideo/get-flash-videos/wiki/Version");
 
     if(!$browser->response->is_success) {
       die "Unable to retrieve version data: " . $browser->response->status_line . "\n";
