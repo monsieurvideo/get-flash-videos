@@ -12,7 +12,7 @@ sub find_video {
   if($browser->content =~ /CBSVideo\.setVideoId\(["']([0-9]+)["']\)/) {
     $video_id = $1;
   } else {
-    die "Could not find video id. If this is a valid CBS News video, please file a bug report at http://code.google.com/p/get-flash-videos/issues";
+    die "Could not find video id. If this is a valid CBS News video, please file a bug report at https://github.com/monsieurvideo/get-flash-videos/issues";
   }
   return $self->get_video($browser, $video_id);
 }
