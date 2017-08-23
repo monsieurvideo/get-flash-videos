@@ -216,7 +216,7 @@ of the sites may not work correctly. First check that you are using the latest
 version.
 
 If you wish to see open bugs or report a bug visit
-L<http://code.google.com/p/get-flash-videos/issues/list>.
+L<https://github.com/monsieurvideo/get-flash-videos/issues>.
 
 =head1 HACKING
 
@@ -224,7 +224,7 @@ If you'd like to change or improve B<get-flash-videos> (for example adding
 support for another site), please see the project wiki where there's an
 overview to help you get started, and a detailed tutorial on adding support
 for a new site:
-L<http://code.google.com/p/get-flash-videos/w/list>.
+L<https://github.com/monsieurvideo/get-flash-videos/wiki>.
 
 =head1 COPYRIGHT
 

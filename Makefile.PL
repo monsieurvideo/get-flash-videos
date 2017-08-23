@@ -41,7 +41,7 @@ if($ExtUtils::MakeMaker::VERSION >= 6.46) {
   $mm_vars{META_MERGE} = {
     resources        => {
       license        => 'http://www.apache.org/licenses/LICENSE-2.0.html',
-      bugtracker     => 'http://code.google.com/p/get-flash-videos/issues',
+      bugtracker     => 'https://github.com/monsieurvideo/get-flash-videos/issues',
       repository     => 'http://github.com/monsieurvideo/get-flash-videos',
     }
   };
