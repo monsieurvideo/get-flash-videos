@@ -23,7 +23,7 @@ my $sane_result_count = 0;
 foreach my $result (@results) {
   if ((ref($result) eq 'HASH') and
       $result->{name} and
-      $result->{url} =~ m'^http://') {
+      $result->{url} =~ m'^https?://') {
     $sane_result_count++;
   }
 }
