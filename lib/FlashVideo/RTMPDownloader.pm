@@ -219,7 +219,7 @@ sub run {
         $self->progress;
       } elsif(/\012$/) {
         for my $l(split /\012/) {
-          if($l =~ /^[A-F0-9]{,2}(?:\s+[A-F0-9]{2})*\s*$/) {
+          if($l =~ /^[A-F0-9]{0,2}(?:\s+[A-F0-9]{2})*\s*$/) {
             debug $l;
           } elsif($l =~ /Download complete/) {
             $complete = 1;
