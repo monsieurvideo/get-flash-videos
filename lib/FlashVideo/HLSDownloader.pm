@@ -51,6 +51,30 @@ sub cleanup_audio {
   return 1;
 }
 
+sub read_hls_playlist {
+  my($browser, $url) = @_;
+
+  $browser->get($url);
+  if (!$browser->success) {
+    die "Couldn't download m3u file, $url: " . $browser->response->status_line;
+  }
+
+  my @lines = split(/\r?\n/, $browser->content);
+  my %urltable = ();
+  my $i = 0;
+
+  # Fill the url table
+  foreach my $line (@lines) {
+    if ($line =~ /EXT-X-STREAM-INF/ && $line =~ /BANDWIDTH/) {
+      $line =~ /BANDWIDTH=([0-9]*)/;
+      $urltable{int($1)} = $lines[$i + 1];
+    }
+    $i++;
+  }
+
+  return %urltable;
+}
+
 sub download {
   my ($self, $args, $file, $browser) = @_;
 
@@ -72,6 +96,9 @@ sub download {
   my $video_url = $urls{$key} =~ m/http(s?):\/\// ? $urls{$key} : $hls_base.$urls{$key};
 
   $browser->get($video_url);
+  if (! $browser->success) {
+    die "Unable to read segments" . $browser->response->status_line;
+  }
 
   my @lines = split(/\r?\n/, $browser->content);
   my @segments = ();
