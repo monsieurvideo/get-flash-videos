@@ -42,6 +42,8 @@ use FlashVideo::Mechanize;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
 use FlashVideo::HLSDownloader;
+use FlashVideo::DASHDownloader;
+use FlashVideo::HLSXDownloader;
 use FlashVideo::Search;
 use FlashVideo::Utils;
 use FlashVideo::VideoPreferences;
@@ -49,7 +51,7 @@ use FlashVideo::VideoPreferences;
 unshift @INC, \&plugin_loader;
 
 # single line for MakeMaker to get version
-use constant CVERSION => "1.25.94"; our $VERSION = CVERSION;
+use constant CVERSION => "1.25.95"; our $VERSION = CVERSION;
  
 our %opt;
 BEGIN {
@@ -406,6 +408,10 @@ sub download {
     if(ref $data eq 'HASH') {
       if (defined($data->{downloader}) && $data->{downloader} eq "hls") {
         $downloader = FlashVideo::HLSDownloader->new;
+      } elsif (defined($data->{downloader}) && $data->{downloader} eq "hlsx") {
+        $downloader = FlashVideo::HLSXDownloader->new;
+      } elsif (defined($data->{downloader}) && $data->{downloader} eq "dash") {
+        $downloader = FlashVideo::DASHDownloader->new;
       } else {
         # RTMP data
         $downloader = FlashVideo::RTMPDownloader->new;
