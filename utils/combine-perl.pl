@@ -139,6 +139,7 @@ sub process_file {
       $pre .= $_;
     } elsif(!/^\s*#/) {
       $start = 0;
+      s/ HTTP::Status::RC_/ &HTTP::Status::RC_/;
       $output .= $_;
     }
   }
