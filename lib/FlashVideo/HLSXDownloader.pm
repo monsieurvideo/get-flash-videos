@@ -8,6 +8,7 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use FlashVideo::Mechanize;
 use Term::ProgressBar;
+use Crypt::Rijndael;
 
 my $bitrate_index = {
   high   => 0,
@@ -52,6 +53,20 @@ sub cleanup_audio {
   return 1;
 }
 
+
+sub m3u8_attributes {
+  my $a = shift;
+  my $info = shift;
+
+  while ($a =~ m/([A-Z0-9-]+)=(\"[^\"]+\"|[^\",]+)(?:,|$)/g) {
+    my $key = $1;
+    my $val = $2;
+    $val =~ s/^\"(.*)\"$/$1/;
+    $info->{$key} = $val;
+  }
+}
+
+
 sub read_hls_playlist {
   my($browser, $url) = @_;
 
@@ -77,6 +92,7 @@ sub read_hls_playlist {
 
   return %urltable;
 }
+
 
 sub download {
   my ($self, $args, $file, $browser) = @_;
@@ -112,24 +128,16 @@ sub download {
   my @segments = ();
    
   # Fill the url table
-  my $encrypt_method;
-  my $encrypt_uri;
   my $hls_key;
   my $decrypt;
 
   foreach my $line (@lines) {
     if ($line !~ /#/) {
-      push @segments, $line; 
-    } elsif ($line =~ /#EXT-X-KEY:METHOD=([^,]*)/) {
-      $encrypt_method = $1; 
-      ($encrypt_uri) = $line =~ m%,URI=\"([^\"]*)"%;
+      # push non-blank lines
+      push @segments, $line if $line !~ /^\s*$/; 
     }
   }
 
-  info "Encrypt $encrypt_method uri $encrypt_uri";
-  if (defined $encrypt_method && $encrypt_method ne 'NONE') {
-    die "Encryption method $encrypt_method is not supported" if $encrypt_method ne "AES-128";
-  }
   my $i = 1;
   my $num_segs = @segments;
   info "Downloading segments";
@@ -139,25 +147,111 @@ sub download {
   binmode($fh_app);
   my $buffer;
 
-  foreach my $url (@segments) {
-    # Download and save each segment in a re-used segment file.
-    # Otherwise, the process memory expands monotonically. Large downloads would use up
-    # all memory and kill the process.
-    $browser->get($url, ":content_file" => $filename_ts_segment);
-    # Open the segment and append it to the TS file.
-    open(SEG, '<', $filename_ts_segment) or die "Could not open file $filename_ts_segment";
-    binmode(SEG);
-    if (! defined $decrypt && defined $encrypt_uri) {
-       $browser->get($encrypt_uri);
-       die "Unable to get decryption key" if ! $browser->success;
-       $hls_key = $browser->contents;
-    }
-    while (read(SEG, $buffer, 16384)) {
-      print $fh_app $buffer;
-    }
-    close(SEG);
-    $progress_bar->update($i);
-    $i++;
+  my $media_sequence = 0;
+  my %decrypt_info = ( 'METHOD', 'NONE'); 
+  my %byte_range = ();
+  my $segment_index = 0;
+
+  foreach my $line (@lines) {
+    # skip empty lines
+    if ($line !~ /^\s*$/) {
+      if ( $line !~ /#/) {
+        # segment line
+        $segment_index += 1;
+        # to do skip if restarted
+        # and havent reaach last segment added yet.
+        my $url = $line;
+        if ($line !~ m%https?://%) {
+          # to do add manifest url to front to form url
+        }
+        if (%byte_range) {
+          $browser->add_header('Range' => 'bytes='.$byte_range{'start'}.'-'. $byte_range{'end'});
+        } else {
+          $browser->delete_header('Range');
+        }
+
+        # Download and save each segment in a re-used segment file.
+        # Otherwise, the process memory expands monotonically. Large downloads would use up
+        # all memory and kill the process.
+        $browser->get($url, ":content_file" => $filename_ts_segment);
+        # Open the segment and append it to the TS file.
+        open(SEG, '<', $filename_ts_segment) or die "Could not open file $filename_ts_segment";
+        binmode(SEG);
+
+        my $crypt;
+        if ($decrypt_info{'METHOD'} eq 'AES-128') {
+          my $iv;
+          if (defined $decrypt_info{'IV'}) {
+            $iv =$decrypt_info{'IV'}
+          } else {
+            $iv = pack('x8Q', $media_sequence);
+          }
+          if (! defined $decrypt_info{'KEY'}) {
+            if (defined $decrypt_info{'URI'}) {
+              $browser->get($decrypt_info{'URI'});
+              my $hls_key = $browser->content;
+              # to do pad key error checks.
+              my $len = length($hls_key);
+              if ($len < 16) {
+                 $hls_key = "\0" x (16 - $len) . $hls_key;
+              }
+              $decrypt_info{'KEY'} = $hls_key;
+              info "Set KEY ".$decrypt_info{'KEY'};
+            }
+          }
+          $crypt = Crypt::Rijndael->new($decrypt_info{'KEY'}, Crypt::Rijndael::MODE_CBC() );
+          $crypt->set_iv($iv);
+          while (read(SEG, $buffer, 16384)) {
+            print $fh_app $crypt->decrypt($buffer);
+          }
+          info "Output decrypted segment";
+        } else {
+          while (read(SEG, $buffer, 16384)) {
+            print $fh_app $buffer;
+          }
+        } 
+        close(SEG);
+        $progress_bar->update($i);
+        $i++;
+        $media_sequence++;
+      } else {
+        # line begins with #
+        if ($line =~ /#EXT-X-KEY:/) {
+          my %m3u8_info;
+          m3u8_attributes($line, \%m3u8_info);
+          $decrypt_info{'METHOD'} = $m3u8_info{'METHOD'};
+          $decrypt_info{'KEY'} = $m3u8_info{'KEY'};
+          $decrypt_info{'IV'} = $m3u8_info{'IV'};
+          $decrypt_info{'URI'} = $m3u8_info{'URI'};
+          info "Method ".$decrypt_info{'METHOD'} if defined $decrypt_info{'METHOD'};
+          info "Key ".$decrypt_info{'KEY'} if defined $decrypt_info{'KEY'};
+          info "IV ".$decrypt_info{'IV'} if defined $decrypt_info{'IV'};
+          info "URI ".$decrypt_info{'URI'} if defined $decrypt_info{'URI'};
+        } elsif ($line =~ /#EXT-X-MEDIA-SEQUENCE/) {
+          my $cmd;
+          ($cmd, $media_sequence) = split(/:/, $line);
+          info "Media sequence = $media_sequence";
+        } elsif ($line =~ /#EXT-X-BYTERANGE/) {
+          my ($cmd, $range) = split(/:/, $line);
+          if ($range =~ /@/) {
+          my ($seg_len, $start) = split(/@/, $range);
+             $byte_range{'start'} = $start;
+             $byte_range{'end'} = $start + $seg_len;
+          } else {
+             $byte_range{'start'} = $byte_range{'end'};
+             $byte_range{'end'} += $range;
+          }
+          info "Byte Range : ".$byte_range{'start'}." to ".$byte_range{'end'};
+           
+        } elsif ($line =~ /#EXTINF/) {
+          my ($cmd, $dt) = split(/:/, $line);
+          my ($dur, $stitle) = split(/,/, $dt);
+          info "Seg duration $dur title $stitle";
+        } else {
+          info "Ignored line : $line";
+        }
+      }
+    }  
   }
   
   # Remove the segment file as it is no longer needed.
