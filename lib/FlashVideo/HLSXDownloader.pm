@@ -140,7 +140,7 @@ sub download {
 
   my $i = 1;
   my $num_segs = @segments;
-  info "Downloading segments";
+  info "Downloading $num_segs segments";
   my $progress_bar = Term::ProgressBar->new($num_segs);
 
   open(my $fh_app, '>', $filename_ts) or die "Could not open file $filename_ts";
@@ -163,6 +163,7 @@ sub download {
         my $url = $line;
         if ($line !~ m%https?://%) {
           # to do add manifest url to front to form url
+          $url = $hls_base.$line;
         }
         if (%byte_range) {
           $browser->add_header('Range' => 'bytes='.$byte_range{'start'}.'-'. $byte_range{'end'});
@@ -174,6 +175,9 @@ sub download {
         # Otherwise, the process memory expands monotonically. Large downloads would use up
         # all memory and kill the process.
         $browser->get($url, ":content_file" => $filename_ts_segment);
+        if (! $browser->success()) {
+          die "filed to download segment - aborting";
+        }
         # Open the segment and append it to the TS file.
         open(SEG, '<', $filename_ts_segment) or die "Could not open file $filename_ts_segment";
         binmode(SEG);
@@ -184,7 +188,7 @@ sub download {
           if (defined $decrypt_info{'IV'}) {
             $iv =$decrypt_info{'IV'}
           } else {
-            $iv = pack('x8Q', $media_sequence);
+            $iv = pack('x8q', $media_sequence);
           }
           if (! defined $decrypt_info{'KEY'}) {
             if (defined $decrypt_info{'URI'}) {
@@ -196,15 +200,15 @@ sub download {
                  $hls_key = "\0" x (16 - $len) . $hls_key;
               }
               $decrypt_info{'KEY'} = $hls_key;
-              info "Set KEY ".$decrypt_info{'KEY'};
             }
           }
           $crypt = Crypt::Rijndael->new($decrypt_info{'KEY'}, Crypt::Rijndael::MODE_CBC() );
           $crypt->set_iv($iv);
-          while (read(SEG, $buffer, 16384)) {
+          my $size = ( stat SEG)[7];
+          # 16384 previously
+          while (read(SEG, $buffer, $size)) {
             print $fh_app $crypt->decrypt($buffer);
           }
-          info "Output decrypted segment";
         } else {
           while (read(SEG, $buffer, 16384)) {
             print $fh_app $buffer;
@@ -223,10 +227,10 @@ sub download {
           $decrypt_info{'KEY'} = $m3u8_info{'KEY'};
           $decrypt_info{'IV'} = $m3u8_info{'IV'};
           $decrypt_info{'URI'} = $m3u8_info{'URI'};
-          info "Method ".$decrypt_info{'METHOD'} if defined $decrypt_info{'METHOD'};
-          info "Key ".$decrypt_info{'KEY'} if defined $decrypt_info{'KEY'};
-          info "IV ".$decrypt_info{'IV'} if defined $decrypt_info{'IV'};
-          info "URI ".$decrypt_info{'URI'} if defined $decrypt_info{'URI'};
+#          info "Method ".$decrypt_info{'METHOD'} if defined $decrypt_info{'METHOD'};
+#          info "Key ".$decrypt_info{'KEY'} if defined $decrypt_info{'KEY'};
+#          info "IV ".$decrypt_info{'IV'} if defined $decrypt_info{'IV'};
+#          info "URI ".$decrypt_info{'URI'} if defined $decrypt_info{'URI'};
         } elsif ($line =~ /#EXT-X-MEDIA-SEQUENCE/) {
           my $cmd;
           ($cmd, $media_sequence) = split(/:/, $line);
@@ -241,14 +245,14 @@ sub download {
              $byte_range{'start'} = $byte_range{'end'};
              $byte_range{'end'} += $range;
           }
-          info "Byte Range : ".$byte_range{'start'}." to ".$byte_range{'end'};
+#          info "Byte Range : ".$byte_range{'start'}." to ".$byte_range{'end'};
            
         } elsif ($line =~ /#EXTINF/) {
           my ($cmd, $dt) = split(/:/, $line);
           my ($dur, $stitle) = split(/,/, $dt);
-          info "Seg duration $dur title $stitle";
+#          info "Seg duration $dur title $stitle";
         } else {
-          info "Ignored line : $line";
+#          info "Ignored line : $line";
         }
       }
     }  
