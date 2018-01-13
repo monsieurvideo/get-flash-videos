@@ -12,6 +12,8 @@ wiki
 *.flv
 *.m3u8
 *.ogg
+*.ts
+*.tsx
 *.webm
 *.gz
 .*sw[op]
