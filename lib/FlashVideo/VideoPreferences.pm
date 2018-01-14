@@ -11,6 +11,7 @@ sub new {
   return bless {
     quality => $opt{quality} || "high",
     subtitles => $opt{subtitles} || 0,
+    type => $opt{type} || "",
   }, $class;
 }
 

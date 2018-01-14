@@ -144,6 +144,11 @@ Download subtitles for the video, if available. Subtitles are converted to
 SubRip format and saved to a file of the same name as the video file, but
 with an extension of 'srt'.
 
+=item I<-t>, I<--type>
+
+For sites that have multiple download type force selected type,
+'hls' or 'rtmp'.
+
 =item I<-q>, I<--quiet>
 
 Be quiet, only print errors.

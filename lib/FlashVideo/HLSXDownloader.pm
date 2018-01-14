@@ -85,7 +85,8 @@ sub read_hls_playlist {
   foreach my $line (@lines) {
     if ($line =~ /EXT-X-STREAM-INF/ && $line =~ /BANDWIDTH/) {
       $line =~ /BANDWIDTH=([0-9]*)/;
-      $urltable{int($1)} = $lines[$i + 1];
+      $urltable{int($1)} = { url => $lines[$i + 1],
+        inf => $line};
     }
     $i++;
   }
@@ -107,15 +108,31 @@ sub download {
   my %urls = read_hls_playlist($browser, $hls_url);
 
   #  Sort the urls and select the suitable one based upon quality preference
-  my $quality = $bitrate_index->{$prefs->{quality}};
-  my $min = $quality < scalar(keys(%urls)) ? $quality : scalar(keys(%urls));
-  my $key = (sort {int($b) <=> int($a)} keys %urls)[$min];
+  my @bandwidths = sort {int($a) <=> int($b)} keys %urls;
+  my $cnt = $#bandwidths;
+  my $key = $prefs->{quality};
+  $key //= 'high';
+  if ($key =~ /^\s*\d+\s*$/) {
+     my $bandwidth = $bandwidths[0];
+     foreach (@bandwidths) {
+       if ($key >= $_) {
+         $bandwidth = $_;
+       }
+     }
+     $key = $bandwidth;
+  } else {
+    my $num = {high => int($cnt), medium => int(($cnt+1)/2), low => 0}->{$key};
+    $num //= int($cnt);
+    $key = $bandwidths[$num];
+  }
 
   my ($hls_base, $trail) = ($hls_url =~ m/(.*\/)(.*)\.m3u8/);
   my $filename_mp4 = $args->{flv};
   my $filename_ts = $args->{flv} . ".ts";
   my $filename_ts_segment = $args->{flv} . ".tsx";
-  my $video_url = $urls{$key} =~ m/http(s?):\/\// ? $urls{$key} : $hls_base.$urls{$key};
+  debug "Select URL ".$urls{$key}->{url};
+  debug "STREAM INF ".$urls{$key}->{inf};
+  my $video_url = $urls{$key}->{url} =~ m/http(s?):\/\// ? $urls{$key}->{url} : $hls_base.$urls{$key}->{url};
 
   $browser->add_header( Referer => undef);
 
@@ -188,13 +205,15 @@ sub download {
           if (defined $decrypt_info{'IV'}) {
             $iv =$decrypt_info{'IV'}
           } else {
-            $iv = pack('x8q', $media_sequence);
+            # must be packed correctly may need changing
+            # if no 64bit support in perl. 
+            $iv = pack('x8q>', $media_sequence);
           }
           if (! defined $decrypt_info{'KEY'}) {
             if (defined $decrypt_info{'URI'}) {
               $browser->get($decrypt_info{'URI'});
               my $hls_key = $browser->content;
-              # to do pad key error checks.
+              # pad key if needed.
               my $len = length($hls_key);
               if ($len < 16) {
                  $hls_key = "\0" x (16 - $len) . $hls_key;
@@ -205,7 +224,8 @@ sub download {
           $crypt = Crypt::Rijndael->new($decrypt_info{'KEY'}, Crypt::Rijndael::MODE_CBC() );
           $crypt->set_iv($iv);
           my $size = ( stat SEG)[7];
-          # 16384 previously
+          # 16384 previously had issue with decrypt
+          # decrypt whole segment in one go
           while (read(SEG, $buffer, $size)) {
             print $fh_app $crypt->decrypt($buffer);
           }

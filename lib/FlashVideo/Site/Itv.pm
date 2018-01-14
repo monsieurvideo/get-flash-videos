@@ -39,7 +39,28 @@ sub find_video {
 
 
   my $productionid;
-  if ( $id )
+  ($productionid) = $browser->content =~ /\"productionId\":\"([^\"]+)\"/i;
+  if (! $productionid) {
+    ($productionid) = $browser->content =~ / data-video-id\s*=\s*\"([^\"]+)\"/i;
+  }
+  $productionid =~ s%^.*/%%;
+  $productionid =~ tr%_\.%/#%;
+  debug "Production ID $productionid\n";
+  die "No id (filter) found in URL or production id\n" unless $productionid;
+
+  my $hls_dl= 1;
+  my $rtmp_dl = 1;
+  if ($prefs->{type} =~ /hls/) {
+    $rtmp_dl = 0;
+  }
+  if ($prefs->{type} =~ /rtmp/) {
+    $hls_dl = 0;
+  }
+
+debug "rtmp = $rtmp_dl hls = $hls_dl";
+info "prefs are ". Data::Dumper->Dumper(\$prefs);
+
+  if ( $id && $rtmp_dl)
   {
 
     $browser->post("http://mercury.itv.com/PlaylistService.svc",
@@ -75,16 +96,9 @@ sub find_video {
 </SOAP-ENV:Envelope>
 EOF
 
+    debug $browser->content;
   }
-  else {
-    ($productionid) = $browser->content =~ /\"productionId\":\"([^\"]+)\"/i;
-    if (! $productionid) {
-      ($productionid) = $browser->content =~ / data-video-id\s*=\s*\"([^\"]+)\"/i;
-    }
-    $productionid =~ s%^.*/%%;
-    $productionid =~ tr%_\.%/#%;
-    debug "Production ID $productionid\n";
-    die "No id (filter) found in URL or production id\n" unless $productionid;
+  elsif ($rtmp_dl) {
     $browser->post($itv_params->{'data-playlist-url'},
       Content_Type => "text/xml; charset=utf-8",
       Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
@@ -132,11 +146,13 @@ EOF
 </soapenv:Envelope>
 EOF
 
+    debug $browser->content;
   }
   # We want the RTMP url within a <Video timecode=...> </Video> section.
-  debug $browser->content;
 
-  if ( $browser->content =~ m%<faultcode>InvalidEntity</faultcode>% ) {
+
+  if ( $hls_dl && (! $rtmp_dl || ($rtmp_dl && 
+        $browser->content =~ m%<faultcode>InvalidEntity</faultcode>%) ) ) {
 
     debug "Trying IOS download...";
     debug "Title: $og_title";
