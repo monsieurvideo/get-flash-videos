@@ -234,7 +234,7 @@ sub download {
         } elsif ($line =~ /#EXT-X-MEDIA-SEQUENCE/) {
           my $cmd;
           ($cmd, $media_sequence) = split(/:/, $line);
-          info "Media sequence = $media_sequence";
+          debug "Media sequence = $media_sequence";
         } elsif ($line =~ /#EXT-X-BYTERANGE/) {
           my ($cmd, $range) = split(/:/, $line);
           if ($range =~ /@/) {
