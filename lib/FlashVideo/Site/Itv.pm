@@ -8,7 +8,7 @@ use HTML::Entities;
 use Encode;
 use Data::Dumper;
 
-our $VERSION = '0.09.01';
+our $VERSION = '0.09.02';
 sub Version() { $VERSION;}
 
 sub extract_attributes {
@@ -17,7 +17,6 @@ sub extract_attributes {
   my %attrib;
   while ($substr =~ m/([-a-z0-9]+)\s*=\"([^\"]+)\"/gi) {
     $attrib{$1} = $2;
-#    info "adding {".$1."}=".$2;
   }
   return \%attrib;
 }
@@ -139,14 +138,10 @@ EOF
 
   if ( $browser->content =~ m%<faultcode>InvalidEntity</faultcode>% ) {
 
-#debuging
-$browser->add_handler("request_send", sub { shift->dump; return });
-$browser->add_handler("response_done", sub { shift->dump; return });
-
-    info "Trying IOS download...";
-    info "Title: $og_title";
-    info "Episode Title ".$itv_params->{'data-video-episode'};
-    info "Series: ".$itv_params->{'data-video-title'};
+    debug "Trying IOS download...";
+    debug "Title: $og_title";
+    debug "Episode Title ".$itv_params->{'data-video-episode'};
+    debug "Series: ".$itv_params->{'data-video-title'};
 
     my $ios_playlist_url = $itv_params->{'data-video-playlist'};
     my $hmac = $itv_params->{'data-video-hmac'};
@@ -155,8 +150,8 @@ $browser->add_handler("response_done", sub { shift->dump; return });
         $ios_playlist_url = $itv_params->{'data-video-id'};
     }
 
-    info "ios url: $ios_playlist_url";
-    info "hamc: $hmac";
+    debug "ios url: $ios_playlist_url";
+    debug "hamc: $hmac";
     my $hls_m3u = 'https://127.0.0.1/test.m3u';
     
     $browser->agent('Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)');
@@ -173,7 +168,6 @@ $browser->add_handler("response_done", sub { shift->dump; return });
     my $playlist = from_json($browser->content);
     my $video_id = $playlist->{Playlist}->{Video};
     my $base_url = $video_id->{Base};
-    info "base:". $base_url;
     my @media_files = @{$video_id->{MediaFiles}};
 
     debug Data::Dumper::Dumper(@media_files);
@@ -184,7 +178,7 @@ $browser->add_handler("response_done", sub { shift->dump; return });
     my $file_id = $productionid;
     $file_id =~ tr%_/#%---%;
     my $filename = title_to_filename("$file_id\_$og_title\_hls", "mp4");
-    info "filename: $filename";
+    debug "filename: $filename";
 
     $browser->cookie_jar( {} ); # keep cookies
     $browser->add_header( Referer => undef);
