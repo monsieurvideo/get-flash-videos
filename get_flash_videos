@@ -51,7 +51,7 @@ use FlashVideo::VideoPreferences;
 unshift @INC, \&plugin_loader;
 
 # single line for MakeMaker to get version
-use constant CVERSION => "1.25.96"; our $VERSION = CVERSION;
+use constant CVERSION => "1.25.97"; our $VERSION = CVERSION;
  
 our %opt;
 BEGIN {
