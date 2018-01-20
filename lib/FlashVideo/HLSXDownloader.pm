@@ -115,7 +115,7 @@ sub download {
   if ($key =~ /^\s*\d+\s*$/) {
      my $bandwidth = $bandwidths[0];
      foreach (@bandwidths) {
-       if ($key >= $_) {
+       if ($key >= $_/1000.00) {
          $bandwidth = $_;
        }
      }
@@ -282,11 +282,16 @@ sub download {
   unlink $filename_ts_segment;
   close($fh_app);
   
-  cleanup_audio($filename_ts, $filename_mp4);
+  if ($prefs->{cleanup}) {
+    cleanup_audio($filename_ts, $filename_mp4);
+    $self->{printable_filename} = $filename_mp4;
+    unlink $filename_ts;
+    return -s $filename_mp4; 
+   } else {
+    $self->{printable_filename} = $filename_ts;
+    return -s $filename_ts;
+   }
 
-  $self->{printable_filename} = $filename_mp4;
 
-  unlink $filename_ts;
-  return -s $filename_mp4; 
 }
 1;

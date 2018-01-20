@@ -57,9 +57,6 @@ sub find_video {
     $hls_dl = 0;
   }
 
-debug "rtmp = $rtmp_dl hls = $hls_dl";
-info "prefs are ". Data::Dumper->Dumper(\$prefs);
-
   if ( $id && $rtmp_dl)
   {
 
