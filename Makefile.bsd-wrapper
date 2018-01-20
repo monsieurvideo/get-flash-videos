@@ -11,10 +11,11 @@ mk/makemaker-wrap.mk: Makefile.PL
 mk/makemaker.mk : Makefile.PL get_flash_videos
 	GFV_DEVEL_MODE=1 perl Makefile.PL
 
-# No longer used github creates archives for download.
+# Only used in testiing github creates archives for download.
+OBSDDISTNAME=${DISTVNAME:S/^App-//}
 distgit:
-	git archive --format=tar.gz --prefix=${DISTNAME}-${VERSION}/ \
-		-o ${DISTNAME}-${VERSION}.tar.gz ${VERSION}^{tree}
+	git archive --format=tar.gz --prefix=${OBSDDISTNAME:S/_/-/g}/ \
+		-o ${OBSDDISTNAME}.tar.gz ${VERSION}^{tree}
 
 # No longer used.
 cleandistgit: clean
