@@ -5,10 +5,12 @@ use strict;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
+use HTML::TreeBuilder;
+use HTML::Element;
 use Encode;
 use Data::Dumper;
 
-our $VERSION = '0.09.02';
+our $VERSION = '0.09.03';
 sub Version() { $VERSION;}
 
 sub extract_attributes {
@@ -391,5 +393,68 @@ sub itv_swfhash_data {
     swfUrl  => $url;
 }
 
+sub search {
+  my ($self, $search) = @_;
+
+  my $browser = FlashVideo::Mechanize->new;
+  my @links;
+  my %processed = {};
+
+info $search;
+  $browser->allow_redirects;
+  $search  =~ s/\\s/-/g;
+  $search =~ tr/ /-/;
+  $search =~ s/---*/-/g;
+  $search - lc($search);
+info $search;
+
+  $browser->get('https://www.itv.com/hub/shows');
+  
+  my $page = $browser->content;
+  my $series;
+
+  while ($page =~ m%<a href="(https://www.itv.com/hub/[^"]*)"[^>]* data-content-type="programme"[^>]*>%g) {
+    my $showurl = $1;
+    next if defined $processed{$showurl};
+    if ($showurl =~ m/$search/i) {
+      $browser->get($showurl);
+      my $progpage = $browser->content;
+      $progpage =~ s%(</?)time([ >])%$1h4$2%g;
+      my $root = HTML::TreeBuilder->new;
+      $root->parse($progpage);
+       
+      my $h2 = $root->look_down(_tag => 'h2', class => 'module__heading');
+      $series = $h2->as_text;
+
+      my $episodes = $root->look_down(_tag => 'h2', class => 'episode-info__episode-count');
+      printf  "%s\n", $episodes->as_text;
+
+      my $episodes = $root->look_down(_tag => 'div', 'id' => 'more-episodes');
+      my @progs = $episodes->look_down(_tag => 'a', 'data-content-type' => 'episode');
+
+      foreach my $prog (@progs) {
+        my $name = $series;
+        my $url = $prog->attr_get_i('href');
+        my $div = $prog->look_down(_tag => 'div', class => 'tout__body media__body');
+
+        my $h3 = $div->find('h3');
+        my $trans = $div->find('h4');
+        my $d = $trans->as_text;
+        $d =~ s/^\w+//;
+        $name .= $d;
+        $name .= ' '.$h3->as_text;
+        my $desc = $div->find('p');
+        my $episode = { name => $name,
+                        url => $url,
+                        description => $desc->as_text};
+
+        push @links, $episode;
+      }
+    }
+    $processed{$showurl} = $showurl;
+  }
+
+  return @links;
+}
 
 1;
