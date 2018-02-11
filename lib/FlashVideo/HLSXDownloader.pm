@@ -282,14 +282,14 @@ sub download {
   unlink $filename_ts_segment;
   close($fh_app);
   
-  if ($prefs->{cleanup}) {
+  if ($prefs->{raw}) {
+    $self->{printable_filename} = $filename_ts;
+    return -s $filename_ts;
+   } else {
     cleanup_audio($filename_ts, $filename_mp4);
     $self->{printable_filename} = $filename_mp4;
     unlink $filename_ts;
     return -s $filename_mp4; 
-   } else {
-    $self->{printable_filename} = $filename_ts;
-    return -s $filename_ts;
    }
 
 

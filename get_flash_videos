@@ -83,7 +83,7 @@ BEGIN {
     debug => 0,
     quiet => 0,
     quality => "high",
-    cleanup => 1,
+    raw => 1,
     type => '',
     subtitles => 0,
     info => 0
@@ -113,6 +113,7 @@ Options:
      --subtitles  Download subtitles where available.
   -q --quiet      Be quiet (only print errors).
   -r --quality    Quality to download at (high|medium|low, or site specific).
+     --raw        No audio cleanup for hls.
   -t --type       Download type HLS/RTMP only download given type.
   -v --version    Print version.
   -y --yes        Say yes to any questions (don't prompt for any information).
@@ -153,7 +154,7 @@ GetOptions(
   "quiet|q"      => \$opt{quiet},
   "add-plugin=s" => \$opt{add_plugin},
   "quality|r=s"  => \$opt{quality},
-  "cleanup"      => \$opt{cleanup},
+  "raw"          => \$opt{raw},
   "type|t=s"     => \$opt{type},
   "subtitles"    => \$opt{subtitles},
   "info|i"       => \$opt{info},
