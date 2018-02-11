@@ -7,11 +7,9 @@ release: release-test release-tag release-cpan release-upload deb
 	svn commit -m "Version $(VERSION)" wiki/Installation.wiki wiki/Version.wiki
 
 release-test: $(BASEEXT)-$(VERSION) release-combined test
-	@git status --porcelain | grep -q . ;\
-	  if [ $$? = 0 ]; then \
-	    echo "Tree dirty, won't release.";\
-	    exit 1;\
-	  fi
+	@git status --porcelain | grep -q . &&\
+	  ( echo "Tree dirty, won't release.";\
+	    exit 1)\
 
 release-cpan: manifest metafile dist
 
