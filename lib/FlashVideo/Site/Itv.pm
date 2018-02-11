@@ -418,7 +418,8 @@ sub search {
       $browser->get($showurl);
       my $progpage = $browser->content;
       my $root = HTML::TreeBuilder->new;
-      # must set otherwise time and section tags ignored
+      # must set otherwise time and section tags are ignored
+      # html5 tags are missing.
       $root->ignore_unknown(0);
       $root->parse($progpage);
        
