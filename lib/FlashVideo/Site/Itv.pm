@@ -400,13 +400,11 @@ sub search {
   my @links;
   my %processed = {};
 
-info $search;
   $browser->allow_redirects;
   $search  =~ s/\\s/-/g;
   $search =~ tr/ /-/;
   $search =~ s/---*/-/g;
   $search - lc($search);
-info $search;
 
   $browser->get('https://www.itv.com/hub/shows');
   
@@ -419,36 +417,45 @@ info $search;
     if ($showurl =~ m/$search/i) {
       $browser->get($showurl);
       my $progpage = $browser->content;
-      $progpage =~ s%(</?)time([ >])%$1h4$2%g;
       my $root = HTML::TreeBuilder->new;
+      # must set otherwise time and section tags ignored
+      $root->ignore_unknown(0);
       $root->parse($progpage);
        
-      my $h2 = $root->look_down(_tag => 'h2', class => 'module__heading');
-      $series = $h2->as_text;
-
       my $episodes = $root->look_down(_tag => 'h2', class => 'episode-info__episode-count');
-      printf  "%s\n", $episodes->as_text;
+      info  $episodes->as_text;
+
+      my $prog_title = $root->look_down(_tag => 'h1', class => 'episode-info__programme-title');
 
       my $episodes = $root->look_down(_tag => 'div', 'id' => 'more-episodes');
-      my @progs = $episodes->look_down(_tag => 'a', 'data-content-type' => 'episode');
+      my @sections = $episodes->look_down(_tag => 'section', class => 'module module--secondary js-series-group');
+      foreach my $section (@sections) {
+#        info $section->attr_get_i('id');
+        my $h2a = $section->look_down(_tag => 'h2', class => 'module__heading');
+        $series = $h2a->as_text;
+        my $li = $section->find('li');
+        my $chan = $li->attr('class');
+        $chan =~ s%^.*--([a-z0-9]+)-pos .*$%$1%;
 
-      foreach my $prog (@progs) {
-        my $name = $series;
-        my $url = $prog->attr_get_i('href');
-        my $div = $prog->look_down(_tag => 'div', class => 'tout__body media__body');
+        my @progs = $section->look_down(_tag => 'a', 'data-content-type' => 'episode');
 
-        my $h3 = $div->find('h3');
-        my $trans = $div->find('h4');
-        my $d = $trans->as_text;
-        $d =~ s/^\w+//;
-        $name .= $d;
-        $name .= ' '.$h3->as_text;
-        my $desc = $div->find('p');
-        my $episode = { name => $name,
-                        url => $url,
-                        description => $desc->as_text};
+        foreach my $prog (@progs) {
+          my $url = $prog->attr_get_i('href');
+          my $div = $prog->look_down(_tag => 'div', class => 'tout__body media__body');
 
-        push @links, $episode;
+          my $h3 = $div->find('h3');
+          my $trans = $div->find('time');
+          my $d = $trans->as_text;
+          $d =~ s/^\s*\w+//;
+          $d =~ s/\s*$//;
+          my $name = $prog_title->as_text . " - $series episode" . $h3->as_text . " - $d ($chan)";
+          my $desc = $div->find('p');
+          my $episode = { name => $name,
+                          url => $url,
+                          description => $desc->as_text};
+
+          push @links, $episode;
+        }
       }
     }
     $processed{$showurl} = $showurl;
