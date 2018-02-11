@@ -6,7 +6,7 @@ use Carp;
 use FlashVideo::Utils;
 
 # Sites which support searching
-my @sites_with_search = ('4oD', 'GoogleVideoSearch');
+my @sites_with_search = ('GoogleVideoSearch');
 
 sub search {
   my ($class, $search, $max_per_site, $max_results) = @_;
@@ -16,7 +16,7 @@ sub search {
 
   # If a user searches for "foo something", check to see if "foo" is a site
   # we support. If it is, only search that site.
-  if ($search =~ /^(\w+) \w+/) {
+  if ($search =~ /^(\w+) \S+/) {
     my $possible_site = ucfirst lc $1;
 
     debug "Checking to see if '$possible_site' in '$search' is a search-supported site.";
