@@ -8,7 +8,8 @@ release: release-test release-tag release-cpan release-upload deb
 
 release-test: $(BASEEXT)-$(VERSION) release-combined test
 	@git status --porcelain | ( grep -q . &&\
-	  echo "Tree dirty, won't release."; exit 1)
+	  echo "Tree dirty, won't release."; exit 1); \
+          echo -n
 
 release-cpan: manifest metafile dist
 
