@@ -401,9 +401,7 @@ sub search {
   my %processed = {};
 
   $browser->allow_redirects;
-  $search  =~ s/\\s/-/g;
-  $search =~ tr/ /-/;
-  $search =~ s/---*/-/g;
+  $search =~ s/\s+/ /g;
   $search - lc($search);
 
   $browser->get('https://www.itv.com/hub/shows');
@@ -411,10 +409,13 @@ sub search {
   my $page = $browser->content;
   my $series;
 
-  while ($page =~ m%<a href="(https://www.itv.com/hub/[^"]*)"[^>]* data-content-type="programme"[^>]*>%g) {
+  while ($page =~ m%<a href="(https://www.itv.com/hub/([^/]*)[^"]*)"[^>]* data-content-type="programme"[^>]*>%g) {
     my $showurl = $1;
+    my $prog_name = $2;
+    $prog_name =~ tr/-/ /;
     next if defined $processed{$showurl};
-    if ($showurl =~ m/$search/i) {
+
+    if ($prog_name =~ /$search/i) {
       $browser->get($showurl);
       my $progpage = $browser->content;
       my $root = HTML::TreeBuilder->new;
@@ -424,7 +425,7 @@ sub search {
       $root->parse($progpage);
        
       my $episodes = $root->look_down(_tag => 'h2', class => 'episode-info__episode-count');
-      info  $episodes->as_text;
+      info  ucfirst $prog_name . $episodes->as_text;
 
       my $prog_title = $root->look_down(_tag => 'h1', class => 'episode-info__programme-title');
 
