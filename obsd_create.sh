@@ -11,4 +11,5 @@
 #make -f Makefile.bsd-wrapper VERSION=${VER} release-test
 
 make -f Makefile.bsd-wrapper mk/makemaker-wrap.mk
+make -f Makefile.bsd-wrapper mk/makemaker.mk
 make -f Makefile.bsd-wrapper release-test

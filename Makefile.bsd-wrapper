@@ -14,12 +14,12 @@ mk/makemaker.mk : Makefile.PL get_flash_videos
 # Only used in testiing github creates archives for download.
 OBSDDISTNAME=${DISTVNAME:S/^App-//}
 distgit:
-	git archive --format=tar.gz --prefix=${OBSDDISTNAME:S/_/-/g}/ \
+	git archive --format=tar.gz --prefix=${OBSDDISTNAME}/ \
 		-o ${OBSDDISTNAME}.tar.gz ${VERSION}^{tree}
 
 # No longer used.
 cleandistgit: clean
-	rm ${DISTNAME}-${VERSION}.tar.gz
+	rm ${OBSDDISTNAME}.tar.gz
 
 -include mk/makemaker-wrap.mk
 include mk/targets.mk
