@@ -9,7 +9,7 @@ sub new {
   my($class, %opt) = @_;
 
   return bless {
-    raw => $opt{raw} || 1,
+    raw => $opt{raw} || 0,
     quality => $opt{quality} || "high",
     subtitles => $opt{subtitles} || 0,
     type => $opt{type} || "",
