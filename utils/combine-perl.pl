@@ -99,6 +99,7 @@ sub process_file {
               for my $item(@items) {
                 next if $item =~ /^\d/;
                 next if $item =~ /^RC_/;
+                next if $item =~ /^__PACKAGE__$/;
                 $output .= "*$item = \\&${module}::${item}; ";
               }
               $output .= "}\n";
@@ -137,6 +138,8 @@ sub process_file {
     } elsif($start && /^\s*(#|$)/) {
       $pre .= COMBINED_WARNING if $. == 2;
       $pre .= $_;
+    } elsif(/^__PACKAGE__$/) {
+      next;
     } elsif(!/^\s*#/) {
       $start = 0;
       s/ HTTP::Status::RC_/ &HTTP::Status::RC_/;
