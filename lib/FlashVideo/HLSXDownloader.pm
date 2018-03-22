@@ -26,21 +26,23 @@ sub cleanup_audio {
       die "Could not find ffmpeg nor avconv executable!";
     } else {
       @args = (
-        "avconv",
-        "-i", $in_file,
-        "-bsf:a", "aac_adtstoasc",
-        "-c", "copy",
-        "-f", "mp4",
+        'avconv',
+        '-i', $in_file,
+        '-bsf:a', 'aac_adtstoasc',
+        '-c', 'copy',
+        '-f', 'mp4',
+        '-v', 'error',
         $out_file
       );
     }
   } else {
     @args = (
-      "ffmpeg",
-      "-i", $in_file,
-      "-absf", "aac_adtstoasc",
-      "-c", "copy",
-      "-f", "mp4",
+      'ffmpeg',
+      '-i', $in_file,
+      '-absf', 'aac_adtstoasc',
+      '-c', 'copy',
+      '-f', 'mp4',
+      '-v', 'error',
       $out_file
     );
   }
