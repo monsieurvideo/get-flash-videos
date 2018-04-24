@@ -2,6 +2,7 @@
 package FlashVideo::Site::Itv;
 
 use strict;
+use warnings;
 use FlashVideo::Utils;
 use FlashVideo::JSON;
 use HTML::Entities;
@@ -9,9 +10,10 @@ use HTML::TreeBuilder;
 use HTML::Element;
 use Encode;
 use Data::Dumper;
+use Readonly;
 
-our $VERSION = '0.09.03';
-sub Version() { $VERSION;}
+our $VERSION = '0.09.04';
+sub Version() { return $VERSION;}
 
 sub extract_attributes {
   my $substr = shift;
@@ -52,21 +54,40 @@ sub find_video {
 
   my $hls_dl= 1;
   my $rtmp_dl = 1;
+  my $dash_dl = 1;
   if ($prefs->{type} =~ /hls/) {
     $rtmp_dl = 0;
+    $dash_dl = 0;
   }
   if ($prefs->{type} =~ /rtmp/) {
     $hls_dl = 0;
+    $dash_dl = 0;
+  }
+  if ($prefs->{type} =~ /dash/) {
+    $hls_dl = 0;
+    $rtmp_dl = 0;
   }
 
-  if ( $id && $rtmp_dl)
-  {
+  if ($itv_params->{'data-video-variants'} !~ /hls/i) {
+    $hls_dl = 0;
+  }
 
-    $browser->post("http://mercury.itv.com/PlaylistService.svc",
-      Content_Type => "text/xml; charset=utf-8",
-      Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
-      SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
-      Content      => <<EOF);
+  if ($itv_params->{'data-video-variants'} !~ /dash/i) {
+    $dash_dl = 0;
+  }
+
+  $browser->agent('Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)');
+  # For dash playtime 
+  # $browser->agent('Mozilla/5.0 (WINDORW NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko');
+  if ($rtmp_dl) {
+    if ( $id )
+    {
+
+      $browser->post("http://mercury.itv.com/PlaylistService.svc",
+        Content_Type => "text/xml; charset=utf-8",
+        Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
+        SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
+        Content      => <<EOF);
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <SOAP-ENV:Body>
     <tem:GetPlaylist xmlns:tem="http://tempuri.org/" xmlns:itv="http://schemas.datacontract.org/2004/07/Itv.BB.Mercury.Common.Types" xmlns:com="http://schemas.itv.com/2009/05/Common">
@@ -95,14 +116,14 @@ sub find_video {
 </SOAP-ENV:Envelope>
 EOF
 
-    debug $browser->content;
-  }
-  elsif ($rtmp_dl) {
-    $browser->post($itv_params->{'data-playlist-url'},
-      Content_Type => "text/xml; charset=utf-8",
-      Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
-      SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
-      Content      => <<EOF);
+      debug $browser->content;
+    }
+    else {
+      $browser->post($itv_params->{'data-playlist-url'},
+        Content_Type => "text/xml; charset=utf-8",
+        Referer      => "http://www.itv.com/mercury/Mercury_VideoPlayer.swf?v=1.5.309/[[DYNAMIC]]/2",
+        SOAPAction   => '"http://tempuri.org/PlaylistService/GetPlaylist"',
+        Content      => <<EOF);
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/" xmlns:itv="http://schemas.datacontract.org/2004/07/Itv.BB.Mercury.Common.Types" xmlns:com="http://schemas.itv.com/2009/05/Common">
   <soapenv:Header/>
   <soapenv:Body>
@@ -145,13 +166,19 @@ EOF
 </soapenv:Envelope>
 EOF
 
-    debug $browser->content;
+      debug $browser->content;
+    }
+    if ($browser->content =~ m%<faultcode>[A-z]*</faultcode>%i) {
+      # failure to find rtmp download
+      $rtmp_dl = 0;
+      info "No rtmp download found";
+    }
+
   }
   # We want the RTMP url within a <Video timecode=...> </Video> section.
 
 
-  if ( $hls_dl && (! $rtmp_dl || ($rtmp_dl && 
-        $browser->content =~ m%<faultcode>InvalidEntity</faultcode>%) ) ) {
+  if ( $hls_dl && (! $rtmp_dl ) ) {
 
     debug "Trying IOS download...";
     debug "Title: $og_title";
@@ -169,7 +196,7 @@ EOF
     debug "hamc: $hmac";
     my $hls_m3u = 'https://127.0.0.1/test.m3u';
     
-    $browser->agent('Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)');
+    $browser->agent('Mozilla/5.0 (WINDORW NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko');
 
     $browser->post($ios_playlist_url, 
       Content_Type => 'application/json',
@@ -208,6 +235,17 @@ EOF
       flv        => $filename,
       args       => { hls_url => $hls_m3u, prefs => $prefs }
     };
+  }
+  if ( $dash_dl && (! $rtmp_dl ) ) {
+    info "DASH Content";
+    return {
+      downloader => "dash",
+      args       => { dash_url => '', prefs => $prefs }
+    };
+  }
+
+  if (! $rtmp_dl) {
+    return;
   }
   die "Unable to find <Video> in XML" unless $browser->content =~ m{<Video timecode[^>]+>(.*?)</Video>}s;
   my $video = $1;
@@ -338,7 +376,7 @@ EOF
 }
 
 
-use constant FP_KEY => "Genuine Adobe Flash Player 001";
+Readonly my $FP_KEY => 'Genuine Adobe Flash Player 001';
 
 # Replacement swfhash upto version 19
 sub itv_swfhash {
@@ -389,7 +427,7 @@ sub itv_swfhash_data {
 
   return
     swfsize => $datalen,
-    swfhash => Digest::SHA::hmac_sha256_hex($data, FP_KEY),
+    swfhash => Digest::SHA::hmac_sha256_hex($data, $FP_KEY),
     swfUrl  => $url;
 }
 
@@ -398,11 +436,11 @@ sub search {
 
   my $browser = FlashVideo::Mechanize->new;
   my @links;
-  my %processed = {};
+  my %processed = ();
 
   $browser->allow_redirects;
   $search =~ s/\s+/ /g;
-  $search - lc($search);
+  $search = lc($search);
 
   $browser->get('https://www.itv.com/hub/shows');
   
@@ -424,8 +462,8 @@ sub search {
       $root->ignore_unknown(0);
       $root->parse($progpage);
        
-      my $episodes = $root->look_down(_tag => 'h2', class => 'episode-info__episode-count');
-      info  ucfirst $prog_name . $episodes->as_text;
+      my $episodes_count = $root->look_down(_tag => 'h2', class => 'episode-info__episode-count');
+      info  ucfirst $prog_name . $episodes_count->as_text;
 
       my $prog_title = $root->look_down(_tag => 'h1', class => 'episode-info__programme-title');
 
