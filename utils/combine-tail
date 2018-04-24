@@ -17,6 +17,7 @@ $dummy = $IO::Uncompress::Inflate::InflateError;
 $dummy = $IO::Compress::Bzip2::Bzip2Error;
 $dummy = $IO::Compress::Deflate::DeflateError;
 $dummy = $HTTP::Status::RC_MOVED_TEMPORARILY;
+$dummy = $HTTP::Status::RC_NO_CODE;
 $dummy = $XML::Simple::xml_out;
 $dummy = $XML::Simple::xml_in;
 $dummy = $XML::SAX::ParserPackage;

@@ -10,7 +10,6 @@ use HTML::TreeBuilder;
 use HTML::Element;
 use Encode;
 use Data::Dumper;
-use Readonly;
 
 our $VERSION = '0.09.04';
 sub Version() { return $VERSION;}
@@ -376,7 +375,7 @@ EOF
 }
 
 
-Readonly my $FP_KEY => 'Genuine Adobe Flash Player 001';
+use constant FP_KEY => 'Genuine Adobe Flash Player 001';
 
 # Replacement swfhash upto version 19
 sub itv_swfhash {
@@ -427,7 +426,7 @@ sub itv_swfhash_data {
 
   return
     swfsize => $datalen,
-    swfhash => Digest::SHA::hmac_sha256_hex($data, $FP_KEY),
+    swfhash => Digest::SHA::hmac_sha256_hex($data, FP_KEY),
     swfUrl  => $url;
 }
 
