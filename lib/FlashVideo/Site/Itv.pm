@@ -11,7 +11,7 @@ use HTML::Element;
 use Encode;
 use Data::Dumper;
 
-our $VERSION = '0.09.04';
+our $VERSION = '0.09.05';
 sub Version() { return $VERSION;}
 
 sub extract_attributes {
@@ -220,6 +220,32 @@ EOF
     $file_id =~ tr%_/#%---%;
     my $filename = title_to_filename("$file_id\_$og_title\_hls", "mp4");
     debug "filename: $filename";
+
+    if ($prefs->{subtitles}) {
+      my @subtitles = @{$video_id->{Subtitles}};
+      my $subtitles_url;
+      debug Data::Dumper::Dumper(@subtitles);
+      foreach my $subtitle_ref (@subtitles) {
+        debug Data::Dumper::Dumper($subtitle_ref);
+        $subtitles_url = $subtitle_ref->{Href};
+      }
+      info "Subtitle URL $subtitles_url";
+      $browser->get($subtitles_url);
+
+      if (!$browser->success) {
+        info "Couldn't download Itv subtitles: " . $browser->response->status_line;
+      }
+      my $subtext = $browser->content;
+      my $subtitles_file = $filename;
+      $subtitles_file =~ s/\.mp4$/\.vtt/;
+
+      unlink($subtitles_file);
+      open my $fh, ">", $subtitles_file;
+      binmode $fh, ':utf8';
+      print $fh $subtext;
+      close $fh;
+      info "Saved subtitles to $subtitles_file";
+    }
 
     $browser->cookie_jar( {} ); # keep cookies
     $browser->add_header( Referer => undef);
