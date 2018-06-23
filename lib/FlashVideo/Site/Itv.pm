@@ -11,7 +11,7 @@ use HTML::Element;
 use Encode;
 use Data::Dumper;
 
-our $VERSION = '0.09.05';
+our $VERSION = '0.09.06';
 sub Version() { return $VERSION;}
 
 sub extract_attributes {
@@ -167,7 +167,11 @@ EOF
 
       debug $browser->content;
     }
-    if ($browser->content =~ m%<faultcode>[A-z]*</faultcode>%i) {
+    if (! $browser->success) {
+      $rtmp_dl = 0;
+      info "No rtmp download found";
+    }
+    elsif ($browser->content =~ m%<faultcode>[A-z]*</faultcode>%i) {
       # failure to find rtmp download
       $rtmp_dl = 0;
       info "No rtmp download found";
