@@ -10,7 +10,7 @@ use base "WWW::Mechanize";
 
 sub new {
   my $class = shift;
-  my $browser = $class->SUPER::new(autocheck => 0);
+  my $browser = $class->SUPER::new(autocheck => 0, parse_head => 0);
   $browser->agent_alias("Windows Mozilla");
 
   my $proxy = $App::get_flash_videos::opt{proxy};
