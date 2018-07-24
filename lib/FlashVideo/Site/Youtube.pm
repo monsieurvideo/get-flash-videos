@@ -178,6 +178,29 @@ sub download_url_encoded_fmt_stream_map {
   return $preferred_quality->{url}, title_to_filename($title, "mp4");
 }
 
+sub swap_at {
+    my (@list) = @_;
+    my $offset = pop @list;
+    my $tmp = $list[0];
+    $list[0] = $list[$offset];
+    $list[$offset] = $tmp;
+    return @list;
+}
+
+sub decipher {
+    my ($encoded) = @_;
+    my @list = split //, $encoded;
+    @list = reverse @list;
+    @list = swap_at(@list, 29);
+    shift @list;
+    @list = reverse @list;
+    shift @list;
+    @list = reverse @list;
+    @list = swap_at(@list, 4);
+    @list = swap_at(@list, 28);
+    return join '', @list;
+}
+
 sub parse_youtube_url_encoded_fmt_stream_map {
   my($raw_map) = @_;;
 
@@ -188,6 +211,7 @@ sub parse_youtube_url_encoded_fmt_stream_map {
     my $format = "";
     my $url = "";
     my $signature = "";
+    my $mime = "";
     
     foreach my $pair (split /&/, $params) {
       my ($name, $value) = split /=/, $pair;
@@ -197,10 +221,29 @@ sub parse_youtube_url_encoded_fmt_stream_map {
         $url = uri_unescape($value);
       } elsif ($name eq "sig") {
         $signature = $value;
+      } elsif ($name eq "s") {
+        $signature = decipher($value);
+      } elsif ($name eq "type") {
+        ($mime) = split /;/, uri_unescape($value);
+        debug "Using MIME $mime";
+        $mime = uri_escape($mime);
       }
     }
+
+    # URLs on "insecure" videos already have the signature precalcuated and
+    # mixed in.
+    unless ($url =~ m/signature=/) {
+      $url .= "&signature=".$signature;
+    }
+
+    # Add mime to sparams. If we fail to do this, then we get 403 even if the
+    # signature is valid. Why? Dunno; go ask Google.
+    unless ($url =~ m/mime=/) {
+      $url =~ s/sparams=/sparams=mime%2C/;
+      $url .= "&mime=".$mime;
+    }
     
-    $map->{$format} = $url."&signature=".$signature;
+    $map->{$format} = $url;
   }
   
   return $map;
