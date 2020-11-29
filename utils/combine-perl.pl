@@ -26,7 +26,7 @@ EOF
 
 my $include = ".*";
 # Note exclude takes precendence over include.
-my $exclude = "^(HTML::Parser|HTML::Entities)";
+my $exclude = "^(HTML::Parser|HTML::Entities|Crypt::Rijndael|parent)";
 # Our name, ends up in $::SCRIPT_NAME
 my $name    = "";
 
