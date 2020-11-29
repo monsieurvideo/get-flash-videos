@@ -11,7 +11,7 @@ use HTML::Element;
 use Encode;
 use Data::Dumper;
 
-our $VERSION = '0.09.06';
+our $VERSION = '0.09.07';
 sub Version() { return $VERSION;}
 
 sub extract_attributes {
@@ -491,20 +491,22 @@ sub search {
       $root->ignore_unknown(0);
       $root->parse($progpage);
        
-      my $episodes_count = $root->look_down(_tag => 'h2', class => 'episode-info__episode-count');
+      my $episodes_count = $root->look_down(_tag => 'h2', class => qr/episode-info__episode-count */);
       info  ucfirst $prog_name . $episodes_count->as_text;
 
       my $prog_title = $root->look_down(_tag => 'h1', class => 'episode-info__programme-title');
 
       my $episodes = $root->look_down(_tag => 'div', 'id' => 'more-episodes');
       my @sections = $episodes->look_down(_tag => 'section', class => 'module module--secondary js-series-group');
+      my $chan_div = $root->look_down(_tag => 'div', class => qr/episode-info__channel-icon */);
+      my $chan = $chan_div->as_text;
       foreach my $section (@sections) {
 #        info $section->attr_get_i('id');
         my $h2a = $section->look_down(_tag => 'h2', class => 'module__heading');
         $series = $h2a->as_text;
-        my $li = $section->find('li');
-        my $chan = $li->attr('class');
-        $chan =~ s%^.*--([a-z0-9]+)-pos .*$%$1%;
+#        my $li = $section->find('li');
+#        my $chan = $li->attr('class');
+#        $chan =~ s%^.*--([a-z0-9]+)-pos .*$%$1%;
 
         my @progs = $section->look_down(_tag => 'a', 'data-content-type' => 'episode');
 
